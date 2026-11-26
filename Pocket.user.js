@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         AI Pill OS - Pocket
 // @namespace    https://github.com/JadanPoll/AI_Pill_OS
-// @version      0.5.9
+// @version      0.5.10
 // @updateURL    https://raw.githubusercontent.com/JadanPoll/AI_Pill_OS/main/Pocket.user.js
 // @downloadURL  https://raw.githubusercontent.com/JadanPoll/AI_Pill_OS/main/Pocket.user.js
 // @description  Universal Safari pill: collect evidence, keep discoveries, and hand a question to a chosen chat.
@@ -24,7 +24,7 @@
 (() => {
   'use strict';
   if (window.top !== window) return;
-  const VERSION='0.5.9';
+  const VERSION='0.5.10';
   // Report initialization failures without depending on the main UI, storage or a CDN.
   function bootFailure(error,phase){
     const message=String(error?.message||error).slice(0,500);
@@ -543,7 +543,7 @@
     target=dest;paintTarget();
     const matching=found.sort((a,b)=>b.created.localeCompare(a.created));
     // Source displays newest request; destination prioritizes unanswered requests.
-    pending=here&&matching.some(r=>r.target===here)?matching.find(r=>r.target===here&&!r.reply&&!r.copied)||matching.find(r=>r.target===here&&!r.reply)||matching[0]||null:matching[0]||null;
+    pending=here&&matching.some(r=>r.target===here)?matching.find(r=>r.id===replyDraftId&&r.target===here&&r.copied&&!r.reply)||matching.find(r=>r.target===here&&!r.reply&&!r.copied)||matching.find(r=>r.target===here&&!r.reply)||matching[0]||null:matching[0]||null;
     if(pending&&pending.target===here&&!pending.seen&&!pending.reply){
       const receipt={id:pending.id,target:pending.target,seenAt:new Date().toISOString()};
       const r=pending;
