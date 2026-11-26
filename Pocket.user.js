@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         AI Pill OS - Pocket
 // @namespace    https://github.com/JadanPoll/AI_Pill_OS
-// @version      0.3.2
+// @version      0.4.0
 // @updateURL    https://raw.githubusercontent.com/JadanPoll/AI_Pill_OS/main/Pocket.user.js
 // @downloadURL  https://raw.githubusercontent.com/JadanPoll/AI_Pill_OS/main/Pocket.user.js
 // @description  Universal Safari pill: collect evidence, keep discoveries, and hand a question to a chosen chat.
@@ -15,14 +15,13 @@
 // @grant        GM_setValue
 // @grant        GM_listValues
 // @grant        GM_deleteValue
-// @require      https://unpkg.com/@zumer/snapdom@3.8.3/dist/snapdom.js
 // @run-at       document-idle
 // @noframes
 // ==/UserScript==
 (() => {
   'use strict';
   if (window.top !== window || document.getElementById('ai-pill-pocket')) return;
-  const VERSION='0.3.2', PREFIX='pocket.v1.', TRAY='tray.v1.', HANDOFF='handoff.v1.', ACK='ack.v1.', TARGET='target.v1', LIMIT=100000, MAX_ITEMS=250;
+  const VERSION='0.4.0', PREFIX='pocket.v1.', TRAY='tray.v1.', HANDOFF='handoff.v1.', ACK='ack.v1.', TARGET='target.v1', LIMIT=100000, MAX_ITEMS=250;
   const uid=()=>globalThis.crypto?.randomUUID?.()||Date.now().toString(36)+'-'+Math.random().toString(36).slice(2);
   // Deliberately no localStorage fallback: that would appear to work but silently
   // partition the data by site. Only this installed script owns these GM keys.
@@ -37,17 +36,18 @@
   Object.assign(icons,{bookmark:'<path d="M6 3h12v18l-6-4-6 4z"/>',back:'<path d="m15 18-6-6 6-6"/>',trash:'<path d="M3 6h18M9 6V3h6v3M6 6l1 15h10l1-15M10 10v7M14 10v7"/>',settings:'<circle cx="5" cy="12" r="1"/><circle cx="12" cy="12" r="1"/><circle cx="19" cy="12" r="1"/>',arrow:'<path d="M7 17 17 7M7 7h10v10"/>',pin:'<path d="m16 3 5 5-4 2-3 5-2-2-6 6-1-1 6-6-2-2 5-3z"/>',search:'<circle cx="10" cy="10" r="6"/><path d="m14 14 6 6"/>'});
   icons.crop='<path d="M6 3v15h15M3 6h15v15"/>';icons.chat='<path d="M20 11a8 8 0 0 1-8 8H4l2-4a8 8 0 1 1 14-4Z"/><path d="M9 11h6"/>';const icon=k=>'<svg width="21" height="21" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round" stroke-linecap="round" aria-hidden="true">'+icons[k]+'</svg>';
   const btn=(id,k,title,words='')=>'<button id="'+id+'" type="button" aria-label="'+title+'" title="'+title+'">'+icon(k)+(words?' '+words:'')+'</button>';
-  root.innerHTML='<style>:host{all:initial;position:fixed;left:12px;bottom:18px;z-index:2147483645;color:#172033;font:14px system-ui}*{box-sizing:border-box}[hidden]{display:none!important}button,input,textarea{font:inherit;color:inherit}button{min-height:44px;min-width:44px;border:0;border-radius:8px;background:transparent;display:inline-flex;align-items:center;justify-content:center;gap:5px;padding:8px;cursor:pointer}button:disabled{opacity:.35}button:focus-visible,a:focus-visible,summary:focus-visible{outline:2px solid #2563eb}#open{font-size:11px;border-radius:22px;background:#172033;color:#fff;box-shadow:0 2px 10px #0004}#panel{width:min(380px,calc(100vw - 24px));max-height:78vh;overflow:auto;background:rgba(255,255,255,.86);backdrop-filter:blur(3px);-webkit-backdrop-filter:blur(3px);border:1px solid #cbd5e1;border-radius:14px;padding:10px;box-shadow:0 4px 20px #0004}.row{display:flex;gap:4px;align-items:center;margin:4px 0}.grow{flex:1;min-width:0}textarea,input{width:100%;border:1px solid #cbd5e1;border-radius:8px;padding:9px;background:#fff;font-size:16px}input{min-height:44px}textarea{resize:vertical}small,#status{font-size:12px;color:#475569;overflow-wrap:anywhere}h3{font-size:16px;margin:0}#list{max-height:30vh;overflow:auto}.entry{display:block;text-align:left;width:100%;border-bottom:1px solid #e2e8f0;border-radius:0;overflow-wrap:anywhere}.entry b,.entry small{display:block}#detail{border-top:1px solid #e2e8f0;margin-top:6px;padding-top:6px}#body,#handoff-preview{white-space:pre-wrap;overflow-wrap:anywhere;max-height:25vh;overflow:auto;background:#f8fafc;padding:8px;font:13px/1.45 ui-monospace,monospace;user-select:text}#ask{background:#172033;color:white}button[aria-pressed=true]{background:#e2e8f0;font-weight:600}#handoff{border:1px solid #cbd5e1;border-radius:8px;padding:5px;margin:6px 0}#handoff-open{color:#1d4ed8;min-height:44px;min-width:44px;display:inline-flex;align-items:center;justify-content:center}#status:empty,#count:empty{display:none}details{border-top:1px solid #e2e8f0;padding:4px 0}summary{cursor:pointer;min-height:44px;display:flex;align-items:center;gap:6px;list-style:none}summary::-webkit-details-marker{display:none}#settings summary{justify-content:flex-end}#source-label{font-size:11px}#pin{border:1px solid #cbd5e1}#remove,#clear-tray{color:#991b1b}#open[data-pinned=true],#chat-target[data-pinned=true]{background:#e9bf58;color:#392804}#chat-target{border:1px solid #cbd5e1}#target-label{display:block;line-height:1.3}#target-label:empty{display:none}#ask{background:rgba(23,32,51,.94)}#draft{background:rgba(255,255,255,.75)}#collection-head{margin-top:6px}</style>'+
+  root.innerHTML='<style>:host{all:initial;position:fixed;left:12px;bottom:18px;z-index:2147483645;color:#172033;font:14px system-ui}*{box-sizing:border-box}[hidden]{display:none!important}button,input,textarea{font:inherit;color:inherit}button{min-height:44px;min-width:44px;border:0;border-radius:8px;background:transparent;display:inline-flex;align-items:center;justify-content:center;gap:5px;padding:8px;cursor:pointer}button:disabled{opacity:.35}button:focus-visible,a:focus-visible,summary:focus-visible{outline:2px solid #2563eb}#open{font-size:11px;border-radius:22px;background:#172033;color:#fff;box-shadow:0 2px 10px #0004}#panel{width:min(380px,calc(100vw - 24px));max-height:78vh;overflow:auto;background:rgba(255,255,255,.86);backdrop-filter:blur(3px);-webkit-backdrop-filter:blur(3px);border:1px solid #cbd5e1;border-radius:14px;padding:10px;box-shadow:0 4px 20px #0004}.row{display:flex;gap:4px;align-items:center;margin:4px 0}.grow{flex:1;min-width:0}textarea,input{width:100%;border:1px solid #cbd5e1;border-radius:8px;padding:9px;background:#fff;font-size:16px}input{min-height:44px}textarea{resize:vertical}small,#status{font-size:12px;color:#475569;overflow-wrap:anywhere}h3{font-size:16px;margin:0}#list{max-height:30vh;overflow:auto}.entry{display:block;text-align:left;width:100%;border-bottom:1px solid #e2e8f0;border-radius:0;overflow-wrap:anywhere}.entry b,.entry small{display:block}#detail{border-top:1px solid #e2e8f0;margin-top:6px;padding-top:6px}#body,#handoff-preview{white-space:pre-wrap;overflow-wrap:anywhere;max-height:25vh;overflow:auto;background:#f8fafc;padding:8px;font:13px/1.45 ui-monospace,monospace;user-select:text}#ask{background:#172033;color:white}button[aria-pressed=true]{background:#e2e8f0;font-weight:600}#handoff{border:1px solid #cbd5e1;border-radius:8px;padding:5px;margin:6px 0}#handoff-open{color:#1d4ed8;min-height:44px;min-width:44px;display:inline-flex;align-items:center;justify-content:center}#status:empty,#count:empty{display:none}details{border-top:1px solid #e2e8f0;padding:4px 0}summary{cursor:pointer;min-height:44px;display:flex;align-items:center;gap:6px;list-style:none}summary::-webkit-details-marker{display:none}#settings summary{justify-content:flex-end}#source-label{font-size:11px}#pin{border:1px solid #cbd5e1}#remove,#clear-tray{color:#991b1b}#open[data-pinned=true],#chat-target[data-pinned=true]{background:#e9bf58;color:#392804}#chat-target{border:1px solid #cbd5e1}#target-label{display:block;line-height:1.3}#target-label:empty{display:none}#ask{background:rgba(23,32,51,.94)}#draft{background:rgba(255,255,255,.75)}#collection-head{margin-top:6px}#crop-editor{position:fixed;inset:8px;z-index:2147483647;display:flex;flex-direction:column;background:#f8fafc;border:1px solid #94a3b8;border-radius:12px;padding:10px;box-shadow:0 4px 20px #0005}#crop-stage{flex:1;min-height:0;display:flex;align-items:center;justify-content:center;overflow:hidden;background:#e2e8f0;border-radius:8px;position:relative}#crop-image-wrap{position:relative;max-width:100%;max-height:100%;display:flex;align-items:center;justify-content:center;touch-action:none;user-select:none}#crop-image{display:block;max-width:100%;max-height:100%;object-fit:contain;pointer-events:none}#crop-selection{position:absolute;outline:2px solid #2563eb;background:rgba(37,99,235,.12);pointer-events:none;box-shadow:0 0 0 200vmax #0004}#crop-stage:has(#crop-image-wrap:not([hidden])) #crop-empty{display:none}#crop-help{padding:5px 2px}#crop-editor .row{flex-wrap:wrap}#crop-add{background:#172033;color:white}#crop-empty{padding:16px;text-align:center;color:#475569}</style>'+
     btn('open','pocket','Open AI Pocket','v'+VERSION)+
     '<section id="panel" hidden><div class="row"><h3 class="grow">Pocket <small>v'+VERSION+'</small></h3>'+btn('saved-tab','bookmark','Open saved discoveries')+btn('close','close','Close Pocket')+'</div>'+
     '<textarea id="draft" rows="2" placeholder="Ask, or select text to collect…" aria-label="Question or selected text"></textarea>'+
-    '<div class="row">'+btn('collect','plus','Collect in working tray')+btn('snip','crop','Capture webpage region')+'<button id="ask" class="grow">Ask</button>'+btn('chat-target','chat','Open or set ChatGPT')+'</div><small id="target-label"></small>'+
+    '<div class="row">'+btn('collect','plus','Collect in working tray')+btn('snip','crop','Crop screenshot')+'<button id="ask" class="grow">Ask</button>'+btn('chat-target','chat','Open or set ChatGPT')+'</div><small id="target-label"></small>'+
     '<section id="handoff" hidden><div class="row"><small class="grow" id="handoff-status"></small><a id="handoff-open" target="_blank" rel="noopener noreferrer" aria-label="Open selected chat" title="Open selected chat" hidden>'+icon('arrow')+'</a>'+btn('handoff-copy','copy','Copy prepared question')+btn('handoff-clear','close','Dismiss handoff')+'</div><pre id="handoff-preview" hidden></pre></section>'+
     '<div class="row" id="collection-head">'+btn('tray-tab','back','Return to collected items')+'<strong id="collection-title" class="grow"></strong>'+btn('copy-tray','copy','Copy collected evidence')+'</div>'+
     '<div class="row" id="filter-row" hidden><input id="filter" class="grow" placeholder="Find items…" aria-label="Find items"></div><small id="count"></small><div id="list"></div>'+
     '<section id="detail" hidden><div class="row">'+btn('done','back','Back to items')+'<small class="grow" id="meta"></small>'+btn('copy','copy','Copy selected text')+'</div><pre id="body"></pre><details><summary>More</summary><div class="row"><button id="copy-record">Copy with source</button><button id="keep">Keep in saved</button>'+btn('remove','trash','Delete item')+'</div></details></section>'+
     '<details id="settings"><summary aria-label="More options">'+icon('settings')+'</summary><label id="source-label" for="source">Source reference</label><input id="source" placeholder="Source URL or reference" aria-label="Source URL or reference"><div class="row">'+btn('refresh','refresh','Refresh shared storage')+'<button id="export">Export saved JSON</button><button id="save">Save draft</button><button id="import-image">Import screenshots</button><button id="pin" hidden>Use this chat instead</button><span id="tray-tools">'+btn('clear-tray','trash','Clear working tray')+'</span></div><small>v'+VERSION+' · Local storage · No automatic upload. Avoid secrets.</small></details>'+
-    '<input id="image-files" type="file" accept="image/*" multiple hidden><textarea id="fallback" hidden rows="4" readonly aria-label="Manual copy fallback"></textarea><div id="status" role="status"></div></section>';
+    '<input id="image-files" type="file" accept="image/*" multiple hidden><input id="crop-file" type="file" accept="image/*" hidden><textarea id="fallback" hidden rows="4" readonly aria-label="Manual copy fallback"></textarea><div id="status" role="status"></div></section>'+
+    '<section id="crop-editor" hidden><div class="row"><h3 class="grow">Crop screenshot <small>v'+VERSION+'</small></h3><button id="crop-paste">Paste image</button><button id="crop-choose">Choose image</button>'+btn('crop-close','close','Close screenshot editor')+'</div><div id="crop-stage"><div id="crop-empty">Take a native screenshot, copy it, then tap Paste image. Or choose a saved screenshot.</div><div id="crop-image-wrap" hidden><img id="crop-image" alt="Screenshot to crop" draggable="false"><div id="crop-selection" hidden></div></div></div><small id="crop-help" role="status">No image selected.</small><div class="row"><button id="crop-reset" hidden>Reset crop</button><button id="crop-add" class="grow" disabled>Collect image</button></div></section>';
   // Keep native text editing and IME behavior; don't let page hotkeys see our keystrokes.
   for(const type of ['keydown','keypress','keyup'])root.addEventListener(type,e=>{if(e.composedPath().some(el=>el instanceof Element&&el.matches('textarea,input,[contenteditable]')))e.stopPropagation();});
   document.documentElement.append(host);
@@ -141,54 +141,101 @@
       await navigator.clipboard.write([new ClipboardItem({'image/png':blob})]);status('Images copied. Paste into chat; Ask includes text evidence separately.');
     }catch(e){try{const b=await blob;const u=URL.createObjectURL(b);const link=document.createElement('a');link.href=u;link.download='pocket-captures.png';link.click();setTimeout(()=>URL.revokeObjectURL(u),30000);status('Image clipboard unavailable; PNG download requested.');}catch(err){status('Image export failed: '+err.message);}}
   }
-  let renderPending=false;
-  function startSnip(){
-    if(!store||busy||handoffBusy)return;
-    if(renderPending){status('Previous renderer still running. Import screenshots from More, or reload.');return;}
-    if(typeof globalThis.snapdom?.toCanvas!=='function'){status('SnapDOM unavailable. Import screenshots from More.');return;}
-    if(window.visualViewport&&Math.abs(window.visualViewport.scale-1)>0.01){status('Reset page zoom before drawing a region, or import a screenshot.');return;}
-    const source=sourceURL(),sx=scrollX,sy=scrollY;
-    host.style.visibility='hidden';
-    const overlay=document.createElement('div');overlay.style.cssText='position:fixed;inset:0;z-index:2147483647;touch-action:none;cursor:crosshair;background:rgba(0,0,0,.12);';
-    const outline=document.createElement('div');outline.style.cssText='position:absolute;pointer-events:none;border:2px solid #38bdf8;background:rgba(56,189,248,.12);display:none';
-    const hint=document.createElement('button');hint.textContent='Draw a rectangle · Cancel';hint.style.cssText='position:absolute;top:12px;left:50%;transform:translateX(-50%);padding:12px;border:0;border-radius:8px;background:#172033;color:white;font:14px system-ui;z-index:2';
-    overlay.append(outline,hint);document.documentElement.append(overlay);
-    let start=null,id=null,ended=false;
-    const clean=()=>{if(ended)return false;ended=true;overlay.remove();window.removeEventListener('keydown',key);window.removeEventListener('resize',cancel);host.style.visibility='';return true;};
-    const cancel=()=>clean(),key=e=>{if(e.key==='Escape')cancel();};
-    window.addEventListener('keydown',key);window.addEventListener('resize',cancel);
-    hint.addEventListener('click',cancel);
-    overlay.addEventListener('pointerdown',e=>{if(!e.isTrusted||e.target===hint||start)return;e.preventDefault();id=e.pointerId;start=[e.clientX,e.clientY];overlay.setPointerCapture(id);});
-    overlay.addEventListener('pointermove',e=>{if(!start||e.pointerId!==id)return;const x=Math.min(start[0],e.clientX),y=Math.min(start[1],e.clientY);Object.assign(outline.style,{display:'block',left:x+'px',top:y+'px',width:Math.abs(e.clientX-start[0])+'px',height:Math.abs(e.clientY-start[1])+'px'});});
-    overlay.addEventListener('pointercancel',cancel);
-    overlay.addEventListener('pointerup',async e=>{
-      if(!start||e.pointerId!==id||!clean())return;
-      const x=Math.max(0,Math.min(start[0],e.clientX)),y=Math.max(0,Math.min(start[1],e.clientY)),w=Math.min(innerWidth-x,Math.abs(e.clientX-start[0])),h=Math.min(innerHeight-y,Math.abs(e.clientY-start[1]));
-      if(w<12||h<12){status('Region too small. Draw again.');return;}
-      busy=true;status('Capturing webpage region…');
-      try{
-        if(scrollX!==sx||scrollY!==sy)throw Error('Page moved during selection; try again.');
-        const startTime=performance.now();let timer;
-        renderPending=true;
-        // Clip at the source; do not reconstruct the entire document to crop it afterward.
-        const work=Promise.resolve().then(()=>globalThis.snapdom.toCanvas(document.documentElement,{
-          clip:{x:sx+x,y:sy+y,width:w,height:h},scale:Math.min(2,1600/Math.max(w,h)),dpr:1,
-          cache:'disabled',exclude:['#ai-pill-pocket','#ai-pill-os','#eruda'],embedFonts:'auto'
-        }));
-        work.then(()=>{renderPending=false;},()=>{renderPending=false;});
-        let canvas;
-        try{canvas=await Promise.race([work,new Promise((_,reject)=>{timer=setTimeout(()=>reject(Error('Renderer exceeded 12s; no retry. Import screenshots from More.')),12000);})]);}
-        finally{clearTimeout(timer);}
-        if(!canvas?.width||!canvas?.height)throw Error('Empty capture');
-        const elapsed=Math.round(performance.now()-startTime);
-        const image=canvas.toDataURL('image/png');if(image.length>2000000)throw Error('Region exceeds image storage limit; select a smaller area.');
-        const keys=await store.keys();if(keys.filter(k=>k.startsWith(TRAY)).length>=30)throw Error('Collection full');
-        const r={id:uid(),created:new Date().toISOString(),source,text:'Webpage region (DOM reconstruction)',image,renderer:'snapdom@3.8.3',region:[x,y,w,h],elapsedMs:elapsed};
-        await store.set(TRAY+r.id,r);const check=await store.get(TRAY+r.id);if(check?.image!==image)throw Error('Image storage readback failed');
-        view='tray';hideDetail();await load();status('Region collected · '+elapsed+' ms · reconstructed');
-      }catch(err){status('Capture failed (SnapDOM 3.8.3): '+String(err.message||err)+' · More → Import screenshots');}finally{busy=false;}
-    });
+  // Native bitmap acquisition is separate from crop geometry. No DOM renderer or network dependency.
+  let cropEpoch=0,cropURL=null,cropRect=null,cropDrag=null,cropSource='',cropBusy=false;
+  const cropHelp=t=>$('crop-help').textContent=t;
+  function resetCrop(){
+    cropRect=null;cropDrag=null;$('crop-selection').hidden=true;$('crop-reset').hidden=true;$('crop-add').textContent='Collect image';
   }
+  function releaseCropImage(){
+    ++cropEpoch;resetCrop();$('crop-image').removeAttribute('src');$('crop-image-wrap').hidden=true;$('crop-add').disabled=true;
+    if(cropURL){URL.revokeObjectURL(cropURL);cropURL=null;}
+  }
+  function startSnip(){
+    if(!store||busy||handoffBusy||cropBusy)return;
+    cropSource=$('source').value.trim()||sourceURL();
+    $('panel').hidden=true;$('open').hidden=true;$('crop-editor').hidden=false;
+    cropHelp('Paste or choose a screenshot. Draw a rectangle, then collect.');
+  }
+  function closeCrop(){
+    if(cropBusy)return;
+    releaseCropImage();$('crop-editor').hidden=true;$('panel').hidden=false;$('open').hidden=true;
+  }
+  async function loadCropFile(file){
+    if(!file||cropBusy)return;
+    if(!file.type.startsWith('image/')||file.size>25000000){cropHelp('Choose an image under 25 MB.');return;}
+    releaseCropImage();const epoch=cropEpoch;
+    cropURL=URL.createObjectURL(file);const im=$('crop-image');im.src=cropURL;
+    try{
+      await im.decode();
+      if(epoch!==cropEpoch)return;
+      if(!im.naturalWidth||!im.naturalHeight)throw Error('Empty image');
+      $('crop-image-wrap').hidden=false;$('crop-add').disabled=false;
+      // Fit the actual image box within the available editor area, without stretching.
+      fitCrop();
+      cropHelp('Draw a rectangle over the image. Collect more than one region from the same screenshot.');
+    }catch(err){if(epoch===cropEpoch){releaseCropImage();cropHelp('Image could not be opened: '+String(err.message||err));}}
+  }
+  function fitCrop(){
+    const im=$('crop-image'),stage=$('crop-stage');
+    if(!im.naturalWidth||$('crop-editor').hidden)return;
+    const k=Math.min(stage.clientWidth/im.naturalWidth,stage.clientHeight/im.naturalHeight,1);
+    if(k<=0)return;
+    im.style.width=Math.max(1,im.naturalWidth*k)+'px';im.style.height=Math.max(1,im.naturalHeight*k)+'px';
+    paintCrop();
+  }
+  function pointOnImage(e){
+    const b=$('crop-image').getBoundingClientRect();
+    return [Math.max(0,Math.min(1,(e.clientX-b.left)/b.width)),Math.max(0,Math.min(1,(e.clientY-b.top)/b.height))];
+  }
+  function updateCrop(a,b){cropRect=[Math.min(a[0],b[0]),Math.min(a[1],b[1]),Math.max(a[0],b[0]),Math.max(a[1],b[1])];paintCrop();}
+  function paintCrop(){
+    if(!cropRect)return;
+    const [x,y,X,Y]=cropRect;const el=$('crop-selection');
+    Object.assign(el.style,{left:x*100+'%',top:y*100+'%',width:(X-x)*100+'%',height:(Y-y)*100+'%'});
+    el.hidden=false;$('crop-reset').hidden=false;$('crop-add').textContent='Collect crop';
+  }
+  const wrap=$('crop-image-wrap');
+  wrap.addEventListener('pointerdown',e=>{
+    if(!e.isTrusted||cropBusy||cropDrag||!$('crop-image').naturalWidth)return;
+    e.preventDefault();e.stopPropagation();const pos=pointOnImage(e);cropDrag={id:e.pointerId,pos};updateCrop(pos,pos);
+    try{wrap.setPointerCapture(e.pointerId);}catch{}
+  });
+  wrap.addEventListener('pointermove',e=>{if(cropDrag?.id!==e.pointerId)return;e.preventDefault();updateCrop(cropDrag.pos,pointOnImage(e));});
+  wrap.addEventListener('pointerup',e=>{if(cropDrag?.id!==e.pointerId)return;updateCrop(cropDrag.pos,pointOnImage(e));cropDrag=null;const [x,y,X,Y]=cropRect,im=$('crop-image');if((X-x)*im.naturalWidth<4||(Y-y)*im.naturalHeight<4)resetCrop();});
+  wrap.addEventListener('pointercancel',()=>resetCrop());
+  window.addEventListener('resize',fitCrop);
+  async function pasteCrop(){
+    if(!navigator.clipboard?.read){cropHelp('Image clipboard access unavailable. Choose a saved screenshot instead.');return;}
+    try{
+      const items=await navigator.clipboard.read();
+      for(const item of items){const type=item.types.find(t=>t.startsWith('image/'));if(type){await loadCropFile(await item.getType(type));return;}}
+      cropHelp('No image in clipboard. Copy a screenshot first.');
+    }catch(e){cropHelp('Clipboard unavailable: '+String(e.message||e)+'. Choose image instead.');}
+  }
+  async function collectCrop(){
+    if(!store||cropBusy||busy||handoffBusy)return;
+    const im=$('crop-image');if(!im.naturalWidth||!im.naturalHeight)return;
+    const [x,y,X,Y]=cropRect||[0,0,1,1];
+    const sx=Math.floor(x*im.naturalWidth),sy=Math.floor(y*im.naturalHeight),w=Math.min(im.naturalWidth-sx,Math.ceil(X*im.naturalWidth)-sx),h=Math.min(im.naturalHeight-sy,Math.ceil(Y*im.naturalHeight)-sy);
+    if(w<1||h<1)return;
+    cropBusy=true;$('crop-add').disabled=true;$('crop-close').disabled=true;$('crop-paste').disabled=true;$('crop-choose').disabled=true;
+    try{
+      const keys=await store.keys();if(keys.filter(k=>typeof k==='string'&&k.startsWith(TRAY)).length>=30)throw Error('Collection full');
+      const k=Math.min(1,2000/Math.max(w,h));const c=document.createElement('canvas');c.width=Math.max(1,Math.round(w*k));c.height=Math.max(1,Math.round(h*k));
+      c.getContext('2d').drawImage(im,sx,sy,w,h,0,0,c.width,c.height);
+      let image=c.toDataURL('image/png');if(image.length>2000000)image=c.toDataURL('image/jpeg',.9);
+      if(image.length>2000000)throw Error('Image exceeds storage limit; draw a smaller rectangle');
+      const r={id:uid(),created:new Date().toISOString(),source:cropSource,text:cropRect?'Screenshot crop':'Screenshot',image,renderer:'native-image-crop',region:[sx,sy,w,h],dimensions:[im.naturalWidth,im.naturalHeight],storedDimensions:[c.width,c.height]};
+      await store.set(TRAY+r.id,r);const check=await store.get(TRAY+r.id);if(check?.image!==image)throw Error('Screenshot storage readback failed');
+      view='tray';hideDetail();await load();resetCrop();cropHelp('Collected. Draw another region, or close to copy your collection.');
+    }catch(err){cropHelp('Collect failed: '+String(err.message||err));}
+    finally{cropBusy=false;for(const id of ['crop-add','crop-close','crop-paste','crop-choose'])$(id).disabled=false;}
+  }
+  action('crop-close',closeCrop);action('crop-reset',resetCrop);action('crop-add',collectCrop);action('crop-paste',pasteCrop);
+  action('crop-choose',()=>$('crop-file').click());
+  $('crop-file').addEventListener('change',e=>{if(!e.isTrusted)return;const f=e.target.files?.[0];e.target.value='';loadCropFile(f);});
+  window.addEventListener('keydown',e=>{if(e.key==='Escape'&&!$('crop-editor').hidden){e.stopPropagation();closeCrop();}},true);
   // Pixel-accurate input comes from an explicitly chosen image, not a reconstructed DOM.
   async function importImages(files){
     if(!store||busy||handoffBusy||!files.length)return;
@@ -221,7 +268,7 @@
   $('image-files').addEventListener('change',e=>{if(!e.isTrusted)return;const files=Array.from(e.target.files||[]);e.target.value='';importImages(files);});
   $('draft').addEventListener('paste',e=>{
     if(!e.isTrusted)return;const files=Array.from(e.clipboardData?.files||[]).filter(f=>f.type.startsWith('image/'));
-    if(!files.length)return;e.preventDefault();e.stopPropagation();importImages(files);
+    if(!files.length)return;e.preventDefault();e.stopPropagation();if(files.length===1){startSnip();if(!$('crop-editor').hidden)loadCropFile(files[0]);}else importImages(files);
   });
   function chatURL(value){
     try{
