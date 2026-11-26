@@ -1,6 +1,6 @@
 {
   "schema": "ai_pill_os.rsm_investigation",
-  "version": 11,
+  "version": 12,
   "updated": "2026-11-25",
   "parent_purpose": "Reduce mechanical distance from human intention to useful realization; preserve agency, context, and recoverability.",
   "scope": "Safari-first personal computing: direct touch for low-information operations, dictation and AI collaboration for high-information intentions, universal pill plus contextual mini-pills, local working state and context-aware canonical persistence.",
@@ -705,7 +705,7 @@
       ],
       "stop": "From real Kami/engineering context, open chosen chat and transfer one prepared request without reconstructing it or losing source; preserve request if unsent. No automatic consumer response extraction. If zero-switch essential and not supported, compare an explicitly authorized provider transport only then.",
       "reopen": "Reopen if switching or manual transfer repeatedly dominates whole workflow and a supported alternative is available.",
-      "next": "Use Pocket v0.2.1 explicit Ask with tray -> Open chat -> Copy question. Evaluate latency and app/tab switches in real use; no automated submission or extraction.",
+      "next": "Test Pocket v0.5.8 real selected-chat anchor: long-press chat icon, Open in New Window, resize or Enter Slide Over if supported. Test direct typing and submission in actual signed-in ChatGPT window while source stays visible, then reuse that window. No proxy, iframe header modification or automatic submission. Native link preview is a navigation affordance, not a certified interactive chat. If successful, prefer native adjacent conversation over custom inference bridge.",
       "depends_on": [
         "I15"
       ]
@@ -947,6 +947,11 @@
       "date": "2026-11-25",
       "decision": "User reframes DevTools from desktop UI imitation to instrumentation and direct evidence export optimized for iPadOS plus AI. Console journal identified startup obstruction, then 0.5.7 produced observed GitHub capture. Prioritize diagnostic information value over UI parity, retain working capture and defer unrelated redesign.",
       "method": "REM-04.02; RSM observation-first"
+    },
+    {
+      "date": "2026-11-25",
+      "decision": "Fix crowded Pocket More controls via two-column grid, preserve capture and storage. Expose exact selected chat as actual link for Safari native windowing; investigate persistent mini-chat via OS windows rather than attempting cross-origin frame/security bypass.",
+      "method": "REM reuse existing capabilities; RSM discriminating device canary"
     }
   ],
   "functional_intent": {
