@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         AI Pill OS - Pocket
 // @namespace    https://github.com/JadanPoll/AI_Pill_OS
-// @version      0.3.0
+// @version      0.3.1
 // @updateURL    https://raw.githubusercontent.com/JadanPoll/AI_Pill_OS/main/Pocket.user.js
 // @downloadURL  https://raw.githubusercontent.com/JadanPoll/AI_Pill_OS/main/Pocket.user.js
 // @description  Universal Safari pill: collect evidence, keep discoveries, and hand a question to a chosen chat.
@@ -15,14 +15,14 @@
 // @grant        GM_setValue
 // @grant        GM_listValues
 // @grant        GM_deleteValue
-// @require      https://cdn.jsdelivr.net/npm/html2canvas@1.4.1/dist/html2canvas.min.js
+// @require      https://cdn.jsdelivr.net/npm/html2canvas-pro@2.6.4/dist/html2canvas-pro.min.js
 // @run-at       document-idle
 // @noframes
 // ==/UserScript==
 (() => {
   'use strict';
   if (window.top !== window || document.getElementById('ai-pill-pocket')) return;
-  const VERSION='0.3.0', PREFIX='pocket.v1.', TRAY='tray.v1.', HANDOFF='handoff.v1.', ACK='ack.v1.', TARGET='target.v1', LIMIT=100000, MAX_ITEMS=250;
+  const VERSION='0.3.1', PREFIX='pocket.v1.', TRAY='tray.v1.', HANDOFF='handoff.v1.', ACK='ack.v1.', TARGET='target.v1', LIMIT=100000, MAX_ITEMS=250;
   const uid=()=>globalThis.crypto?.randomUUID?.()||Date.now().toString(36)+'-'+Math.random().toString(36).slice(2);
   // Deliberately no localStorage fallback: that would appear to work but silently
   // partition the data by site. Only this installed script owns these GM keys.
@@ -35,19 +35,18 @@
   const $=id=>root.getElementById(id);
   const icons={pocket:'<path d="M4 5h16v10a8 8 0 0 1-16 0zM8 10l4 4 4-4"/>',close:'<path d="m6 6 12 12M18 6 6 18"/>',copy:'<rect x="8" y="8" width="12" height="12" rx="2"/><path d="M16 8V4H4v12h4"/>',plus:'<path d="M12 4v16M4 12h16"/>',refresh:'<path d="M20 8a8 8 0 1 0 0 8M20 3v5h-5"/>'};
   Object.assign(icons,{bookmark:'<path d="M6 3h12v18l-6-4-6 4z"/>',back:'<path d="m15 18-6-6 6-6"/>',trash:'<path d="M3 6h18M9 6V3h6v3M6 6l1 15h10l1-15M10 10v7M14 10v7"/>',settings:'<circle cx="5" cy="12" r="1"/><circle cx="12" cy="12" r="1"/><circle cx="19" cy="12" r="1"/>',arrow:'<path d="M7 17 17 7M7 7h10v10"/>',pin:'<path d="m16 3 5 5-4 2-3 5-2-2-6 6-1-1 6-6-2-2 5-3z"/>',search:'<circle cx="10" cy="10" r="6"/><path d="m14 14 6 6"/>'});
-  icons.crop='<path d="M6 3v15h15M3 6h15v15"/>';const icon=k=>'<svg width="21" height="21" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round" stroke-linecap="round" aria-hidden="true">'+icons[k]+'</svg>';
+  icons.crop='<path d="M6 3v15h15M3 6h15v15"/>';icons.chat='<path d="M20 11a8 8 0 0 1-8 8H4l2-4a8 8 0 1 1 14-4Z"/><path d="M9 11h6"/>';const icon=k=>'<svg width="21" height="21" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round" stroke-linecap="round" aria-hidden="true">'+icons[k]+'</svg>';
   const btn=(id,k,title,words='')=>'<button id="'+id+'" type="button" aria-label="'+title+'" title="'+title+'">'+icon(k)+(words?' '+words:'')+'</button>';
-  root.innerHTML='<style>:host{all:initial;position:fixed;left:12px;bottom:18px;z-index:2147483645;color:#172033;font:14px system-ui}*{box-sizing:border-box}[hidden]{display:none!important}button,input,textarea{font:inherit;color:inherit}button{min-height:44px;min-width:44px;border:0;border-radius:8px;background:transparent;display:inline-flex;align-items:center;justify-content:center;gap:5px;padding:8px;cursor:pointer}button:disabled{opacity:.35}button:focus-visible,a:focus-visible,summary:focus-visible{outline:2px solid #2563eb}#open{font-size:11px;border-radius:22px;background:#172033;color:#fff;box-shadow:0 2px 10px #0004}#panel{width:min(380px,calc(100vw - 24px));max-height:78vh;overflow:auto;background:white;border:1px solid #cbd5e1;border-radius:14px;padding:10px;box-shadow:0 4px 20px #0004}.row{display:flex;gap:4px;align-items:center;margin:4px 0}.grow{flex:1;min-width:0}textarea,input{width:100%;border:1px solid #cbd5e1;border-radius:8px;padding:9px;background:#fff;font-size:16px}input{min-height:44px}textarea{resize:vertical}small,#status{font-size:12px;color:#475569;overflow-wrap:anywhere}h3{font-size:16px;margin:0}#list{max-height:30vh;overflow:auto}.entry{display:block;text-align:left;width:100%;border-bottom:1px solid #e2e8f0;border-radius:0;overflow-wrap:anywhere}.entry b,.entry small{display:block}#detail{border-top:1px solid #e2e8f0;margin-top:6px;padding-top:6px}#body,#handoff-preview{white-space:pre-wrap;overflow-wrap:anywhere;max-height:25vh;overflow:auto;background:#f8fafc;padding:8px;font:13px/1.45 ui-monospace,monospace;user-select:text}#ask{background:#172033;color:white}button[aria-pressed=true]{background:#e2e8f0;font-weight:600}#handoff{border:1px solid #cbd5e1;border-radius:8px;padding:5px;margin:6px 0}#handoff-open{color:#1d4ed8;min-height:44px;min-width:44px;display:inline-flex;align-items:center;justify-content:center}#status:empty,#count:empty{display:none}details{border-top:1px solid #e2e8f0;padding:4px 0}summary{cursor:pointer;min-height:44px;display:flex;align-items:center;gap:6px;list-style:none}summary::-webkit-details-marker{display:none}#settings summary{justify-content:flex-end}#source-label{font-size:11px}#pin{border:1px solid #cbd5e1}#remove,#clear-tray{color:#991b1b}</style>'+
+  root.innerHTML='<style>:host{all:initial;position:fixed;left:12px;bottom:18px;z-index:2147483645;color:#172033;font:14px system-ui}*{box-sizing:border-box}[hidden]{display:none!important}button,input,textarea{font:inherit;color:inherit}button{min-height:44px;min-width:44px;border:0;border-radius:8px;background:transparent;display:inline-flex;align-items:center;justify-content:center;gap:5px;padding:8px;cursor:pointer}button:disabled{opacity:.35}button:focus-visible,a:focus-visible,summary:focus-visible{outline:2px solid #2563eb}#open{font-size:11px;border-radius:22px;background:#172033;color:#fff;box-shadow:0 2px 10px #0004}#panel{width:min(380px,calc(100vw - 24px));max-height:78vh;overflow:auto;background:rgba(255,255,255,.86);backdrop-filter:blur(3px);-webkit-backdrop-filter:blur(3px);border:1px solid #cbd5e1;border-radius:14px;padding:10px;box-shadow:0 4px 20px #0004}.row{display:flex;gap:4px;align-items:center;margin:4px 0}.grow{flex:1;min-width:0}textarea,input{width:100%;border:1px solid #cbd5e1;border-radius:8px;padding:9px;background:#fff;font-size:16px}input{min-height:44px}textarea{resize:vertical}small,#status{font-size:12px;color:#475569;overflow-wrap:anywhere}h3{font-size:16px;margin:0}#list{max-height:30vh;overflow:auto}.entry{display:block;text-align:left;width:100%;border-bottom:1px solid #e2e8f0;border-radius:0;overflow-wrap:anywhere}.entry b,.entry small{display:block}#detail{border-top:1px solid #e2e8f0;margin-top:6px;padding-top:6px}#body,#handoff-preview{white-space:pre-wrap;overflow-wrap:anywhere;max-height:25vh;overflow:auto;background:#f8fafc;padding:8px;font:13px/1.45 ui-monospace,monospace;user-select:text}#ask{background:#172033;color:white}button[aria-pressed=true]{background:#e2e8f0;font-weight:600}#handoff{border:1px solid #cbd5e1;border-radius:8px;padding:5px;margin:6px 0}#handoff-open{color:#1d4ed8;min-height:44px;min-width:44px;display:inline-flex;align-items:center;justify-content:center}#status:empty,#count:empty{display:none}details{border-top:1px solid #e2e8f0;padding:4px 0}summary{cursor:pointer;min-height:44px;display:flex;align-items:center;gap:6px;list-style:none}summary::-webkit-details-marker{display:none}#settings summary{justify-content:flex-end}#source-label{font-size:11px}#pin{border:1px solid #cbd5e1}#remove,#clear-tray{color:#991b1b}#open[data-pinned=true],#chat-target[data-pinned=true]{background:#e9bf58;color:#392804}#chat-target{border:1px solid #cbd5e1}#target-label{display:block;line-height:1.3}#target-label:empty{display:none}#ask{background:rgba(23,32,51,.94)}#draft{background:rgba(255,255,255,.75)}#collection-head{margin-top:6px}</style>'+
     btn('open','pocket','Open AI Pocket','v'+VERSION)+
     '<section id="panel" hidden><div class="row"><h3 class="grow">Pocket <small>v'+VERSION+'</small></h3>'+btn('saved-tab','bookmark','Open saved discoveries')+btn('close','close','Close Pocket')+'</div>'+
     '<textarea id="draft" rows="2" placeholder="Ask, or select text to collect…" aria-label="Question or selected text"></textarea>'+
-    '<div class="row">'+btn('collect','plus','Collect in working tray')+btn('snip','crop','Capture webpage region')+'<button id="ask" class="grow">Ask</button></div><small id="target-label"></small>'+
-    '<button id="pin" hidden>Use this chat</button>'+
+    '<div class="row">'+btn('collect','plus','Collect in working tray')+btn('snip','crop','Capture webpage region')+'<button id="ask" class="grow">Ask</button>'+btn('chat-target','chat','Open or set ChatGPT')+'</div><small id="target-label"></small>'+
     '<section id="handoff" hidden><div class="row"><small class="grow" id="handoff-status"></small><a id="handoff-open" target="_blank" rel="noopener noreferrer" aria-label="Open selected chat" title="Open selected chat" hidden>'+icon('arrow')+'</a>'+btn('handoff-copy','copy','Copy prepared question')+btn('handoff-clear','close','Dismiss handoff')+'</div><pre id="handoff-preview" hidden></pre></section>'+
     '<div class="row" id="collection-head">'+btn('tray-tab','back','Return to collected items')+'<strong id="collection-title" class="grow"></strong>'+btn('copy-tray','copy','Copy collected evidence')+'</div>'+
     '<div class="row" id="filter-row" hidden><input id="filter" class="grow" placeholder="Find items…" aria-label="Find items"></div><small id="count"></small><div id="list"></div>'+
     '<section id="detail" hidden><div class="row">'+btn('done','back','Back to items')+'<small class="grow" id="meta"></small>'+btn('copy','copy','Copy selected text')+'</div><pre id="body"></pre><details><summary>More</summary><div class="row"><button id="copy-record">Copy with source</button><button id="keep">Keep in saved</button>'+btn('remove','trash','Delete item')+'</div></details></section>'+
-    '<details id="settings"><summary aria-label="More options">'+icon('settings')+'</summary><label id="source-label" for="source">Source reference</label><input id="source" placeholder="Source URL or reference" aria-label="Source URL or reference"><div class="row">'+btn('refresh','refresh','Refresh shared storage')+'<button id="export">Export saved JSON</button><button id="save">Save draft</button><span id="tray-tools">'+btn('clear-tray','trash','Clear working tray')+'</span></div><small>v'+VERSION+' · Local storage · No automatic upload. Avoid secrets.</small></details>'+
+    '<details id="settings"><summary aria-label="More options">'+icon('settings')+'</summary><label id="source-label" for="source">Source reference</label><input id="source" placeholder="Source URL or reference" aria-label="Source URL or reference"><div class="row">'+btn('refresh','refresh','Refresh shared storage')+'<button id="export">Export saved JSON</button><button id="save">Save draft</button><button id="pin" hidden>Use this chat instead</button><span id="tray-tools">'+btn('clear-tray','trash','Clear working tray')+'</span></div><small>v'+VERSION+' · Local storage · No automatic upload. Avoid secrets.</small></details>'+
     '<textarea id="fallback" hidden rows="4" readonly aria-label="Manual copy fallback"></textarea><div id="status" role="status"></div></section>';
   // Keep native text editing and IME behavior; don't let page hotkeys see our keystrokes.
   for(const type of ['keydown','keypress','keyup'])root.addEventListener(type,e=>{if(e.composedPath().some(el=>el instanceof Element&&el.matches('textarea,input,[contenteditable]')))e.stopPropagation();});
@@ -169,24 +168,44 @@
         const canvas=await html2canvas(document.documentElement,{x:sx+x,y:sy+y,width:w,height:h,scale:Math.min(2,1200/Math.max(w,h)),useCORS:true,allowTaint:false,logging:false,ignoreElements:el=>el.id==='ai-pill-pocket'||el.id==='ai-pill-os'||el.id==='eruda'});
         const image=canvas.toDataURL('image/png');if(image.length>2000000)throw Error('Region exceeds image storage limit; select a smaller area.');
         const keys=await store.keys();if(keys.filter(k=>k.startsWith(TRAY)).length>=30)throw Error('Collection full');
-        const r={id:uid(),created:new Date().toISOString(),source,text:'Webpage region (DOM reconstruction)',image};
+        const r={id:uid(),created:new Date().toISOString(),source,text:'Webpage region (DOM reconstruction)',image,renderer:'html2canvas-pro@2.6.4',region:[x,y,w,h]};
         await store.set(TRAY+r.id,r);const check=await store.get(TRAY+r.id);if(check?.image!==image)throw Error('Image storage readback failed');
         view='tray';hideDetail();await load();status('Region collected · reconstructed image');
-      }catch(err){status('Capture failed: '+String(err.message||err));}finally{busy=false;}
+      }catch(err){status('Capture failed (html2canvas-pro 2.6.4): '+String(err.message||err));}finally{busy=false;}
     });
   }
   function chatURL(value){
     try{
       const u=new URL(value);if(u.protocol!=='https:'||u.port||u.username||u.password)return null;
-      if(u.hostname==='chatgpt.com'&&/^\/(?:g\/[^/]+\/)?c\/[A-Za-z0-9_-]+\/?$/.test(u.pathname))return u.origin+u.pathname.replace(/\/$/,'');
+      if(u.hostname==='chatgpt.com'&&(u.pathname==='/'||/^\/(?:g\/[^/]+\/)?c\/[A-Za-z0-9_-]+\/?$/.test(u.pathname)))return u.origin+(u.pathname==='/'?'/':u.pathname.replace(/\/$/,''));
       if(u.hostname==='gemini.google.com'&&/^\/(?:u\/\d+\/)?app\/[A-Za-z0-9_-]+\/?$/.test(u.pathname))return u.origin+u.pathname.replace(/\/$/,'');
     }catch{}
     return null;
   }
   function trayText(items){return items.map((r,i)=>'['+(i+1)+'] '+(r.source||'No source')+'\n'+r.text+(r.image?' (Image: copy collected images separately)':'')).join('\n\n');}
+  // Use the exact selected conversation URL; ordinary userscripts cannot activate arbitrary existing Safari tabs.
+  function openChat(dest){if(!dest)return;const a=document.createElement('a');a.href=dest;a.target='_blank';a.rel='noopener noreferrer';a.click();}
+  function paintTarget(){
+    const here=chatURL(location.href),pinned=!!target&&here===target;
+    $('open').setAttribute('data-pinned',String(pinned));$('chat-target').setAttribute('data-pinned',String(pinned));
+    const name=target?(target.includes('chatgpt.com')?'ChatGPT':'Gemini'):'ChatGPT';
+    const label=pinned?'Selected '+name+' destination':target?'Open selected '+name:here?'Set this chat':'Open ChatGPT to choose a chat';
+    $('chat-target').title=label;$('chat-target').setAttribute('aria-label',label);
+    $('target-label').textContent=pinned?'Selected '+name+(target==='https://chatgpt.com/'?' · new chat':''):target?'':here?'Tap the chat icon to set this destination.':'';
+    $('pin').hidden=!here||!target||pinned;
+  }
+  async function refreshTarget(){if(!store)return;target=chatURL(await store.get(TARGET));paintTarget();}
+  function chatAction(){
+    if(!store){status('Shared storage unavailable.');return;}
+    const here=chatURL(location.href);
+    if(target&&here===target){status('This is the selected chat.');return;}
+    if(target){openChat(target);return;}
+    if(here)return pinChat();
+    openChat('https://chatgpt.com/');
+  }
   async function pinChat(){
     if(!store)return;const dest=chatURL(location.href);
-    if(!dest){status('Open an existing ChatGPT or Gemini conversation first.');return;}
+    if(!dest){status('Open ChatGPT or an existing Gemini conversation first.');return;}
     await store.set(TARGET,dest);if(await store.get(TARGET)!==dest)throw Error('Chat setting could not be read back');
     await load();status('This conversation is now the Ask destination.');
   }
@@ -200,8 +219,7 @@
     }
     if(epoch!==loadEpoch)return;
     target=dest;
-    $('pin').hidden=!chatURL(location.href)||chatURL(location.href)===target;
-    $('target-label').textContent=target?'Ask → '+(target.includes('chatgpt.com')?'ChatGPT':'Gemini'):'Choose a chat once using Use this chat.';
+    paintTarget();
     const here=chatURL(location.href),source=sourceURL();
     const matching=found.filter(r=>r.target===here||r.sourcePage===source).sort((a,b)=>b.created.localeCompare(a.created));
     pending=matching.find(r=>!r.copied)||matching[0]||null;
@@ -221,7 +239,7 @@
     if(!question){status('Dictate or enter a question first.');return;}
     handoffBusy=true;$('ask').disabled=true;
     try{
-      const dest=chatURL(await store.get(TARGET));if(!dest){status('Select an existing AI conversation using Use this chat first.');return;}
+      const dest=chatURL(await store.get(TARGET));if(!dest){status('Tap the chat icon to choose a ChatGPT destination first.');return;}
       const keys=await store.keys();const existing=keys.filter(k=>typeof k==='string'&&k.startsWith(HANDOFF));
       if(existing.length>=10){status('Ten handoffs retained. Dismiss old handoffs at their source or selected chat before preparing more.');return;}
       const items=[];
@@ -262,7 +280,7 @@
   action('tray-tab',()=>{view='tray';$('filter').value='';hideDetail();render();});action('saved-tab',()=>{view='saved';$('filter').value='';hideDetail();render();});
   action('copy-tray',()=>copyCollection(tray));action('snip',startSnip);
   action('clear-tray',async()=>{if(!store||busy||!tray.length||!confirm('Clear the current working tray? Saved items and prepared handoffs remain.'))return;const ids=tray.map(r=>r.id);busy=true;try{for(const id of ids)await store.del(TRAY+id);hideDetail();await load();}finally{busy=false;}});
-  action('pin',pinChat);action('ask',prepareHandoff);action('handoff-copy',copyHandoff);action('handoff-clear',clearHandoff);
+  action('pin',pinChat);action('chat-target',chatAction);action('ask',prepareHandoff);action('handoff-copy',copyHandoff);action('handoff-clear',clearHandoff);
   $('filter').addEventListener('input',e=>{if(e.isTrusted){hideDetail();render();}});
   action('done',hideDetail);
   action('copy',()=>{if(selected)return selected.image?copyCollection([selected]):copyText(selected.text);});
@@ -270,7 +288,10 @@
   action('copy-record',()=>{if(selected)return copyText(JSON.stringify(selected,null,2));});
   action('remove',async()=>{if(!store||!selected||busy)return;const r=selected,prefix=view==='tray'?TRAY:PREFIX;if(!confirm('Delete this item?'))return;busy=true;try{await store.del(prefix+r.id);hideDetail();await load();status('Deleted item.');}finally{busy=false;}});
   action('export',async()=>{if(!store)return;await copyText(JSON.stringify({schema:'ai_pill_os.pocket',version:1,items:records},null,2));});
-  function refreshVisible(){if(!$('panel').hidden&&!document.hidden&&!busy&&!handoffBusy)load().catch(e=>status('Error: '+String(e.message||e)));}
+  function refreshVisible(){if(document.hidden||busy||handoffBusy)return;const work=$('panel').hidden?refreshTarget():load();work.catch(e=>status('Error: '+String(e.message||e)));}
+  refreshVisible();
+  let lastChatURL=chatURL(location.href);const routeTimer=setInterval(()=>{if(document.hidden)return;const here=chatURL(location.href);if(here!==lastChatURL){lastChatURL=here;refreshVisible();}},1200);
+  window.addEventListener('popstate',refreshVisible);
   window.addEventListener('pageshow',refreshVisible);
   document.addEventListener('visibilitychange',refreshVisible);
 })();
