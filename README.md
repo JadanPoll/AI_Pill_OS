@@ -22,6 +22,23 @@ Speed of thought is an asymptotic objective, not a latency guarantee. Some think
 
 The initial high-priority surfaces are the existing AssistiveTouch screenshot gesture and screenshot-to-intelligence handoff, native voice control and semantic DOM execution, source-linked capture and investigation resumption (Kami/FKEN), and local computation using iSH. [Apple Shortcuts research](research/APPLE_SHORTCUTS.md) covers native orchestration and ambient intelligence. Develop from actual recurring workflows, not from an exhaustive API catalog. Preserve the existing fast paths.
 
+## Personal interfaces: a collection of site-specific userscripts
+
+A major component of AI Pill OS is **not** the universal AI pill. It is a collection of specialized Tampermonkey/Userscripts interfaces for the websites the human repeatedly uses. A website is a source of capabilities and information; its stock interface need not be the best way to access them.
+
+Design around the actual distribution of recurring activities: remove low-value features and distractions, increase useful information density, eliminate repeated navigation, expose missing operations at their point of use, and repair recurring friction. Use ordinary deterministic code for familiar interactions. AI is often most useful at **design time**, producing and revising these interfaces, rather than at runtime.
+
+Existing examples in [Learning Visualizations Taxonomy](https://github.com/JadanPoll/Learning_Visualizations_Taxonomy):
+
+- [LinkedIn Insight Mode](https://github.com/JadanPoll/Learning_Visualizations_Taxonomy/blob/main/LinkedIn_Intuit.user.js): reversible subtraction of distracting feed signals and grid presentation.
+- [Patent Card](https://github.com/JadanPoll/Learning_Visualizations_Taxonomy/blob/main/Patent.Card.user.js): scannable search results and inline detail.
+- [PatentX](https://github.com/JadanPoll/Learning_Visualizations_Taxonomy/blob/main/PatentX.user.js): visual relationships and annotation within the document.
+- [Kami/Wikipedia](https://github.com/JadanPoll/Learning_Visualizations_Taxonomy/blob/main/Kami_Wikipedia.user.js): active investigation, passages, insights and source navigation.
+- [YouTube Comments](https://github.com/JadanPoll/Learning_Visualizations_Taxonomy/blob/main/Youtube_Comments.user.js): direct filtered access to comments.
+- [Grokipedia correction](https://github.com/JadanPoll/Learning_Visualizations_Taxonomy/blob/main/Grok_Wikipedia_Correction.user.js): mathematical rendering repair.
+
+Keep canonical scripts in their existing projects; the `site_scripts` index in [capabilities.json](capabilities.json) records their purpose and links. Do not rewrite them to fit a common framework. Introduce shared command or diagnostic primitives only when repeated real usage establishes their value. Preserve a recoverable stock view and validate real tasks on iPad Safari. The goal is to make the right action obvious and almost instantaneous even a week after the last use.
+
 ## First practical realization: Safari on iPadOS
 
 A small, movable AI pill on permitted webpages, accessible through touch and native dictation.
