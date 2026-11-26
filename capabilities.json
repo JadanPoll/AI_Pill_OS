@@ -1,6 +1,6 @@
 {
   "schema": "ai_pill_os.capability_atlas",
-  "version": 16,
+  "version": 17,
   "updated": "2026-11-25",
   "purpose": "Can I operate at the speed of thought? Living design inventory, not a promise of implementation.",
   "design_rules": {
@@ -921,6 +921,7 @@
       ],
       "why": "Do not interrupt an investigation to transfer each observation.",
       "mechanisms": [
+        "Pocket v0.5.4 uses SnapDOM classic 3.8.3 via manager @require/content injection; separates serialization and rasterization; decodes stored PNG/JPEG via createImageBitmap when available and draws canvas previews.",
         "Pocket v0.4.1: dependency-free native bitmap crop editor; user pastes or chooses a screenshot, draws normalized region(s), collects via Canvas drawImage and exports existing composite PNG. No DOM reconstruction.",
         "Pocket v0.3.2 replaces html2canvas-pro with one bounded SnapDOM 3.8.3 clipped SVG reconstruction experiment; offscreen culling, elapsed time, 12s async deadline and no concurrent retry. Native screenshot file import or explicit image paste provides an independent path to local tray and composite export.",
         "Pocket v0.3.1 region snipping with html2canvas-pro@2.6.4, modern CSS colors, local image previews and composite PNG clipboard export. DOM reconstruction, not framebuffer capture.",
@@ -946,7 +947,7 @@
         "safari_capture_mdn",
         "webkit_clipboard"
       ],
-      "boundary": "No privileged tab capture claim, GM binary quota and image paste untested; no automatic uploads. Text/JSON slice executed against mocked DOM and GM; no real Safari storage or image capture established. Stop DOM renderer substitution after one representative SnapDOM attempt on each failed page; use native screenshot input if either fails or hangs. A timeout cannot interrupt synchronous main-thread blocking. Apple and MDN disagree about iOS extension captureVisibleTab support; no exposed GM capture method established. Native import and target clipboard not yet verified. User reported v0.3.2 UI absent; mandatory renderer dependency is a possible cause, not diagnosed. DOM reconstruction branch stopped; no external @require in Pocket. Native screenshot acquisition remains user-initiated; browser framebuffer access not established. Mock startup and crop geometry checks passed; device acceptance pending."
+      "boundary": "No privileged tab capture claim, GM binary quota and image paste untested; no automatic uploads. Text/JSON slice executed against mocked DOM and GM; no real Safari storage or image capture established. Stop DOM renderer substitution after one representative SnapDOM attempt on each failed page; use native screenshot input if either fails or hangs. A timeout cannot interrupt synchronous main-thread blocking. Apple and MDN disagree about iOS extension captureVisibleTab support; no exposed GM capture method established. Native import and target clipboard not yet verified. User reported v0.3.2 UI absent; mandatory renderer dependency is a possible cause, not diagnosed. DOM reconstruction branch stopped; no external @require in Pocket. Native screenshot acquisition remains user-initiated; browser framebuffer access not established. Mock startup and crop geometry checks passed; device acceptance pending. Standalone Safari fixture and clipboard passed; actual Grokipedia script-src-elem blocks dynamic CDN module import. Manager require delivery, actual-page rasterization and composite export remain unverified."
     },
     {
       "id": "control.handoff",
@@ -1064,6 +1065,7 @@
     }
   ],
   "next_experiments": [
+    "Install Pocket v0.5.4; verify launcher, old image preview, real Grokipedia crop and report. If module delivery fails, isolate manager @require installation; if SVG rasterization fails, inspect img-src/frame-src events. No blind renderer swaps.",
     "Install Pocket v0.4.1 over existing script. Verify visible launcher and previous collected text. Use native screenshot Copy, crop icon → Paste image (or Choose image), draw two regions and collect; close and copy composite into ChatGPT. Stop adding mechanisms once practical flow works.",
     "Pocket v0.3.2: try one bounded region capture each on actual Grokipedia and ChatGPT; inspect thumbnail fidelity/elapsed status. If failure, stop renderer experiments and import two native screenshots (More → Import screenshots or explicit image paste), copy composite and paste. Do not use synthetic CSS canary as substitute.",
     "Update Pocket v0.3.1 and AI Pill v0.4.0; repeat same Grokipedia/ChatGPT crop, paste two images, select current chat and verify gold then route from source; test precision inspector on small real controls. No further capture/pointer complexity until results.",
@@ -1144,6 +1146,12 @@
       "capability": "persist.tray",
       "evidence": "User reports Pocket UI absent in v0.3.2. Removed renderer dependency in v0.4.1 and executed actual script against mocked DOM/GM/decoder/canvas: 8 checks passed, including old record recovery, crop coordinate transform, multiple collection and return to Pocket.",
       "scope": "No real browser image decoding, rendering, screenshot acquisition or clipboard certification."
+    },
+    {
+      "date": "2026-11-25",
+      "capability": "persist.tray",
+      "evidence": "Paired actual reports: standalone Safari 15/15 probes passed in 550ms, root clip 27ms correct pixels, PNG pasted; Grokipedia dynamic import blocked by enforced script-src-elem while matching dependency fetched HTTP 200. v0.5.4 uses manager-installed classic bundle, no dynamic dependency import.",
+      "scope": "Standalone fixture and actual CSP obstruction established; target renderer and updated manager installation not certified."
     }
   ],
   "thoughts": [
