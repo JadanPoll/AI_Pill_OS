@@ -1,6 +1,6 @@
 {
   "schema": "ai_pill_os.capability_atlas",
-  "version": 6,
+  "version": 7,
   "updated": "2026-11-25",
   "purpose": "Can I operate at the speed of thought? Living design inventory, not a promise of implementation.",
   "design_rules": {
@@ -922,6 +922,7 @@
     }
   ],
   "next_experiments": [
+    "Install OpenMinis from App Store if compatible; establish an authorized model connection and complete one real research or Git task. Check whether existing workspace and skill features replace planned work; do not configure broad device control before testing ordinary app utility.",
     "Test native Describe a Shortcut if available; otherwise compile/sign/import one minimal Cherri shortcut. Bind a non-screenshot accessibility trigger once and test a reviewed implementation update without rebinding. Test native Voice Control on AI Pill accessible button names; no new custom voice recognizer.",
     "v0.3.0: cold-demo Inspect/Record/Sources/DevTools; record while closed and stop after reopening; verify contextual Copy and source search; revisit usefulness after a week and a month.",
     "On the same GitHub page test v0.2.1 opacity/height/close, Sources file filter, format HTML/JS, search and review/copy an excerpt; report concrete failure if blocked.",
@@ -964,7 +965,8 @@
     "The key acceleration is closing the evidence-to-code loop; DevTools is infrastructure for producing many specialized interfaces, not merely another feature.",
     "A developer tool should optimize time to useful evidence, not reproduce the appearance of desktop F12. Prefer thumb-sized controls and a direct searchable source-to-excerpt workflow.",
     "A capability earning its existence does not imply its control earns permanent screen space. Familiar icon, contextual appearance, secondary control and removal are distinct choices.",
-    "Accessibility is an input layer, Shortcuts a native capability layer, and reviewed versioned code/data a replaceable implementation layer. Keep the binding stable while iterating behind it."
+    "Accessibility is an input layer, Shortcuts a native capability layer, and reviewed versioned code/data a replaceable implementation layer. Keep the binding stable while iterating behind it.",
+    "OpenMinis and iCTRL materially change the build-versus-reuse decision. The unique value of AI Pill OS may be specialized personal interfaces and context/action routing, not a new general agent harness."
   ],
   "site_scripts": {
     "purpose": "A collection of focused personal interface implementations. Existing code remains canonical in its own repository; this is a source index, not duplicate scripts or a universal injected runtime.",
@@ -1038,5 +1040,110 @@
       "Retain native functionality via reversible modes and clear failure/rollback; no user-facing shared framework unless it improves overall effort.",
       "Keep optional semantic voice actions separate from the presentation layer. Do not require AI round trips for familiar navigation."
     ]
+  },
+  "external_precedents": {
+    "updated": "2026-11-25",
+    "purpose": "Critical generating set for AI-directed mobile computing. External project claims, not target-iPad acceptance.",
+    "projects": [
+      {
+        "id": "openminis",
+        "url": "https://github.com/OpenMinis/OpenMinis",
+        "install": "https://apps.apple.com/us/app/open-minis/id6759188481",
+        "covers": [
+          "compute.shell",
+          "intelligence.ask",
+          "compute.remote",
+          "ambient.curate"
+        ],
+        "insight": "Native agent with an embedded Alpine/iSH sandbox, browser tools, skills and device framework integrations. Try before building a separate iSH bridge or general agent harness.",
+        "evidence": [
+          "https://www.macstories.net/reviews/open-minis-is-the-ios-agent-i-wish-siri-ai-could-be/",
+          "https://github.com/OpenMinis/AwesomeMinis",
+          "https://github.com/OpenMinis/MinisSkills"
+        ],
+        "boundary": "Own browser/workspace sandbox, not arbitrary Safari DOM. API key billing separate. Source also implements a Codex OAuth backend route; official third-party subscription authorization for this particular app is not established. Prefer supported auth; no target-device test."
+      },
+      {
+        "id": "ictrl",
+        "url": "https://github.com/OpenMinis/iCTRL",
+        "covers": [
+          "control.native",
+          "control.intent",
+          "develop.plan"
+        ],
+        "insight": "XCUITest automation runner exposes device screenshots, UI tree, touch, input and app launch via paired JSON-RPC; local Minis connection is documented.",
+        "boundary": "Testing/research only. Development signing, Developer Mode, DDI mount, runner lifecycle; free SideStore route initially needs computer and recurring signing. Keep local-only, supervised, no sensitive apps or irreversible actions. Target OS compatibility untested."
+      },
+      {
+        "id": "relay",
+        "url": "https://github.com/rishiv7/relay",
+        "covers": [
+          "capture.route",
+          "intelligence.shortcut"
+        ],
+        "insight": "One trigger captures screen plus spoken intent, model drafts into clipboard; smallest precedent for contextual native interaction.",
+        "boundary": "README recipe uses separate Anthropic API key, not an included subscription. iPhone trigger examples; adapt to iPad AssistiveTouch only if picker supports it."
+      },
+      {
+        "id": "iris",
+        "url": "https://github.com/AffanShaikhsurab/iris",
+        "covers": [
+          "control.dispatch",
+          "intelligence.shortcut",
+          "compute.update"
+        ],
+        "insight": "Cherri source-controlled native routes, model selects predefined actions, Siri invocation and local memory.",
+        "boundary": "Alpha, hosted NVIDIA model key, manual device validation needed."
+      },
+      {
+        "id": "redde",
+        "url": "https://github.com/goosehouse-llc/redde",
+        "covers": [
+          "control.dispatch",
+          "ambient.curate",
+          "compute.remote"
+        ],
+        "insight": "Native voice client, Siri, shortcuts, widgets, approvals and offline queue for Hermes or supported model endpoints.",
+        "boundary": "Requires backend and appropriate OS; no general cross-app control assumed."
+      },
+      {
+        "id": "happy",
+        "url": "https://github.com/slopus/happy",
+        "covers": [
+          "compute.remote",
+          "compute.update"
+        ],
+        "insight": "Voice-oriented remote coding agent orchestration; leverage authorized Codex host instead of reconstructing remote engineering UI.",
+        "boundary": "Requires connected agent runtime/host; not an iPad system controller."
+      },
+      {
+        "id": "cursorless",
+        "url": "https://github.com/cursorless-dev/cursorless",
+        "covers": [
+          "control.dom",
+          "control.native"
+        ],
+        "insight": "Talon ecosystem composes spoken action, semantic target and modifiers to edit rapidly; learn from voice grammar and visual target labels rather than AI inference for known actions.",
+        "evidence": [
+          "https://github.com/talonhub/community",
+          "https://talon.wiki/Voice%20Coding/voice-coding-overview/"
+        ],
+        "boundary": "Desktop-oriented precedent, not native iPad software."
+      },
+      {
+        "id": "openclaw",
+        "url": "https://docs.openclaw.ai/",
+        "covers": [
+          "compute.remote",
+          "control.dispatch"
+        ],
+        "insight": "Voice-capable remote agent with iOS companion node and supported device tools.",
+        "evidence": [
+          "https://github.com/openclaw/docs/blob/main/docs/platforms/ios.md"
+        ],
+        "boundary": "Gateway required; not equivalent to unrestricted local app control."
+      }
+    ],
+    "decision": "Try OpenMinis on the target iPad first with a supported model connection and one real Git/JSON or research task; no new agent runtime before evaluating fit. Keep existing personalized userscripts and DevTools. Investigate iCTRL signing/setup separately only if native UI control has material recurring utility. Borrow Relay's contextual capture and Talon's semantic command language, not every feature."
   }
 }
