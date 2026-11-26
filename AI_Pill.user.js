@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         AI Pill OS - DevTools and Ask
 // @namespace    https://github.com/JadanPoll/AI_Pill_OS
-// @version      0.4.3
+// @version      0.4.4
 // @description  Inspect, record, export browser evidence; hand it to ChatGPT and run bounded read-only investigation requests.
 // @match        https://*/*
 // @match        http://*/*
@@ -17,7 +17,7 @@
 (() => {
   'use strict';
   if (window.top !== window || document.getElementById('ai-pill-os')) return;
-  const VERSION = '0.4.3', MAX = 100, MAX_REPORT = 100000;
+  const VERSION = '0.4.4', MAX = 100, MAX_REPORT = 100000;
   let host, root, status, preview, question, scope, includeText, planBox, pill;
   let picked = null, selection = '', armed = false, recording = false, observer = null;
   let events = [], dropped = 0, started = 0, lastReport = null, erudaReady = false;
@@ -385,8 +385,8 @@
   function erudaSettings() {
     const dev=eruda.get(), cfg=dev.config;
     const alpha=Number(cfg.get('transparency')), size=Number(cfg.get('displaySize'));
-    byId('dev-alpha').innerHTML=icon('opacity')+'<span>'+Math.round(alpha*100)+'%</span>';
-    byId('dev-size').innerHTML=icon('height')+'<span>'+Math.round(size)+'%</span>';
+    iconLabel(byId('dev-alpha'),'opacity',Math.round(alpha*100)+'%');
+    iconLabel(byId('dev-size'),'height',Math.round(size)+'%');
     byId('dev-alpha').title='Opacity '+Math.round(alpha*100)+'%';byId('dev-alpha').setAttribute('aria-label',byId('dev-alpha').title);
     byId('dev-size').title='Height '+Math.round(size)+'%';byId('dev-size').setAttribute('aria-label',byId('dev-size').title);
     byId('dev-bar').style.top='max(8px, calc('+(100-size)+'vh - 58px))';
@@ -421,28 +421,25 @@
     } catch(e) {setStatus('Eruda unavailable: '+safe(e.message));}
   }
   // Familiar symbols reduce visual weight; uncommon actions retain short words.
-  const icons = {
-    terminal:'<path d="m4 6 6 6-6 6M13 18h7"/>',
-    close:'<path d="m6 6 12 12M18 6 6 18"/>',
-    back:'<path d="m14 6-6 6 6 6"/>',
-    next:'<path d="m10 6 6 6-6 6"/>',
-    inspect:'<path d="M3 9V3h6M15 3h6v6M21 15v6h-6M9 21H3v-6M8 8l8 8M8 8l2 8 2-4 4-2z"/>',
-    code:'<path d="m8 6-6 6 6 6m8-12 6 6-6 6m-2-15-4 18"/>',
-    file:'<path d="M6 3h8l4 4v14H6zM14 3v5h4M9 13h6M9 17h6"/>',
-    record:'<circle cx="12" cy="12" r="7" fill="currentColor" stroke="none"/>',
-    stop:'<rect x="6" y="6" width="12" height="12" rx="2" fill="currentColor" stroke="none"/>',
-    copy:'<rect x="8" y="8" width="12" height="12" rx="2"/><path d="M16 8V4H4v12h4"/>',
-    opacity:'<circle cx="12" cy="12" r="9"/><path d="M12 3a9 9 0 0 1 0 18Z" fill="currentColor" stroke="none"/>',
-    height:'<path d="M4 4h16M4 20h16M12 7v10m-4-6 4-4 4 4m-8 2 4 4 4-4"/>',
-    refresh:'<path d="M20 8a8 8 0 1 0 0 8M20 3v5h-5"/>',
-    search:'<circle cx="10" cy="10" r="6"/><path d="m14.5 14.5 5 5"/>'
-  };
-  function icon(name){return '<svg viewBox="0 0 24 24" width="21" height="21" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">'+icons[name]+'</svg>';}
-  function button(id,name,label,visible=''){return '<button class="icon-btn" id="'+id+'" type="button" aria-label="'+label+'" title="'+label+'">'+icon(name)+(visible?'<span>'+visible+'</span>':'')+'</button>';}
+  // Use DOM construction, not TrustedHTML sinks. Page-realm debugger hooks
+  // remain intact on sites enforcing Trusted Types.
+  const icons = {"terminal":[["path",{"d":"m4 6 6 6-6 6M13 18h7"}]],"close":[["path",{"d":"m6 6 12 12M18 6 6 18"}]],"back":[["path",{"d":"m14 6-6 6 6 6"}]],"next":[["path",{"d":"m10 6 6 6-6 6"}]],"inspect":[["path",{"d":"M3 9V3h6M15 3h6v6M21 15v6h-6M9 21H3v-6M8 8l8 8M8 8l2 8 2-4 4-2z"}]],"code":[["path",{"d":"m8 6-6 6 6 6m8-12 6 6-6 6m-2-15-4 18"}]],"file":[["path",{"d":"M6 3h8l4 4v14H6zM14 3v5h4M9 13h6M9 17h6"}]],"record":[["circle",{"cx":"12","cy":"12","r":"7","fill":"currentColor","stroke":"none"}]],"stop":[["rect",{"x":"6","y":"6","width":"12","height":"12","rx":"2","fill":"currentColor","stroke":"none"}]],"copy":[["rect",{"x":"8","y":"8","width":"12","height":"12","rx":"2"}],["path",{"d":"M16 8V4H4v12h4"}]],"opacity":[["circle",{"cx":"12","cy":"12","r":"9"}],["path",{"d":"M12 3a9 9 0 0 1 0 18Z","fill":"currentColor","stroke":"none"}]],"height":[["path",{"d":"M4 4h16M4 20h16M12 7v10m-4-6 4-4 4 4m-8 2 4 4 4-4"}]],"refresh":[["path",{"d":"M20 8a8 8 0 1 0 0 8M20 3v5h-5"}]],"search":[["circle",{"cx":"10","cy":"10","r":"6"}],["path",{"d":"m14.5 14.5 5 5"}]]};
+  function el(tag,attrs={},...children){
+    const n=document.createElement(tag);
+    for(const [k,v] of Object.entries(attrs)){if(v===true)n.setAttribute(k,'');else if(v!==false&&v!=null)n.setAttribute(k,String(v));}
+    n.append(...children.flat().filter(v=>v!=null));return n;
+  }
+  function icon(name){
+    const ns='http://www.w3.org/2000/svg',svg=document.createElementNS(ns,'svg');
+    for(const [k,v] of Object.entries({viewBox:'0 0 24 24',width:21,height:21,fill:'none',stroke:'currentColor','stroke-width':'1.7','stroke-linecap':'round','stroke-linejoin':'round','aria-hidden':'true'}))svg.setAttribute(k,v);
+    for(const [tag,attrs] of icons[name]){const n=document.createElementNS(ns,tag);for(const [k,v] of Object.entries(attrs))n.setAttribute(k,v);svg.append(n);}return svg;
+  }
+  function button(id,name,label,visible=''){return el('button',{class:'icon-btn',id,type:'button','aria-label':label,title:label},icon(name),visible?el('span',{},visible):null);}
+  function iconLabel(n,name,label){n.replaceChildren(icon(name),el('span',{},label));}
   function syncEvidence(){if(root)byId('evidence').hidden=!preview.value;}
   function syncRecord(){
     if(!root)return;
-    const b=byId('record'); b.innerHTML=icon(recording?'stop':'record')+'<span>'+(recording?'Stop':'Record')+'</span>';
+    const b=byId('record'); iconLabel(b,recording?'stop':'record',recording?'Stop':'Record');
     b.setAttribute('aria-label',recording?'Stop recording':'Record interaction');
     b.title=b.getAttribute('aria-label');b.classList.toggle('active-record',recording);
     const open=byId('open');if(!armed)open.textContent=(recording?'● AI':'AI')+' v'+VERSION;
@@ -451,19 +448,36 @@
     if(document.getElementById('ai-pill-os'))return;
     host=document.createElement('div');host.id='ai-pill-os';host.setAttribute('data-console-journal','true');
     root=host.attachShadow({mode:'open'});
-    root.innerHTML='<style>'+
-      ':host{all:initial;position:fixed;right:12px;bottom:18px;z-index:2147483646;font:14px system-ui;color:#172033}*{box-sizing:border-box}button,a,select,textarea,input{font:inherit;color:inherit}button,a{border:1px solid #cbd5e1;background:white;border-radius:8px;padding:9px 11px;cursor:pointer;text-decoration:none;display:inline-flex;align-items:center;justify-content:center;min-height:44px}button:active{background:#e2e8f0}button:disabled{opacity:.35}button svg{flex:none}.icon-btn{min-width:44px;gap:5px;padding:7px}.icon-btn span{font-size:12px}#open{border-radius:24px;background:#172033;color:white;box-shadow:0 2px 12px #0004}#panel,#source-panel{background:rgba(255,255,255,.86);backdrop-filter:blur(3px);-webkit-backdrop-filter:blur(3px);border:1px solid #cbd5e1;border-radius:14px;box-shadow:0 4px 20px #0003;padding:10px;width:min(420px,calc(100vw - 28px));max-height:78vh;overflow:auto}[hidden]{display:none!important}#dev-bar{position:fixed;right:12px;z-index:2147483647;display:flex;gap:4px;padding:4px;background:#f8fafc;border:1px solid #94a3b8;border-radius:10px;box-shadow:0 2px 12px #0004;max-width:calc(100vw - 24px)}#source-panel{width:min(900px,calc(100vw - 28px));max-height:83vh}#source-panel input[type=text],select{min-height:44px;min-width:0;padding:8px;border:1px solid #cbd5e1;border-radius:6px}#source-code{font:14px/1.55 ui-monospace,monospace;white-space:pre-wrap;overflow-wrap:anywhere;max-height:48vh;overflow:auto;background:#f8fafc;border:1px solid #cbd5e1;border-radius:6px;padding:10px;color:#172033;user-select:text;margin:6px 0}#source-status,#source-position,#source-count,#status{font-size:12px;color:#475569;overflow-wrap:anywhere}.row{display:flex;gap:5px;flex-wrap:wrap;align-items:center;margin:6px 0}.head{justify-content:space-between;margin-top:0}.grow{flex:1;min-width:0}textarea{display:block;width:100%;border:1px solid #cbd5e1;border-radius:8px;padding:8px;resize:vertical;background:white}label{display:block;margin:5px 0}summary{cursor:pointer;padding:8px 0;color:#475569}small{color:#475569;font-weight:400}h3{margin:0;font-size:15px}.active-record{color:#b91c1c;border-color:#b91c1c}.main-actions{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:4px;margin:7px 0}.main-actions button{flex-direction:column;min-width:0;padding:6px 2px}.main-actions span{font-size:11px}.primary{background:#172033;color:white}details{border-top:1px solid #e2e8f0}#evidence{border-top:1px solid #e2e8f0;padding-top:6px}#pointer-panel{position:fixed;right:12px;bottom:18px;width:min(280px,calc(100vw - 24px));background:rgba(255,255,255,.86);backdrop-filter:blur(3px);border:1px solid #94a3b8;border-radius:12px;padding:8px;box-shadow:0 3px 14px #0003}#pointer-pad{height:110px;touch-action:none;user-select:none;background:rgba(226,232,240,.68);border:1px dashed #94a3b8;border-radius:9px;display:grid;place-items:center;color:#475569;font-size:13px}#pointer-cursor{position:fixed;width:22px;height:22px;border:2px solid #fff;border-radius:50%;transform:translate(-50%,-50%);background:rgba(37,99,235,.65);box-shadow:0 0 0 1px #1d4ed8;pointer-events:none;z-index:2147483647}#pointer-cursor:after{content:"+";position:absolute;inset:0;display:grid;place-items:center;color:#fff;font-weight:bold}#pointer-box{position:fixed;outline:2px solid #2563eb;background:rgba(59,130,246,.08);pointer-events:none;z-index:2147483646}#pointer-label{font-size:12px;overflow-wrap:anywhere}'+
-      '</style><button id="open" aria-label="Open AI Pill">AI v'+VERSION+'</button>'+
-      '<section id="panel" hidden><div class="row head"><h3 class="grow">AI Pill <small>v'+VERSION+'</small></h3>'+button('console','terminal','Open persistent console logs')+button('copy-html','copy','Copy full live page HTML; may contain private data','HTML')+button('close','close','Close')+'</div>'+
-      '<div class="main-actions">'+button('inspect','inspect','Inspect element','Inspect')+button('record','record','Record interaction','Record')+button('sources','file','Browse sources','Sources')+button('eruda','code','Open Eruda debugger','DevTools')+'</div>'+
-      '<textarea id="question" rows="2" placeholder="Ask about this page…"></textarea><div class="row"><select id="scope" class="grow" aria-label="Context"><option value="none">URL only</option><option value="selection">Selected text</option><option value="page">Page text</option><option value="report">Diagnostic report</option></select><button id="ask" class="primary">Prepare</button></div>'+
-      '<section id="evidence" hidden><div class="row head"><small>Review before sharing</small>'+button('copy','copy','Copy evidence','Copy')+'</div><textarea id="preview" rows="4" aria-label="Evidence preview"></textarea><div class="row"><a href="https://chatgpt.com/" target="_blank" rel="noopener noreferrer">ChatGPT</a><a href="https://gemini.google.com/" target="_blank" rel="noopener noreferrer">Gemini</a></div></section>'+
-      '<details><summary>More</summary><div class="row"><button id="snapshot">Page report</button><button id="direct-inspect">Direct tap inspect</button><a href="shortcuts://run-shortcut?name=AI%20Pill%20Ask">Run Shortcut</a></div><label><input id="text" type="checkbox"> Include element text in reports</label><details><summary>AI investigation plan</summary><textarea id="plan" rows="3" placeholder=\'{"operations":[{"op":"inspect","selector":"button"}]}\'></textarea><button id="run">Run read-only plan</button></details></details>'+
-      '<div id="status" role="status">Ready. Nothing is sent automatically.</div></section>'+
-      '<div id="pointer-box" hidden></div><div id="pointer-cursor" hidden></div><section id="pointer-panel" hidden><div class="row head"><small>Inspect · v'+VERSION+'</small>'+button('pointer-close','close','Cancel precision inspection')+'</div><div id="pointer-pad" aria-label="Relative pointer trackpad">Drag to move pointer</div><div class="row"><small id="pointer-label" class="grow"></small></div><div class="row"><button id="pointer-parent" title="Select parent element">Parent ↑</button><button id="pointer-select" class="primary grow">Inspect</button></div></section>'+
-      '<div id="dev-bar" hidden>'+button('dev-alpha','opacity','Opacity')+button('dev-size','height','Panel height')+button('dev-sources','file','Sources')+button('dev-console','terminal','Open persistent console logs')+button('dev-close','close','Close debugger')+'</div>'+
-      '<section id="source-panel" hidden><div class="row head">'+button('source-close','back','Back to AI Pill')+'<h3 class="grow">Sources <small>v'+VERSION+'</small></h3>'+button('source-refresh','refresh','Refresh file list')+'</div><div class="row"><input id="source-filter" class="grow" type="text" placeholder="Filter files…" aria-label="Filter filenames"><span id="source-count"></span></div><div class="row"><select id="source-select" class="grow" aria-label="Source file"></select><button id="source-load" class="primary">Load</button></div>'+
-      '<div id="source-reading" hidden><div class="row"><input id="source-find" class="grow" type="text" placeholder="Find in file…" aria-label="Find in file">'+button('find-prev','back','Previous match')+button('find-next','next','Next match')+button('source-copy','copy','Review and copy excerpt')+'</div><div id="source-position"></div><pre id="source-code"></pre><div class="row" id="source-chunks">'+button('source-prev','back','Previous chunk','Chunk')+button('source-next','next','Next chunk','Chunk')+'</div><details><summary>Source options</summary><label><input id="source-pretty" type="checkbox" checked> Format source</label></details></div><div id="source-status" role="status">Choose a file. No automatic fetch or upload.</div></section>';
+    const row=(...children)=>el('div',{class:'row'},...children);
+    const head=(...children)=>el('div',{class:'row head'},...children);
+    const plain=(id,label,attrs={})=>el('button',{id,type:'button',...attrs},label);
+    const link=(href,label,attrs={})=>el('a',{href,...attrs},label);
+    const field=(id,rows,placeholder,attrs={})=>el('textarea',{id,rows,placeholder,...attrs});
+    const check=(id,label,checked=false)=>el('label',{},el('input',{id,type:'checkbox',checked}), ' '+label);
+    const details=(label,...children)=>el('details',{},el('summary',{},label),...children);
+    const heading=label=>el('h3',{class:'grow'},label+' ',el('small',{},'v'+VERSION));
+    root.append(
+      el('style',{},':host{all:initial;position:fixed;right:12px;bottom:18px;z-index:2147483646;font:14px system-ui;color:#172033}*{box-sizing:border-box}button,a,select,textarea,input{font:inherit;color:inherit}button,a{border:1px solid #cbd5e1;background:white;border-radius:8px;padding:9px 11px;cursor:pointer;text-decoration:none;display:inline-flex;align-items:center;justify-content:center;min-height:44px}button:active{background:#e2e8f0}button:disabled{opacity:.35}button svg{flex:none}.icon-btn{min-width:44px;gap:5px;padding:7px}.icon-btn span{font-size:12px}#open{border-radius:24px;background:#172033;color:white;box-shadow:0 2px 12px #0004}#panel,#source-panel{background:rgba(255,255,255,.86);backdrop-filter:blur(3px);-webkit-backdrop-filter:blur(3px);border:1px solid #cbd5e1;border-radius:14px;box-shadow:0 4px 20px #0003;padding:10px;width:min(420px,calc(100vw - 28px));max-height:78vh;overflow:auto}[hidden]{display:none!important}#dev-bar{position:fixed;right:12px;z-index:2147483647;display:flex;gap:4px;padding:4px;background:#f8fafc;border:1px solid #94a3b8;border-radius:10px;box-shadow:0 2px 12px #0004;max-width:calc(100vw - 24px)}#source-panel{width:min(900px,calc(100vw - 28px));max-height:83vh}#source-panel input[type=text],select{min-height:44px;min-width:0;padding:8px;border:1px solid #cbd5e1;border-radius:6px}#source-code{font:14px/1.55 ui-monospace,monospace;white-space:pre-wrap;overflow-wrap:anywhere;max-height:48vh;overflow:auto;background:#f8fafc;border:1px solid #cbd5e1;border-radius:6px;padding:10px;color:#172033;user-select:text;margin:6px 0}#source-status,#source-position,#source-count,#status{font-size:12px;color:#475569;overflow-wrap:anywhere}.row{display:flex;gap:5px;flex-wrap:wrap;align-items:center;margin:6px 0}.head{justify-content:space-between;margin-top:0}.grow{flex:1;min-width:0}textarea{display:block;width:100%;border:1px solid #cbd5e1;border-radius:8px;padding:8px;resize:vertical;background:white}label{display:block;margin:5px 0}summary{cursor:pointer;padding:8px 0;color:#475569}small{color:#475569;font-weight:400}h3{margin:0;font-size:15px}.active-record{color:#b91c1c;border-color:#b91c1c}.main-actions{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:4px;margin:7px 0}.main-actions button{flex-direction:column;min-width:0;padding:6px 2px}.main-actions span{font-size:11px}.primary{background:#172033;color:white}details{border-top:1px solid #e2e8f0}#evidence{border-top:1px solid #e2e8f0;padding-top:6px}#pointer-panel{position:fixed;right:12px;bottom:18px;width:min(280px,calc(100vw - 24px));background:rgba(255,255,255,.86);backdrop-filter:blur(3px);border:1px solid #94a3b8;border-radius:12px;padding:8px;box-shadow:0 3px 14px #0003}#pointer-pad{height:110px;touch-action:none;user-select:none;background:rgba(226,232,240,.68);border:1px dashed #94a3b8;border-radius:9px;display:grid;place-items:center;color:#475569;font-size:13px}#pointer-cursor{position:fixed;width:22px;height:22px;border:2px solid #fff;border-radius:50%;transform:translate(-50%,-50%);background:rgba(37,99,235,.65);box-shadow:0 0 0 1px #1d4ed8;pointer-events:none;z-index:2147483647}#pointer-cursor:after{content:"+";position:absolute;inset:0;display:grid;place-items:center;color:#fff;font-weight:bold}#pointer-box{position:fixed;outline:2px solid #2563eb;background:rgba(59,130,246,.08);pointer-events:none;z-index:2147483646}#pointer-label{font-size:12px;overflow-wrap:anywhere}'),
+      plain('open','AI v'+VERSION,{'aria-label':'Open AI Pill'}),
+      el('section',{id:'panel',hidden:true},
+        head(heading('AI Pill'),button('console','terminal','Open persistent console logs'),button('copy-html','copy','Copy full live page HTML; may contain private data','HTML'),button('close','close','Close')),
+        el('div',{class:'main-actions'},button('inspect','inspect','Inspect element','Inspect'),button('record','record','Record interaction','Record'),button('sources','file','Browse sources','Sources'),button('eruda','code','Open Eruda debugger','DevTools')),
+        field('question',2,'Ask about this page…'),
+        row(el('select',{id:'scope',class:'grow','aria-label':'Context'},...([['none','URL only'],['selection','Selected text'],['page','Page text'],['report','Diagnostic report']].map(([value,label])=>el('option',{value},label)))),plain('ask','Prepare',{class:'primary'})),
+        el('section',{id:'evidence',hidden:true},head(el('small',{},'Review before sharing'),button('copy','copy','Copy evidence','Copy')),field('preview',4,null,{'aria-label':'Evidence preview'}),row(link('https://chatgpt.com/','ChatGPT',{target:'_blank',rel:'noopener noreferrer'}),link('https://gemini.google.com/','Gemini',{target:'_blank',rel:'noopener noreferrer'}))),
+        details('More',row(plain('snapshot','Page report'),plain('direct-inspect','Direct tap inspect'),link('shortcuts://run-shortcut?name=AI%20Pill%20Ask','Run Shortcut')),check('text','Include element text in reports'),details('AI investigation plan',field('plan',3,'{"operations":[{"op":"inspect","selector":"button"}]}'),plain('run','Run read-only plan'))),
+        el('div',{id:'status',role:'status'},'Ready. Nothing is sent automatically.')
+      ),
+      el('div',{id:'pointer-box',hidden:true}),el('div',{id:'pointer-cursor',hidden:true}),
+      el('section',{id:'pointer-panel',hidden:true},head(el('small',{},'Inspect · v'+VERSION),button('pointer-close','close','Cancel precision inspection')),el('div',{id:'pointer-pad','aria-label':'Relative pointer trackpad'},'Drag to move pointer'),row(el('small',{id:'pointer-label',class:'grow'})),row(plain('pointer-parent','Parent ↑',{title:'Select parent element'}),plain('pointer-select','Inspect',{class:'primary grow'}))),
+      el('div',{id:'dev-bar',hidden:true},button('dev-alpha','opacity','Opacity'),button('dev-size','height','Panel height'),button('dev-sources','file','Sources'),button('dev-console','terminal','Open persistent console logs'),button('dev-close','close','Close debugger')),
+      el('section',{id:'source-panel',hidden:true},head(button('source-close','back','Back to AI Pill'),heading('Sources'),button('source-refresh','refresh','Refresh file list')),
+        row(el('input',{id:'source-filter',class:'grow',type:'text',placeholder:'Filter files…','aria-label':'Filter filenames'}),el('span',{id:'source-count'})),
+        row(el('select',{id:'source-select',class:'grow','aria-label':'Source file'}),plain('source-load','Load',{class:'primary'})),
+        el('div',{id:'source-reading',hidden:true},row(el('input',{id:'source-find',class:'grow',type:'text',placeholder:'Find in file…','aria-label':'Find in file'}),button('find-prev','back','Previous match'),button('find-next','next','Next match'),button('source-copy','copy','Review and copy excerpt')),el('div',{id:'source-position'}),el('pre',{id:'source-code'}),el('div',{class:'row',id:'source-chunks'},button('source-prev','back','Previous chunk','Chunk'),button('source-next','next','Next chunk','Chunk')),details('Source options',check('source-pretty','Format source',true))),
+        el('div',{id:'source-status',role:'status'},'Choose a file. No automatic fetch or upload.')
+      )
+    );
     for(const type of ['keydown','keypress','keyup'])root.addEventListener(type,e=>{if(e.composedPath().some(el=>el instanceof Element&&el.matches('textarea,input,[contenteditable]')))e.stopPropagation();});
     document.documentElement.append(host);
     const $=id=>root.getElementById(id);
