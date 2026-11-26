@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         AI Pill OS - Pocket
 // @namespace    https://github.com/JadanPoll/AI_Pill_OS
-// @version      0.7.12
+// @version      0.7.13
 // @updateURL    https://raw.githubusercontent.com/JadanPoll/AI_Pill_OS/main/Pocket.user.js
 // @downloadURL  https://raw.githubusercontent.com/JadanPoll/AI_Pill_OS/main/Pocket.user.js
 // @description  Universal Safari pill: collect evidence, keep discoveries, and hand a question to a chosen chat.
@@ -24,7 +24,7 @@
 (() => {
   'use strict';
   if (window.top !== window) return;
-  const VERSION='0.7.12';
+  const VERSION='0.7.13';
   // Report initialization failures without depending on the main UI, storage or a CDN.
   function bootFailure(error,phase){
     const message=String(error?.message||error).slice(0,500);
@@ -50,7 +50,7 @@
     if(document.getElementById('ai-pill-pocket'))return;
     let phase='storage setup';
     try{
-  const PREFIX='pocket.v1.', TRAY='tray.v1.', HANDOFF='handoff.v1.', ACK='ack.v1.', SEEN='seen.v1.', REPLY='reply.v1.', RUN='run.v1.', TRACE='trace.v1.', REQUEST_TRACE='request.trace.v1.', MAILBOX='mailbox.v1', TARGET='target.v1', TITLE='chat.title.v1.', LIMIT=100000, MAX_ITEMS=250;
+  const PREFIX='pocket.v1.', TRAY='tray.v1.', HANDOFF='handoff.v1.', ACK='ack.v1.', SEEN='seen.v1.', REPLY='reply.v1.', RUN='run.v1.', TRACE='trace.v1.', REQUEST_TRACE='request.trace.v1.', HISTORY='telemetry.history.v1', JOURNAL='telemetry.journal.v1.', MAILBOX='mailbox.v1', TARGET='target.v1', TITLE='chat.title.v1.', LIMIT=100000, MAX_ITEMS=250;
   const uid=()=>globalThis.crypto?.randomUUID?.()||Date.now().toString(36)+'-'+Math.random().toString(36).slice(2);
   // Deliberately no localStorage fallback: that would appear to work but silently
   // partition the data by site. Only this installed script owns these GM keys.
@@ -120,8 +120,15 @@
   window.addEventListener('resize',clampDock);window.visualViewport?.addEventListener('resize',clampDock);window.visualViewport?.addEventListener('scroll',clampDock);requestAnimationFrame(clampDock);
   phase='event binding';
   let records=[],tray=[],selected=null,busy=false,loadEpoch=0,view='tray',target=null,pending=null,handoffBusy=false,handoffRead=0,replyDraftId=null,pollBusy=false,sourceWatch=false,targetRead=0,pinBusy=false;
-  const uiEvents=[];
-  const status=t=>{if(t&&uiEvents.at(-1)?.detail!==t){uiEvents.push({at:Date.now(),detail:String(t).slice(0,300)});if(uiEvents.length>80)uiEvents.shift();}$('status').textContent=t;};
+  // Journal is per site and tab (sessionStorage survives ordinary reloads).
+  // Keep bounded events locally across refresh, without cross-tab overwrite.
+  const journalKey='ai-pill-pocket-journal.v1';
+  let journal={ui:[],link:[]};
+  try{const j=JSON.parse(sessionStorage.getItem(journalKey)||'null');if(Array.isArray(j?.ui)&&Array.isArray(j?.link))journal={ui:j.ui.slice(-80),link:j.link.slice(-100)};}catch{}
+  const uiEvents=journal.ui;
+  function saveJournal(){try{sessionStorage.setItem(journalKey,JSON.stringify(journal));}catch{}}
+  
+  const status=t=>{if(t&&uiEvents.at(-1)?.detail!==t){uiEvents.push({at:Date.now(),detail:String(t).slice(0,300)});if(uiEvents.length>80)uiEvents.shift();saveJournal();}$('status').textContent=t;};
   const action=(id,fn)=>{$(id).addEventListener('click',e=>{if(!e.isTrusted)return;try{Promise.resolve(fn()).catch(err=>status('Error: '+String(err?.message||err).slice(0,250)));}catch(err){status('Error: '+String(err?.message||err).slice(0,250));}});};
   function sourceURL(){try{const u=new URL(location.href);return u.origin+u.pathname;}catch{return '';}}
   function selection(){
@@ -850,7 +857,7 @@
   async function clearHandoff(){
     if(!store||!pending||handoffBusy)return;
     const r=pending;if(!confirm('Dismiss this question and any returned answer? Tray and saved items remain.'))return;
-    handoffBusy=true;try{await store.del(HANDOFF+r.id);await store.del(ACK+r.id);await store.del(SEEN+r.id);await store.del(REPLY+r.id);await store.del(RUN+r.id);await store.del(REQUEST_TRACE+r.id);await removeMailbox(r.id);await load();}finally{handoffBusy=false;}
+    handoffBusy=true;try{await store.del(HANDOFF+r.id);await store.del(ACK+r.id);await store.del(SEEN+r.id);await store.del(REPLY+r.id);await store.del(RUN+r.id);await removeMailbox(r.id);await load();}finally{handoffBusy=false;}
   }
   action('open',async()=>{
     $('open').hidden=true;$('panel').hidden=false;
@@ -890,9 +897,9 @@
   const LINK_PING='link.ping.v1',LINK_HEART='link.heart.v1',LINK_INTERVAL=5000,LINK_TTL=25000;
   const instance=uid();
   let linkBusy=false,linkTarget=null,challenge=null,lastProof=null,lastHeart=null,linkState='off',linkDetail='',linkError=null,linkSeq=0,lastChallengeAt=0,linkStarted=0;
-  const linkEvents=[];
+  const linkEvents=journal.link;
   function linkLog(event,detail={}){
-    linkEvents.push({at:Date.now(),event,...detail});if(linkEvents.length>100)linkEvents.shift();
+    linkEvents.push({at:Date.now(),event,...detail});if(linkEvents.length>100)linkEvents.shift();saveJournal();
     if(event==='state'||event==='error'||event==='pong')console.info('[Pocket link v'+VERSION+']',event,detail);
   }
   function chatObservation(here){
@@ -998,19 +1005,19 @@
   function copyConnectionReport(){return copyText(buildConnectionReport,'Report');}
   async function buildConnectionReport(){
     const here=chatURL(location.href),selected=target,request=pending;
-    let savedTrace=null,requestTrace=null,traceReadError=null,live=null,receipts=null;
+    let savedTrace=null,requestTrace=null,history=null,traceReadError=null,live=null,receipts=null;
     const timeout=(promise)=>{let timer;return Promise.race([promise,new Promise((_,reject)=>{timer=setTimeout(()=>reject(Error('Diagnostic storage read timed out')),2500);})]).finally(()=>clearTimeout(timer));};
     try{if(here)live={...traceSnapshot(),sendCandidates:sendCandidates().map(b=>({label:b.getAttribute('aria-label'),type:b.type,testid:b.dataset.testid||null,disabled:b.disabled||b.getAttribute('aria-disabled')==='true'}))};}catch(e){live={error:String(e?.message||e).slice(0,200)};}
     try{
       await timeout(traceWrites);
       if(store){
-        const reads=await timeout(Promise.all([here||selected?store.get(TRACE+(here||selected)):null,request?store.get(REQUEST_TRACE+request.id):null,request?store.get(RUN+request.id):null,request?store.get(REPLY+request.id):null,request?store.get(SEEN+request.id):null,request?store.get(ACK+request.id):null]));
-        savedTrace=reads[0];requestTrace=reads[1];
+        const reads=await timeout(Promise.all([here||selected?store.get(TRACE+(here||selected)):null,request?store.get(REQUEST_TRACE+request.id):null,request?store.get(RUN+request.id):null,request?store.get(REPLY+request.id):null,request?store.get(SEEN+request.id):null,request?store.get(ACK+request.id):null,store.get(HISTORY)]));
+        savedTrace=reads[0];requestTrace=reads[1];history=reads[6]||emptyHistory();
         if(request)receipts={run:reads[2],reply:validReply(reads[3],request)?{id:reads[3].id,created:reads[3].created,characters:reads[3].text.length,messageId:reads[3].messageId||null,provenance:reads[3].provenance||null}:null,seen:validSeen(reads[4],request)?reads[4]:null,copied:!!reads[5]};
       }
     }catch(e){traceReadError=String(e?.message||e).slice(0,200);}
-    const exactExecution=request?(executionTrace?.id===request.id?executionTrace:requestTrace?.execution?.id===request.id?requestTrace.execution:savedTrace?.execution?.id===request.id?savedTrace.execution:null):null;
-    return JSON.stringify({version:VERSION,exportedAt:new Date().toISOString(),reportId:uid(),instance,target:linkTarget,state:linkState,challenge,lastProof,lastHeart,ageMs:lastHeart?Date.now()-lastHeart.at:null,error:linkError,visibility:document.visibilityState,intervalMs:LINK_INTERVAL,expiryMs:LINK_TTL,mailbox:'metadata index; direct request keys',autoStartExpiryMs:AUTO_START_TTL,events:linkEvents,uiEvents,live,environment:{surface:here?chatSurface():null,storage:modern?'GM async':legacy?'GM legacy':'unavailable',viewport:[innerWidth,innerHeight],visualViewport:window.visualViewport?[window.visualViewport.width,window.visualViewport.height]:null,hasFocus:document.hasFocus(),clipboard:!!navigator.clipboard,position:dock},selfTest:lastSelfTest||savedTrace?.selfTest||null,execution:exactExecution||(!request?(executionTrace||savedTrace?.execution||null):null),latestConversationExecution:request&&!exactExecution?(savedTrace?.execution||null):null,traceReadError,traceError,clipboard:lastCopy,request:request?{id:request.id,target:request.target,chatTitle:request.chatTitle||null,created:request.created,worker:request.autoWorker||null,promptCharacters:request.text?.length||0,seen:request.seen,copied:request.copied,returned:!!request.reply,manualReason:request.manualReason||null,run:request.run,receipts}:null,scope:'Exact request trace when available, recent UI and connection events, live worker DOM and receipt metadata. No custom prompt or answer body. Latest conversation execution is separate when it belongs to another request.'},null,2);}
+    const exactExecution=request?(executionTrace?.id===request.id?executionTrace:history?.recent?.find(e=>e.id===request.id)||history?.historical?.find(e=>e.id===request.id)||(requestTrace?.execution?.id===request.id?requestTrace.execution:savedTrace?.execution?.id===request.id?savedTrace.execution:null)):null;
+    return JSON.stringify({version:VERSION,exportedAt:new Date().toISOString(),reportId:uid(),instance,target:linkTarget,state:linkState,challenge,lastProof,lastHeart,ageMs:lastHeart?Date.now()-lastHeart.at:null,error:linkError,visibility:document.visibilityState,intervalMs:LINK_INTERVAL,expiryMs:LINK_TTL,mailbox:'metadata index; direct request keys',autoStartExpiryMs:AUTO_START_TTL,events:linkEvents,uiEvents,history,retention:{full:HISTORY_FULL,compact:HISTORY_COMPACT,failureExamples:HISTORY_EXAMPLES,distinctFailureSignatures:HISTORY_SIGNATURES,journal:'per tab, survives ordinary reload; sessionStorage'},live,environment:{surface:here?chatSurface():null,storage:modern?'GM async':legacy?'GM legacy':'unavailable',viewport:[innerWidth,innerHeight],visualViewport:window.visualViewport?[window.visualViewport.width,window.visualViewport.height]:null,hasFocus:document.hasFocus(),clipboard:!!navigator.clipboard,position:dock},selfTest:lastSelfTest||savedTrace?.selfTest||null,execution:exactExecution||(!request?(executionTrace||savedTrace?.execution||null):null),latestConversationExecution:request&&!exactExecution?(savedTrace?.execution||null):null,traceReadError,traceError,clipboard:lastCopy,request:request?{id:request.id,target:request.target,chatTitle:request.chatTitle||null,created:request.created,worker:request.autoWorker||null,promptCharacters:request.text?.length||0,seen:request.seen,copied:request.copied,returned:!!request.reply,manualReason:request.manualReason||null,run:request.run,receipts}:null,scope:'Exact request trace when available, recent UI and connection events, live worker DOM and receipt metadata. No custom prompt or answer body. Archive retains recent full executions, compact history, aggregate outcomes and bounded rare failure examples; journal survives ordinary refresh. Latest conversation execution is separate when it belongs to another request.'},null,2);}
   action('link-report',copyConnectionReport);
   function extractPocketAnswer(last) {
     if(!last)return '';
@@ -1099,16 +1106,53 @@
     const e=chatEditor(),b=sendControl(),u=fingerprint(),a=lastTurn('assistant');
     return {visibility:document.visibilityState,hasFocus:document.hasFocus(),surface:chatSurface(),editor:!!e,editorFocused:!!e&&document.activeElement===e,editorCharacters:editorText(e).length,attachments:composerAttachments(e),sendControl:!!b,sendEnabled:canSend(b),streaming:streamActive(),turnState:latestTurnState(),userCount:u.count,userId:u.id,assistantCount:turns('assistant').length,assistantId:turnID(a)};
   };
+  // Archive is independent of the mailbox. A single bounded GM value
+  // preserves the recent full window, compact older records, and aggregates.
+  // Normal worker writes are serialized by traceWrites; concurrent tabs do
+  // not have a transactional compare-and-swap in Safari Userscripts.
+  const HISTORY_FULL=10,HISTORY_COMPACT=100,HISTORY_SIGNATURES=64,HISTORY_EXAMPLES=12;
+  function compactExecution(e){
+    const stages=e.stages||[],last=stages.at(-1)||{},guard=stages.filter(v=>/guard/.test(v.phase)),receipt=stages.findLast(v=>v.phase==='extracted'),completion=stages.findLast(v=>v.phase==='completion');
+    const errors=stages.filter(v=>v.phase==='failed'||v.phase==='uncertain');
+    const outcome=e.phase==='done'&&receipt?.markerMatched===false?'marker-mismatch':e.phase;
+    return {id:e.id,target:e.target,worker:e.worker,version:e.version||null,selfTest:e.selfTest,started:e.started,updated:e.updated||last.at||e.started,phase:e.phase,outcome,detail:e.detail,promptCharacters:e.promptCharacters,elapsedMs:last.elapsedMs??null,timings:Object.fromEntries(stages.map(v=>[v.phase,v.elapsedMs])),guards:guard.map(({dom,...v})=>v),errors:errors.map(({dom,...v})=>v),receipt:receipt?{replyReadback:receipt.replyReadback,markerMatched:receipt.markerMatched,answerCharacters:receipt.answerCharacters}:null,completion:completion?{explicitCompletion:completion.explicitCompletion,observedGeneration:completion.observedGeneration,stableMs:completion.stableMs}:null,environment:last.dom||null};
+  }
+  const failureSignature=e=>{const c=e.outcome?e:compactExecution(e);return ['failed','uncertain','marker-mismatch','interrupted'].includes(c.outcome)?c.outcome+':'+String(c.detail||'').replace(/[0-9a-f]{8,}/gi,'#').replace(/\d+/g,'#').slice(0,140):null;};
+  function emptyHistory(){return {schema:1,updated:0,recent:[],historical:[],aggregate:{total:0,outcomes:{},elapsed:{count:0,sum:0,min:null,max:null},failures:{},otherFailures:0},failureExamples:[]};}
+  function archiveFold(h,c){
+    const a=h.aggregate; a.total++;const outcome=c.outcome||'unknown';a.outcomes[outcome]=(a.outcomes[outcome]||0)+1;
+    if(Number.isFinite(c.elapsedMs)){const t=a.elapsed;t.count++;t.sum+=c.elapsedMs;t.min=t.min===null?c.elapsedMs:Math.min(t.min,c.elapsedMs);t.max=t.max===null?c.elapsedMs:Math.max(t.max,c.elapsedMs);}
+    const sig=failureSignature(c);if(sig){if(Object.prototype.hasOwnProperty.call(a.failures,sig))a.failures[sig]++;else if(Object.keys(a.failures).length<HISTORY_SIGNATURES)a.failures[sig]=1;else a.otherFailures++;}
+  }
+  function updateArchive(h,e){
+    if(!h||h.schema!==1||!Array.isArray(h.recent)||!Array.isArray(h.historical)||!h.aggregate)h=emptyHistory();
+    const old=h.recent.find(v=>v.id===e.id)||h.historical.find(v=>v.id===e.id);
+    if(old&&(old.updated||0)>(e.updated||0))return h;
+    h.recent=h.recent.filter(v=>v.id!==e.id);h.historical=h.historical.filter(v=>v.id!==e.id);
+    h.recent.push(e);h.recent.sort((a,b)=>(b.updated||b.started)-(a.updated||a.started));
+    for(const older of h.recent.splice(HISTORY_FULL)){
+      const c=compactExecution(older);h.historical.push(c);
+      const sig=failureSignature(c);
+      // Retain a rich exemplar for each distinct failure, bounded separately.
+      if(sig&&!h.failureExamples.some(v=>v.signature===sig)){h.failureExamples.unshift({signature:sig,execution:older});h.failureExamples=h.failureExamples.slice(0,HISTORY_EXAMPLES);}
+    }
+    h.historical.sort((a,b)=>b.updated-a.updated);
+    for(const c of h.historical.splice(HISTORY_COMPACT))archiveFold(h,c);
+    h.updated=Date.now();return h;
+  }
+  async function archiveExecution(e){
+    if(!store||!e?.id)return;
+    const h=updateArchive(await store.get(HISTORY),e);
+    await store.set(HISTORY,h);
+  }
   function checkpointTrace(r){
     if(!store||!r?.target)return;
-    const key=TRACE+r.target,execution=executionTrace?.id===r.id?JSON.parse(JSON.stringify(executionTrace)):null,selfTest=lastSelfTest?.id===r.id?JSON.parse(JSON.stringify(lastSelfTest)):null;
+    const key=TRACE+r.target,execution=executionTrace?.id===r.id?JSON.parse(JSON.stringify({...executionTrace,version:VERSION,updated:Date.now()})):null,selfTest=lastSelfTest?.id===r.id?JSON.parse(JSON.stringify(lastSelfTest)):null;
     traceWrites=traceWrites.then(async()=>{
       const prev=await store.get(key);
       const report={schema:1,version:VERSION,updated:Date.now(),execution:execution||prev?.execution||null,selfTest:selfTest||prev?.selfTest||null};
       await store.set(key,report);
-      // Keep the exact request trace until dismissal, not only the latest
-      // execution in the conversation. Self-tests retain the latest summary.
-      if(execution&&!r.selfTest&&await store.get(HANDOFF+r.id))await store.set(REQUEST_TRACE+r.id,{schema:1,version:VERSION,updated:report.updated,execution});
+      if(execution)await archiveExecution(execution);
     }).catch(e=>{traceError=String(e?.message||e).slice(0,200);linkLog('error',{message:'Trace checkpoint: '+traceError});});
   }
   function recordStage(r,phase,detail,extra={}){
