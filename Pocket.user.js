@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         AI Pill OS - Pocket
 // @namespace    https://github.com/JadanPoll/AI_Pill_OS
-// @version      0.7.17
+// @version      0.7.18
 // @updateURL    https://raw.githubusercontent.com/JadanPoll/AI_Pill_OS/main/Pocket.user.js
 // @downloadURL  https://raw.githubusercontent.com/JadanPoll/AI_Pill_OS/main/Pocket.user.js
 // @description  Universal Safari pill: collect evidence, keep discoveries, and hand a question to a chosen chat.
@@ -24,7 +24,7 @@
 (() => {
   'use strict';
   if (window.top !== window) return;
-  const VERSION='0.7.17';
+  const VERSION='0.7.18';
   // Report initialization failures without depending on the main UI, storage or a CDN.
   function bootFailure(error,phase){
     const message=String(error?.message||error).slice(0,500);
@@ -50,7 +50,7 @@
     if(document.getElementById('ai-pill-pocket'))return;
     let phase='storage setup';
     try{
-  const PREFIX='pocket.v1.', TRAY='tray.v1.', HANDOFF='handoff.v1.', ACK='ack.v1.', SEEN='seen.v1.', REPLY='reply.v1.', RUN='run.v1.', TRACE='trace.v1.', REQUEST_TRACE='request.trace.v1.', VISUAL='request.visual.v1.', HISTORY='telemetry.history.v1', JOURNAL='telemetry.journal.v1.', MAILBOX='mailbox.v1', TARGET='target.v1', TITLE='chat.title.v1.', LIMIT=100000, MAX_ITEMS=250;
+  const PREFIX='pocket.v1.', TRAY='tray.v1.', HANDOFF='handoff.v1.', ACK='ack.v1.', SEEN='seen.v1.', REPLY='reply.v1.', RUN='run.v1.', TRACE='trace.v1.', REQUEST_TRACE='request.trace.v1.', VISUAL='request.visual.v1.', HISTORY='telemetry.history.v1', JOURNAL='telemetry.journal.v1.', MAILBOX='mailbox.v1', TARGET='target.v1', WORKER='target.worker.v1', TITLE='chat.title.v1.', LIMIT=100000, MAX_ITEMS=250;
   const uid=()=>globalThis.crypto?.randomUUID?.()||Date.now().toString(36)+'-'+Math.random().toString(36).slice(2);
   // Deliberately no localStorage fallback: that would appear to work but silently
   // partition the data by site. Only this installed script owns these GM keys.
@@ -722,11 +722,11 @@
     if(here)link.removeAttribute('href');else link.href=target||'https://chatgpt.com/';
     $('pin').hidden=!here||!target||pinned;
   }
-  async function refreshTarget(){if(!store||pinBusy)return;const read=++targetRead,dest=chatURL(await store.get(TARGET));if(read!==targetRead||pinBusy)return;target=dest;paintTarget();await readTitle(dest);}
+  async function refreshTarget(){if(!store||pinBusy)return;const read=++targetRead,[raw,binding]=await Promise.all([store.get(TARGET),store.get(WORKER)]),dest=chatURL(raw);if(read!==targetRead||pinBusy)return;target=dest;selectedWorker=binding?.target===dest?binding.worker:null;paintTarget();await readTitle(dest);}
   function chatAction(){
     if(!store){status('Shared storage unavailable.');return;}
     const here=chatURL(location.href);
-    if(target&&here===target){status('This is the selected chat.');return;}
+    if(target&&here===target&&selectedWorker===instance){status('This tab is selected.');return;}
     if(here)return pinChat();
     if(target){openChat(target);return;}
     openChat('https://chatgpt.com/');
@@ -737,10 +737,10 @@
     if(pinBusy)return;
     pinBusy=true;++targetRead;renderConnection();
     try{
-      await store.set(TARGET,dest);if(await store.get(TARGET)!==dest)throw Error('Chat setting could not be read back');
-      target=dest;linkLog('selection',{selected:true});await rememberTitle(dest,localChatTitle());paintTarget();
+      await store.set(TARGET,dest);await store.set(WORKER,{target:dest,worker:instance});const binding=await store.get(WORKER);if(await store.get(TARGET)!==dest||binding?.target!==dest||binding.worker!==instance)throw Error('Chat setting could not be read back');
+      selectedWorker=instance;target=dest;linkLog('selection',{selected:true});await rememberTitle(dest,localChatTitle());paintTarget();
     }finally{pinBusy=false;renderConnection();}
-    await refreshHandoff(loadEpoch);wakeTransport();status('This conversation is now the Ask destination.');
+    await refreshHandoff(loadEpoch);wakeTransport();status('This tab is now the Ask destination.');
   }
   function validReply(v,r){return v&&v.id===r.id&&v.target===r.target&&v.sourcePage===r.sourcePage&&typeof v.text==='string'&&v.text.length>0&&v.text.length<=LIMIT&&typeof v.created==='string';}
   function validSeen(v,r){return v&&v.id===r.id&&v.target===r.target&&typeof v.seenAt==='string';}
@@ -779,7 +779,7 @@
   }
   async function refreshHandoff(epoch){
     const read=++handoffRead,here=chatURL(location.href),source=sourceURL(),selectionRead=targetRead;
-    const dest=chatURL(await store.get(TARGET));
+    const [raw,binding]=await Promise.all([store.get(TARGET),store.get(WORKER)]),dest=chatURL(raw);
     const entries=(await mailbox()).filter(e=>e.target===here||e.sourcePage===source).sort((a,b)=>b.created.localeCompare(a.created));
     const found=[];
     for(const e of entries){
@@ -793,14 +793,14 @@
       const [ack,seen]=await Promise.all([store.get(ACK+r.id),store.get(SEEN+r.id)]);
       found.push({...r,copied:ack?.id===r.id&&typeof ack.copiedAt==='string',seen:validSeen(seen,r),reply:validReply(reply,r)?reply:null,run:run?.id===r.id?run:null});
       // A source displays only the newest surviving request, as before.
-      if(!here)break;
+      if(!here||found.length>=12)break;
     }
     if(epoch!==loadEpoch||read!==handoffRead||here!==chatURL(location.href)||source!==sourceURL())return;
-    if(selectionRead===targetRead&&!pinBusy){target=dest;paintTarget();}
+    if(selectionRead===targetRead&&!pinBusy){target=dest;selectedWorker=binding?.target===dest?binding.worker:null;paintTarget();}
     const matching=found.sort((a,b)=>b.created.localeCompare(a.created));
     sourceWatch=matching.some(r=>r.sourcePage===source&&!r.reply);
     // Source displays newest request; destination prioritizes unanswered requests.
-    pending=here&&matching.some(r=>r.target===here)?matching.find(r=>r.id===replyDraftId&&r.target===here&&r.copied&&!r.reply)||matching.find(r=>r.target===here&&!r.reply&&!r.copied)||matching.find(r=>r.target===here&&!r.reply)||matching[0]||null:matching[0]||null;
+    pending=here&&matching.some(r=>r.target===here)?matching.find(r=>r.id===activeAsk?.r.id)||matching.find(r=>r.id===replyDraftId&&r.target===here&&r.copied&&!r.reply)||matching.find(r=>r.target===here&&!r.reply&&!r.copied)||matching.find(r=>r.target===here&&!r.reply)||matching[0]||null:matching[0]||null;
     if(pending&&pending.target===here&&!pending.seen&&!pending.reply){
       const receipt={id:pending.id,target:pending.target,seenAt:new Date().toISOString()};
       const r=pending;
@@ -814,7 +814,7 @@
     const atChat=!!pending&&pending.target===here,hasReply=!!pending?.reply;
     const auto=pending?.autoWorker,run=pending?.run,expired=!!auto&&!run&&Date.now()-Date.parse(pending.created)>AUTO_START_TTL;
     const interrupted=!!auto&&!!run&&!['failed','uncertain','done'].includes(run.phase)&&((atChat&&auto!==instance)||(Date.now()-run.at>AUTO_TIMEOUT));
-    const manual=!auto||expired||run?.phase==='failed';
+    const manual=!auto||expired||run?.phase==='failed'||(!run&&atChat&&auto!==instance);
     const fallback=manual||interrupted||run?.phase==='uncertain'||run?.phase==='prepared';
     const connectionLost=!!auto&&!atChat&&!hasReply&&linkState==='stale';
     if(replyDraftId!==pending?.id){$('reply-compose').open=false;$('worker-recovery').open=false;$('reply-draft').value='';replyDraftId=pending?.id||null;}
@@ -828,7 +828,7 @@
     $('handoff').hidden=!pending||(atChat&&(hasReply||(!fallback&&!pending.copied)));
     $('handoff-preview').hidden=!atChat||!fallback||hasReply;
     $('handoff-preview').textContent=atChat?pending.text:'';
-    $('handoff-copy').hidden=!atChat||!manual||hasReply;
+    $('handoff-copy').hidden=!atChat||!(manual||run?.phase==='uncertain'||interrupted)||hasReply;
     $('handoff-open').hidden=!pending||atChat||!(hasReply||fallback||connectionLost);
     $('reply-compose').hidden=!atChat||hasReply||!(pending?.copied||interrupted||run?.phase==='uncertain');
     $('reply-result').hidden=!hasReply;
@@ -873,9 +873,7 @@
     handoffBusy=true;$('ask').disabled=true;
     try{
       const dest=chatURL(await store.get(TARGET));if(!dest){status('Tap the chat icon to choose a ChatGPT destination first.');return;}
-      const existing=await mailbox();
-      let unresolved=0;for(const e of existing){const reply=await store.get(REPLY+e.id);if(!validReply(reply,e)&&await store.get(HANDOFF+e.id))unresolved++;}
-      if(unresolved>=10){status('Ten unanswered questions retained. Dismiss an unfinished question first.');return;}
+      // Historical or abandoned requests never gate a new Ask.
       const items=explicit.slice();
       for(const k of (include?(await store.keys()).filter(k=>typeof k==='string'&&k.startsWith(TRAY)):[])){const r=await store.get(k);if(valid(r,k)&&!items.some(v=>v.id===r.id))items.push(r);}
       items.sort((a,b)=>a.created.localeCompare(b.created)||a.id.localeCompare(b.id));
@@ -889,8 +887,8 @@
       // On iPadOS Safari a suspended tab may miss the heartbeat. Preserve the
       // explicit request, but only a known worker can auto-submit it on resume.
       const knownWorker=heart?.target===dest&&heart.version===VERSION&&typeof heart.worker==='string'?heart.worker:null;
-      const autoWorker=isChatGPT&&!(proved&&heart.draft)?knownWorker:null;
-      if(isChatGPT&&proved&&heart.draft){status('The selected chat has an unsent draft. Finish it, then Ask again. Your question is kept.');return;}
+      const binding=await store.get(WORKER);
+      const autoWorker=isChatGPT?(binding?.target===dest?binding.worker:knownWorker):null;
       const manualReason=hasImages?'Open selected ChatGPT to prepare visual evidence':!isChatGPT?'Choose an existing ChatGPT conversation for automatic Ask':'Open the selected chat to send the queued question';
       const id=uid(),r={id,created:new Date().toISOString(),sourcePage:origin,target:dest,chatTitle:conversationName(dest,heart?.target===dest?heart.title:null),text,...(hasImages?{visuals:visuals.map(v=>({id:v.id,characters:v.data.length,kind:v.data.startsWith('data:image/svg+xml')?'svg':'bitmap'}))}:{}),...(autoWorker?{autoWorker}:{manualReason})};
       if(hasImages){await store.set(VISUAL+id,visuals);const check=await store.get(VISUAL+id);if(!Array.isArray(check)||check.length!==visuals.length||check.some((v,i)=>v.id!==visuals[i].id||v.data!==visuals[i].data)){await store.del(VISUAL+id);throw Error('Visual evidence storage readback failed');}}
@@ -899,13 +897,13 @@
       await publishMailbox(r);
       linkLog('request-queued',{id:r.id,target:r.target,worker:r.autoWorker||null,characters:text.length,manualReason:r.manualReason||null,proved:!!proved});
       if($('draft').value.trim()===question)$('draft').value='';if(quoted===passage)setQuote('');attachments=attachments.filter(v=>!explicit.some(r=>r.id===v.id));paintAttachments();$('include-tray').checked=false;
-      await refreshHandoff(loadEpoch);wakeTransport();status(r.autoWorker?(proved?'Question queued.':'Question queued · waiting for chat to wake.') : r.manualReason);
+      await refreshHandoff(loadEpoch);wakeTransport();status(r.autoWorker?(proved&&heart.draft?'Question queued · waits for current draft':proved?'Question queued.':'Question queued · waiting for chat to wake.') : r.manualReason);
     }finally{handoffBusy=false;$('ask').disabled=false;}
   }
   async function recoverSend(){
     if(!store||!pending||handoffBusy||$('worker-send').hidden)return;
     const r=pending;
-    if(chatURL(location.href)!==r.target||await store.get(TARGET)!==r.target)return;
+    if(chatURL(location.href)!==r.target||!await allowedDestination(r)){status('Use this tab first, or send manually.');return;}
     handoffBusy=true;
     try{
       const previous=await store.get(RUN+r.id);
@@ -936,7 +934,7 @@
   }
   async function copyHandoff(){
     if(!store||!pending||handoffBusy||chatURL(location.href)!==pending.target)return;
-    const r=pending;if(r.autoWorker&&!(r.run?.phase==='failed'||(!r.run&&Date.now()-Date.parse(r.created)>AUTO_START_TTL))){status('Automatic submission may be active. Check chat instead.');return;}handoffBusy=true;
+    const r=pending;if(r.autoWorker&&!(['failed','uncertain'].includes(r.run?.phase)||(!r.run&&(Date.now()-Date.parse(r.created)>AUTO_START_TTL||r.autoWorker!==instance)))){status('Automatic submission may be active. Check chat instead.');return;}handoffBusy=true;
     try{
       if(!await copyText(r.text))return;
       if(!(await store.get(HANDOFF+r.id))){status('Copied, but handoff was dismissed in another tab.');return;}
@@ -988,6 +986,7 @@
   // version and observed state. This probe never submits a prompt or reads replies.
   const LINK_PING='link.ping.v1',LINK_HEART='link.heart.v1',LINK_INTERVAL=5000,LINK_TTL=25000;
   const instance=uid();
+  let selectedWorker=null;
   let linkBusy=false,linkTarget=null,challenge=null,lastProof=null,lastHeart=null,linkState='off',linkDetail='',linkError=null,linkSeq=0,lastChallengeAt=0,linkStarted=0;
   const linkEvents=journal.link;
   // Real, near-silent nonzero PCM in an HTML media element, not an oscillator
@@ -1059,20 +1058,21 @@
   // The selection and heartbeat are independent observations. Only this
   // renderer owns their presentation; routine mailbox refresh cannot reset it.
   function renderConnection(){
-    const here=chatURL(location.href),selected=!!here&&here===target,chat=!!here;
+    const here=chatURL(location.href),sameChat=!!here&&here===target,selected=sameChat&&selectedWorker===instance,chat=!!here;
     const relevant=linkTarget===target;
     const state=pinBusy?'checking':chat&&!selected?'off':relevant?linkState:'checking';
-    const label=pinBusy?'Selecting…':!selected?'Not selected':state==='ready'?'Ready':state==='responding'?'Responding':state==='uncertain'?'Needs attention':state==='stale'?'Unavailable':'Checking…';
+    const health=state==='ready'?'Ready':state==='responding'?'Responding':state==='uncertain'?'Needs attention':state==='stale'?'Unavailable':'Checking…';
+    const label=pinBusy?'Selecting…':selected?'Selected tab · '+health:sameChat?'Same chat · another tab selected':'Not selected';
     const setText=(node,value)=>{if(node.textContent!==value)node.textContent=value;};
     const setAttr=(node,key,value)=>{if(node.getAttribute(key)!==value)node.setAttribute(key,value);};
     $('worker-pin').hidden=!chat||selected;$('worker-pin').disabled=pinBusy;
     $('keep-awake').hidden=!selected;
-    setText($('worker-pin'),'Use this chat');
+    setText($('worker-pin'),sameChat?'Use this tab':'Use this chat');
     setText($('worker-status'),label);
     $('worker-status').title=selected&&relevant?linkDetail:label;
     // Stable launcher text and width: color, not repeated label changes,
     // conveys connection state. No extra connection subtitle.
-    setText($('open').lastChild,chat?' Pocket':' v'+VERSION);
+    setText($('open').lastChild,chat?(selected?' Pocket · Selected':' Pocket'):' v'+VERSION);
     $('open').title=chat?'Pocket · '+label+(selected&&linkDetail?' · '+linkDetail:''):'Pocket v'+VERSION+' · '+(linkDetail||'No chat selected');
     const incoming=!!pending?.reply&&!chat;
     const activeMode=$('panel').dataset.mode;
@@ -1097,12 +1097,17 @@
     if(!store||linkBusy||(document.hidden&&!chatURL(location.href)))return;
     linkBusy=true;
     try{
-      const selectionRead=targetRead,dest=chatURL(await store.get(TARGET)),here=chatURL(location.href);
+      const selectionRead=targetRead,[raw,binding]=await Promise.all([store.get(TARGET),store.get(WORKER)]),dest=chatURL(raw),here=chatURL(location.href);
       if(pinBusy||selectionRead!==targetRead)return;
+      selectedWorker=binding?.target===dest?binding.worker:null;
       if(dest!==linkTarget){linkTarget=dest;challenge=null;lastProof=null;lastHeart=null;lastChallengeAt=0;linkStarted=Date.now();linkLog('destination changed',{selected:!!dest});}
       if(target!==dest||$('panel').dataset.chat!==String(!!here)){target=dest;paintTarget();}
       if(!dest){paintLink('off','No chat selected');return;}
       if(here===dest){
+        // Upgrade old URL-only selection once; never let two tabs routinely
+        // publish competing heartbeats for the same conversation.
+        if(!selectedWorker&&!document.hidden){await store.set(WORKER,{target:dest,worker:instance});const check=await store.get(WORKER);selectedWorker=check?.target===dest?check.worker:null;}
+        if(selectedWorker!==instance){paintLink('off','Same conversation, different receiver tab');return;}
         const ping=await store.get(LINK_PING);
         if(chatURL(location.href)!==dest)return;
         const now=Date.now(),ob=chatObservation(here);
@@ -1110,6 +1115,7 @@
         const title=localChatTitle();
         await rememberTitle(dest,title);
         const heart={target:dest,title,worker:instance,version:VERSION,seq:++linkSeq,at:now,...ob,echo,watchdog:pulseSnapshot()};
+        const owner=await store.get(WORKER);if(owner?.target!==dest||owner.worker!==instance)return;
         await store.set(LINK_HEART,heart);
         lastHeart=heart;
         // Local worker readiness is distinct from remote round-trip proof.
@@ -1119,7 +1125,7 @@
       if(document.hidden)return;
       if(here){paintLink('off',dest?'Another chat is selected':'Select this chat to receive questions');return;}
       const heart=await store.get(LINK_HEART),now=Date.now();
-      lastHeart=heart?.target===dest?heart:null;
+      lastHeart=heart?.target===dest&&(!selectedWorker||heart.worker===selectedWorker)?heart:null;
       if(lastHeart?.title&&!/^(ChatGPT|Gemini|Google Gemini|New chat)$/i.test(lastHeart.title))chatTitles.set(dest,cleanChatTitle(lastHeart.title));
       else if(!chatTitles.has(dest))await readTitle(dest);
       if(challenge&&lastHeart&&fresh(lastHeart.at,now)&&lastHeart.echo?.id===challenge.id&&lastHeart.echo.sender===instance&&lastHeart.echo.issuedAt===challenge.at&&lastHeart.at>=challenge.at&&fresh(challenge.at,now)&&lastProof?.id!==challenge.id){
@@ -1156,7 +1162,7 @@
       }
     }catch(e){traceReadError=String(e?.message||e).slice(0,200);}
     const exactExecution=request?(executionTrace?.id===request.id?executionTrace:[history?.recent?.find(e=>e.id===request.id),history?.historical?.find(e=>e.id===request.id),requestTrace?.execution,savedTrace?.execution].filter(e=>e?.id===request.id).sort((a,b)=>(b.updated||b.started)-(a.updated||a.started))[0]||null):null;
-    return JSON.stringify({version:VERSION,exportedAt:new Date().toISOString(),reportId:uid(),instance,target:linkTarget,state:linkState,challenge,lastProof,lastHeart,ageMs:lastHeart?Date.now()-lastHeart.at:null,error:linkError,visibility:document.visibilityState,intervalMs:LINK_INTERVAL,expiryMs:LINK_TTL,mailbox:'metadata index; direct request keys',autoStartExpiryMs:AUTO_START_TTL,events:linkEvents,uiEvents,watchdog:pulseSnapshot(),priorPulse,history,retention:{full:HISTORY_FULL,compact:HISTORY_COMPACT,failureExamples:HISTORY_EXAMPLES,distinctFailureSignatures:HISTORY_SIGNATURES,journal:'per tab, survives ordinary reload; sessionStorage'},live,environment:{surface:here?chatSurface():null,storage:modern?'GM async':legacy?'GM legacy':'unavailable',viewport:[innerWidth,innerHeight],visualViewport:window.visualViewport?[window.visualViewport.width,window.visualViewport.height]:null,hasFocus:document.hasFocus(),clipboard:!!navigator.clipboard,position:dock,overlay:{mode:layerMode,error:layerError,zIndex:getComputedStyle(host).zIndex}},selfTest:lastSelfTest||savedTrace?.selfTest||null,execution:exactExecution||(!request?(executionTrace||savedTrace?.execution||null):null),latestConversationExecution:request&&!exactExecution?(savedTrace?.execution||null):null,traceReadError,traceError,clipboard:lastCopy,request:request?{id:request.id,target:request.target,chatTitle:request.chatTitle||null,created:request.created,worker:request.autoWorker||null,promptCharacters:request.text?.length||0,visuals:request.visuals||[],seen:request.seen,copied:request.copied,returned:!!request.reply,manualReason:request.manualReason||null,run:request.run,receipts}:null,scope:'Exact request trace when available, recent UI and connection events, live worker DOM and receipt metadata. No custom prompt or answer body. Archive retains recent full executions, compact history, aggregate outcomes and bounded rare failure examples; journal survives ordinary refresh. Latest conversation execution is separate when it belongs to another request.'},null,2);}
+    return JSON.stringify({version:VERSION,exportedAt:new Date().toISOString(),reportId:uid(),instance,selectedWorker,target:linkTarget,state:linkState,challenge,lastProof,lastHeart,ageMs:lastHeart?Date.now()-lastHeart.at:null,error:linkError,visibility:document.visibilityState,intervalMs:LINK_INTERVAL,expiryMs:LINK_TTL,mailbox:'metadata index; direct request keys',autoStartExpiryMs:AUTO_START_TTL,events:linkEvents,uiEvents,watchdog:pulseSnapshot(),priorPulse,history,retention:{full:HISTORY_FULL,compact:HISTORY_COMPACT,failureExamples:HISTORY_EXAMPLES,distinctFailureSignatures:HISTORY_SIGNATURES,journal:'per tab, survives ordinary reload; sessionStorage'},live,environment:{surface:here?chatSurface():null,storage:modern?'GM async':legacy?'GM legacy':'unavailable',viewport:[innerWidth,innerHeight],visualViewport:window.visualViewport?[window.visualViewport.width,window.visualViewport.height]:null,hasFocus:document.hasFocus(),clipboard:!!navigator.clipboard,position:dock,overlay:{mode:layerMode,error:layerError,zIndex:getComputedStyle(host).zIndex}},selfTest:lastSelfTest||savedTrace?.selfTest||null,execution:exactExecution||(!request?(executionTrace||savedTrace?.execution||null):null),latestConversationExecution:request&&!exactExecution?(savedTrace?.execution||null):null,traceReadError,traceError,clipboard:lastCopy,request:request?{id:request.id,target:request.target,chatTitle:request.chatTitle||null,created:request.created,worker:request.autoWorker||null,promptCharacters:request.text?.length||0,visuals:request.visuals||[],seen:request.seen,copied:request.copied,returned:!!request.reply,manualReason:request.manualReason||null,run:request.run,receipts}:null,scope:'Exact request trace when available, recent UI and connection events, live worker DOM and receipt metadata. No custom prompt or answer body. Archive retains recent full executions, compact history, aggregate outcomes and bounded rare failure examples; journal survives ordinary refresh. Latest conversation execution is separate when it belongs to another request.'},null,2);}
   action('link-report',copyConnectionReport);
   function extractPocketAnswer(last) {
     if(!last)return '';
@@ -1360,7 +1366,9 @@
     catch(e){linkLog('error',{message:'Self-test cleanup: '+String(e?.message||e).slice(0,160)});}
   }
   async function allowedDestination(r){
-    return chatURL(location.href)===r.target&&(r.selfTest?r.autoWorker===instance:await store.get(TARGET)===r.target);
+    if(chatURL(location.href)!==r.target)return false;
+    if(r.selfTest)return r.autoWorker===instance;
+    const b=await store.get(WORKER);return await store.get(TARGET)===r.target&&b?.target===r.target&&b.worker===instance;
   }
   const normalizeChat=v=>String(v||'').replace(/\s+/g,' ').trim();
   // Two observed DOM families: SwarmX legacy and the live 2026-11-26
@@ -1429,7 +1437,7 @@
       if(!editor||editorText(editor)||composerAttachments(editor)||streamActive()){
         await markRun(r,'failed','Chat is busy or contains a draft. No send attempted.');return;
       }
-      const baseline=fingerprint(),expected=normalizeChat(r.text);
+      const baseline=fingerprint(),expected=normalizeChat(r.text),knownUserIds=turns('user').map(turnID).filter(Boolean);
       const files=r.visuals?.length?await prepareVisualFiles(r):[];
       if(files.length&&(!await allowedDestination(r)||!await ownsRequest(r)||chatEditor()!==editor||editorText(editor)||composerAttachments(editor)||streamActive()||!sameTurn(baseline,fingerprint())))throw Error('Composer or destination changed while rendering');
       editor.focus({preventScroll:true});
@@ -1450,7 +1458,7 @@
         if(!composerAttachments(chatEditor())||editorText(chatEditor())!==expected)throw Error('Image attachment not observed. Inspect composer; no send attempted');
         // Attachment presence is not upload completion or identity proof. Keep
         // the existing text-only send guard; the user reviews and sends once.
-        activeAsk={r,baseline,expected,started:Date.now(),user:null,seenBusy:false,answer:'',stableAt:0,assistantID:null,assistantNode:null,manualVisual:true};
+        activeAsk={r,baseline,expected,started:Date.now(),user:null,seenBusy:false,answer:'',stableAt:0,assistantID:null,assistantNode:null,manualVisual:true,knownUserIds};
         if(!await markRun(r,'prepared','Visual attachment detected; review and press Send in chat'))activeAsk=null;
         return;
       }
@@ -1466,7 +1474,7 @@
       const finalGuard=sendEvidence(baseline,expected),finalBlock=sendBlock(finalGuard);
       testStage(r,'final-guard',!authorized?'Destination or receipt changed':finalBlock||'Final guard passed',finalGuard);
       if(!authorized||finalBlock){await markRun(r,'failed',(!authorized?'Destination or receipt changed':finalBlock)+'. No send attempted.');return;}
-      activeAsk={r,baseline,expected,started:Date.now(),user:null,seenBusy:false,answer:'',stableAt:0,assistantID:null,assistantNode:null};
+      activeAsk={r,baseline,expected,started:Date.now(),user:null,seenBusy:false,answer:'',stableAt:0,assistantID:null,assistantNode:null,knownUserIds};
       attempted=true;
       sendControl().click();
       linkLog('ask-click',{id:r.id});testStage(r,'clicked','Send clicked · waiting for matching user turn');
@@ -1487,8 +1495,11 @@
     if(now-a.started>AUTO_TIMEOUT){await finishAsk(a,'uncertain','Response not confirmed within 20 minutes');return;}
     if(!a.user){
       if(!sameTurn(a.baseline,current)){
-        if(current.text!==a.expected){await finishAsk(a,'uncertain','A different user message appeared');return;}
-        a.user=current;
+        const all=turns('user'),baseIndex=all.findIndex(n=>a.baseline.id&&turnID(n)===a.baseline.id);
+        const eligible=baseIndex>=0?all.slice(baseIndex+1):all.slice(-1);
+        const matches=eligible.filter(n=>turnText(n)===a.expected&&(!turnID(n)||!a.knownUserIds?.includes(turnID(n)))&&turnID(n)!==a.baseline.id);
+        if(matches.length!==1){await finishAsk(a,'uncertain','Original turn not identified · other chat activity is allowed');return;}
+        const matched=matches[0];a.user={count:all.length,id:turnID(matched),text:turnText(matched)};
         testStage(r,'user-verified','New user turn matched submitted text',{userId:current.id,userCount:current.count});
         if(!await markRun(r,'sent','Matching new user turn observed')){activeAsk=null;return;}
       }else{
@@ -1496,10 +1507,11 @@
         return;
       }
     }
-    if(!sameTurn(a.user,current)){await finishAsk(a,'uncertain','A later user turn appeared before answer return');return;}
-    const user=lastTurn('user'),modern=chatSurface()==='modern',container=user?.closest('[data-turn-key]');
+    const user=a.user.id?turns('user').find(n=>turnID(n)===a.user.id&&turnText(n)===a.expected):sameTurn(a.user,current)?lastTurn('user'):null;
+    if(!user){await finishAsk(a,'uncertain','Original turn no longer visible · other chat activity is allowed');return;}
+    const modern=chatSurface()==='modern',container=user?.closest('[data-turn-key]');
     const candidate=turns('assistant').filter(n=>user&&!!(user.compareDocumentPosition(n)&Node.DOCUMENT_POSITION_FOLLOWING)&&(!modern||(container&&n.closest('[data-turn-key]')===container))).at(-1);
-    if(!candidate||busyNow){a.stableAt=0;return;}
+    if(!candidate||(!modern&&busyNow)){a.stableAt=0;return;}
     const text=extractPocketAnswer(candidate);
     if(!text)return;
     const id=turnID(candidate),sameCandidate=id? id===a.assistantID:candidate===a.assistantNode;
@@ -1511,7 +1523,7 @@
     if(now-a.stableAt<6000||(modern?!completed:(!a.seenBusy&&!completed)))return;
     testStage(r,'completion','Response completion verified',{explicitCompletion:completed,observedGeneration:a.seenBusy,stableMs:now-a.stableAt,assistantId:id});
     if(text.length>LIMIT){await finishAsk(a,'uncertain','Answer exceeds Pocket text limit; copy from chat');return;}
-    if(streamActive()||!sameTurn(a.user,fingerprint())||chatURL(location.href)!==r.target)return;
+    if((!modern&&streamActive())||!user.isConnected||turnText(user)!==a.expected||chatURL(location.href)!==r.target)return;
     if(validReply(await store.get(REPLY+r.id),r)){activeAsk=null;return;}
     if(!(await store.get(HANDOFF+r.id))) {activeAsk=null;return;}
     const reply={id:r.id,target:r.target,sourcePage:r.sourcePage,created:new Date().toISOString(),text,provenance:'chatgpt-observed-turn',messageId:id};
@@ -1528,7 +1540,7 @@
     autoBusy=true;
     try{
       if(activeAsk){await observeAsk(activeAsk);return;}
-      if(await store.get(TARGET)!==here||streamActive()||!chatEditor()||editorText(chatEditor())||composerAttachments(chatEditor()))return;
+      if(!await allowedDestination({target:here})||streamActive()||!chatEditor()||editorText(chatEditor())||composerAttachments(chatEditor()))return;
       const entries=(await mailbox()).filter(e=>e.target===here&&e.autoWorker===instance&&Date.now()-Date.parse(e.created)<=AUTO_START_TTL);
       const jobs=[];
       for(const e of entries){
