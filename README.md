@@ -16,6 +16,12 @@ The ambition is not simply to make clicking faster, put an AI chatbot on every w
 
 Speed of thought is an asymptotic objective, not a latency guarantee. Some thinking benefits from deliberation, unfamiliar knowledge, and productive friction. The point is to remove unnecessary friction, not to eliminate the human's intellectual participation.
 
+## Living capability atlas
+
+[**capabilities.json**](capabilities.json) is the canonical, evolving inventory of capabilities and realistic workflows. It records human intentions, why each capability matters, candidate mechanisms, dependencies, evidence status, practical acceptance criteria and whether it should remain discoverable and useful after a week or month. It is not a feature commitment or a personal data store.
+
+The initial high-priority surfaces are the existing AssistiveTouch screenshot gesture and screenshot-to-intelligence handoff, native voice control and semantic DOM execution, source-linked capture and investigation resumption (Kami/FKEN), and local computation using iSH. [Apple Shortcuts research](research/APPLE_SHORTCUTS.md) covers native orchestration and ambient intelligence. Develop from actual recurring workflows, not from an exhaustive API catalog. Preserve the existing fast paths.
+
 ## First practical realization: Safari on iPadOS
 
 A small, movable AI pill on permitted webpages, accessible through touch and native dictation.
