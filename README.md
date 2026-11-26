@@ -20,15 +20,21 @@ Speed of thought is an asymptotic objective, not a latency guarantee. Some think
 
 The primary environment is Safari, the existing signed-in ChatGPT/Gemini web chats and rapidly iterated userscripts. Native Shortcuts are deliberately rare: create one when it unlocks a genuinely valuable OS capability that Safari cannot supply. OpenMinis has reported successful Git inspection, local validation and its own browser navigation; retain those results but defer integration and app switching until a concrete task justifies it. Separate API inference, iCTRL and iSH integration are not current priorities.
 
-### Pocket — cross-site local memory (v0.1.1)
+### Pocket — universal working tray and handoff (v0.2.1)
 
-[Install / view raw Pocket.user.js](https://raw.githubusercontent.com/JadanPoll/AI_Pill_OS/main/Pocket.user.js) · [Source](Pocket.user.js).
+[Install / update Pocket.user.js](https://raw.githubusercontent.com/JadanPoll/AI_Pill_OS/main/Pocket.user.js) · [Source](Pocket.user.js).
 
-A small universal userscript for explicitly saving selected text, thoughts, links, prompts and JSON across websites. The bookmark-like Pocket icon opens a local inbox: save text with source, search, open, copy, or export all records as JSON. It needs no server or model. Select text before opening; to save a link only, enter the URL as text. Source defaults to origin + path (query/fragment removed); edit it if those details are necessary. Clipboard fallback preserves the draft.
+Collect evidence across sites, Save a discovery for later, or Ask with tray. One installed script owns cross-site GM storage. The temporary working tray and explicitly durable items are separate; previous v0.1.x saved records retain their keys. No server, new model account or separate app. Text, links and JSON only for this slice; rectangular image capture is next after real text handoff acceptance.
 
-Storage is the installed script's GM namespace (modern or legacy APIs), not site localStorage. Records use separate keys, no silent fallback and no automatic network transfer. Different installed scripts do not automatically share a namespace; initially use explicit clipboard transfer, not a page-accessible cross-script message bus. Data is local to the manager/device; export before changing installation or uninstalling. Enable only on trusted sites; no secrets or credentials. Pocket and DevTools are separate scripts for this first canary so the GM grants do not change Eruda's execution context; consolidate the launchers only if actual use warrants it.
+**Live demo / acceptance:** Open an existing ChatGPT or Gemini conversation, open Pocket and tap Use this chat. On Wikipedia and GitHub, select real passages, open Pocket and Collect. Dictate a question in the draft, choose Ask with tray, then Open chat. At the selected conversation, open Pocket, review and Copy question, paste into the normal composer and send explicitly. Return to the source and refresh: the receipt says copied, not confirmed sent. Reload and verify the request and previous saved items. Clear tray only when finished; prepared questions preserve their evidence snapshot. Dismiss finished handoffs when no longer useful.
 
-**Acceptance:** select/save a passage on GitHub or Wikipedia, recall it in Safari ChatGPT, copy/paste into a real conversation, reload and verify persistence. Export JSON, then verify the same items survive a normal script update. If GM storage is unavailable, preserve the visible diagnostic and report the manager/version. Syntax checked only, not yet tested on iPad.
+The target is an exact supported conversation URL; opening it may create a new tab rather than focus an existing tab. No automated provider submission or response extraction. The script pulls shared state on open/refresh/resume; no hidden-tab liveness promise. Source defaults to origin + path; edit it for important page/section/document details. Review captured content, use trusted sites only and avoid storing credentials. Storage is local to the installed script/manager; export saved JSON before uninstalling. Native update metadata points to the raw GitHub file; install as an update, not a second copy.
+
+Nine integration-style checks passed executing the actual script with mocked DOM, GM, URL and clipboard (two origins, snapshot, wrong conversation, reload, failure/no acknowledgment, successful copy, source status, durable item preservation). Safari manager behavior, visual usability, and provider handoff still require actual iPad use.
+
+**Canonical persistence:** when asked to preserve a research finding in Kami, use [Kami_Uploads_RSM_Tree](https://github.com/JadanPoll/Kami_Uploads_RSM_Tree)'s existing domain investigation records and source anchors, not a parallel note database or Kami annotation sync. FKEN and Drive remain other explicit destinations. Authorized ChatGPT connector writes and exact readback receipts are the first route, not browser-held credentials.
+
+Keep Eruda/DevTools as the existing separate mini-pill until real usage warrants consolidation. Do not build a task dashboard, worker system, or custom update manager before observing a consequential gap.
 
 ### One native bridge: Copy Screenshot
 
