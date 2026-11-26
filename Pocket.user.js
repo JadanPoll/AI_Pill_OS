@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         AI Pill OS - Pocket
 // @namespace    https://github.com/JadanPoll/AI_Pill_OS
-// @version      0.7.32
+// @version      0.7.33
 // @updateURL    https://raw.githubusercontent.com/JadanPoll/AI_Pill_OS/main/Pocket.user.js
 // @downloadURL  https://raw.githubusercontent.com/JadanPoll/AI_Pill_OS/main/Pocket.user.js
 // @description  Universal Safari pill: collect evidence, keep discoveries, and hand a question to a chosen chat.
@@ -26,7 +26,7 @@
 (() => {
   'use strict';
   if (window.top !== window) return;
-  const VERSION='0.7.32';
+  const VERSION='0.7.33';
   // Report initialization failures without depending on the main UI, storage or a CDN.
   function bootFailure(error,phase){
     const message=String(error?.message||error).slice(0,500);
@@ -1303,25 +1303,117 @@
     const menus=[...document.querySelectorAll('[role=menu],[role=listbox]')].filter(n=>n.getClientRects().length&&!n.closest('[hidden],[aria-hidden=true]'));
     return menus.length===1?menus[0]:null;
   }
+  // 2026-11-26 live DOM differential: ChatGPT simple power slider and
+  // advanced radio list; Gemini mode radios and nested thinking-level radios.
+  const modelWait=ms=>new Promise(r=>setTimeout(r,ms));
+  const modelVisible=n=>!!n?.getClientRects().length&&!n.closest('[hidden],[aria-hidden=true],[data-visible=false]');
+  const modelEnabled=n=>!!n&&!n.disabled&&!n.closest('[aria-disabled=true],[disabled],[data-disabled]');
+  function powerControl(menu){
+    const row=menu?.querySelector('[data-reasoning-slider="true"]'),thumb=row?.querySelector('[role=slider][aria-valuenow]');
+    if(!row||!thumb)return null;
+    const min=Number(thumb.getAttribute('aria-valuemin')),max=Number(thumb.getAttribute('aria-valuemax')),value=Number(thumb.getAttribute('aria-valuenow'));
+    return Number.isInteger(value)&&min===0&&max===2&&value>=min&&value<=max?{row,value,min,max}:null;
+  }
+  const powerLabels=['Instant','Medium','High'];
+  function gemThinking(menu){
+    const trigger=menu?.querySelector('gem-menu-item[value="thinking_level"][aria-haspopup=true]');
+    const sub=trigger&&document.getElementById(trigger.getAttribute('aria-controls'));
+    return sub?.matches('gem-menu[role=menu]')?{trigger,sub}:null;
+  }
   function nativeOptions(menu){
     if(!menu)return [];
-    const nodes=[...menu.querySelectorAll('[role=menuitemradio],[role=menuitem],[role=option],[role=radio]')].filter(n=>n.getClientRects().length&&!n.closest('[hidden],[aria-hidden=true]')&&!n.disabled&&n.getAttribute('aria-disabled')!=='true'&&!n.hasAttribute('aria-haspopup'));
-    return nodes.map(n=>({n,label:normalizeChat(n.innerText||n.textContent).slice(0,180),role:n.getAttribute('role'),selected:n.getAttribute('aria-checked')==='true'||n.getAttribute('aria-selected')==='true'})).filter(o=>o.label&&!/upgrade|subscription|learn more|manage|settings|buy|sign in/i.test(o.label));
+    if(chatSurface()==='gemini'){
+      const modes=[...menu.querySelectorAll('gem-menu-item[role=menuitemradio][data-mode-id]')].filter(n=>modelEnabled(n)&&n.getAttribute('aria-haspopup')==='false'&&!n.getAttribute('data-mode-id').startsWith('upsell_')&&!n.querySelector('[data-mat-icon-name=lock]'));
+      const out=modes.map(n=>({n,role:'gem-mode',value:n.getAttribute('data-mode-id'),label:normalizeChat([n.querySelector('.label')?.textContent,n.querySelector('.sublabel')?.textContent].filter(Boolean).join(' · ')),selected:n.getAttribute('aria-checked')==='true'}));
+      const thinking=gemThinking(menu);
+      if(thinking&&modelEnabled(thinking.trigger))for(const n of thinking.sub.querySelectorAll('gem-menu-item[role=menuitemradio]')){
+        const value=normalizeChat(n.querySelector('.label')?.textContent||'');
+        if(value&&modelEnabled(n)&&n.getAttribute('aria-haspopup')==='false')out.push({n,role:'gem-thinking',value,label:'Thinking · '+value,selected:n.getAttribute('aria-checked')==='true'});
+      }
+      return out;
+    }
+    const group=menu.querySelector('[data-model-picker-view]');if(!group)return [];
+    const out=[],power=powerControl(menu);
+    // The hidden advanced catalog is mounted even in simple view. It is
+    // safe to read, but selection must first activate the advanced view.
+    if(power&&group.getAttribute('data-model-picker-view')==='simple'&&modelEnabled(power.row)&&modelVisible(power.row))
+      for(let v=power.min;v<=power.max;v++)out.push({n:power.row,role:'chat-power',value:String(v),label:'Thinking · '+powerLabels[v],selected:v===power.value});
+    for(const n of group.querySelectorAll('[role=menuitemradio]')){
+      const value=normalizeChat(n.querySelector('[data-menu-row-content] .truncate')?.textContent||n.textContent);
+      if(value&&modelEnabled(n)&&!n.querySelector('[aria-label*="Locked" i],[data-testid*="lock" i]'))out.push({n,role:'chat-model',value,label:'Model · '+value,selected:n.getAttribute('aria-checked')==='true'});
+    }
+    return out;
   }
   async function openNativeModel(b){
-    if(b.getAttribute('aria-expanded')==='true')return nativeModelMenu(b);
-    // Radix uses pointerdown; Angular menus typically use click.
-    if(chatSurface()!=='gemini')b.dispatchEvent(new PointerEvent('pointerdown',{bubbles:true,cancelable:true,button:0,pointerType:'mouse',isPrimary:true}));
-    await new Promise(r=>setTimeout(r,80));
-    if(b.getAttribute('aria-expanded')!=='true')b.click();
-    for(let i=0;i<15;i++){const menu=nativeModelMenu(b);if(menu)return menu;await new Promise(r=>setTimeout(r,100));}
-    return null;
+    if(!b)return null;
+    if(b.getAttribute('aria-expanded')!=='true'){
+      if(chatSurface()!=='gemini')b.dispatchEvent(new PointerEvent('pointerdown',{bubbles:true,cancelable:true,button:0,pointerType:'mouse',isPrimary:true}));
+      await modelWait(80);if(b.getAttribute('aria-expanded')!=='true')b.click();
+    }
+    let menu=null;
+    for(let i=0;i<20;i++){menu=nativeModelMenu(b);if(menu&&nativeOptions(menu).length){await modelWait(200);return nativeModelMenu(b)||menu;}await modelWait(100);}
+    return menu;
   }
-  function closeNativeModel(b,menu){
-    if(!b||b.getAttribute('aria-expanded')!=='true')return;
-    const focus=document.activeElement;const node=menu?.contains(focus)?focus:menu||b;
+  async function closeNativeModel(b,menu){
+    b=nativeModelButton()||b;if(!b||b.getAttribute('aria-expanded')!=='true')return;
+    const focus=document.activeElement,node=menu?.contains(focus)?focus:menu||b;
     node.dispatchEvent(new KeyboardEvent('keydown',{key:'Escape',code:'Escape',bubbles:true,cancelable:true}));
-    if(b.getAttribute('aria-expanded')==='true')b.click();
+    await modelWait(100);
+    b=nativeModelButton()||b;if(b.getAttribute('aria-expanded')==='true')b.click();
+    await modelWait(100);
+  }
+  function modelMenuEvidence(menu){
+    return {view:menu?.querySelector('[data-model-picker-view]')?.getAttribute('data-model-picker-view')||null,power:powerControl(menu)?.value??null,thinkingVisible:gemThinking(menu)?.sub.getAttribute('data-visible')??null,options:nativeOptions(menu).map(({role,value,label,selected,n})=>({role,value,label,selected,visible:modelVisible(n)}))};
+  }
+  async function activateModelOption(b,menu,o,stillAllowed){
+    if(!await stillAllowed())throw Error('Receiver changed; no selection made');
+    if(o.role==='chat-power'){
+      const wanted=Number(o.value);
+      for(let i=0;i<3;i++){
+        const current=powerControl(menu);
+        if(!current||!modelVisible(current.row)||!modelEnabled(current.row))throw Error('Power slider unavailable');
+        if(current.value===wanted)return true;
+        if(!await stillAllowed())throw Error('Receiver changed during slider adjustment');
+        const key=current.value<wanted?'ArrowRight':'ArrowLeft';
+        current.row.focus({preventScroll:true});current.row.dispatchEvent(new KeyboardEvent('keydown',{key,code:key,bubbles:true,cancelable:true}));
+        let after=current.value;
+        for(let j=0;j<12;j++){await modelWait(80);after=powerControl(menu)?.value;if(after!==current.value)break;}
+        linkLog('model-slider-step',{before:current.value,after,key,wanted});
+        if(after===current.value||after==null||Math.abs(after-wanted)>=Math.abs(current.value-wanted))break;
+      }
+      return powerControl(menu)?.value===wanted;
+    }
+    if(o.role==='chat-model'){
+      const group=menu.querySelector('[data-model-picker-view]');
+      if(group?.getAttribute('data-model-picker-view')!=='advanced'){
+        const toggle=group?.querySelector('[data-model-picker-view-toggle=true]');
+        if(!modelVisible(toggle)||!modelEnabled(toggle))throw Error('Advanced model view toggle unavailable');
+        toggle.click();
+        for(let i=0;i<20&&group.getAttribute('data-model-picker-view')!=='advanced';i++)await modelWait(80);
+        if(group.getAttribute('data-model-picker-view')!=='advanced')throw Error('Advanced view did not open');
+      }
+    }else if(o.role==='gem-thinking'){
+      const t=gemThinking(menu);if(!t||!modelVisible(t.trigger)||!modelEnabled(t.trigger))throw Error('Thinking submenu unavailable');
+      if(t.trigger.getAttribute('aria-expanded')!=='true')t.trigger.click();
+      for(let i=0;i<20&&t.sub.getAttribute('data-visible')!=='true';i++)await modelWait(80);
+      if(t.trigger.getAttribute('aria-expanded')!=='true'||t.sub.getAttribute('data-visible')!=='true')throw Error('Thinking submenu did not open');
+    }
+    const matches=nativeOptions(menu).filter(v=>v.role===o.role&&v.value===o.value&&modelVisible(v.n)&&modelEnabled(v.n));
+    if(matches.length!==1||!await stillAllowed())throw Error('Native option unavailable or ambiguous');
+    matches[0].n.click();
+    // Reopen if selection closed the menu. Verify the exact requested radio,
+    // not merely a change to the composer label.
+    for(let i=0;i<15;i++){
+      await modelWait(100);const current=nativeModelButton();
+      if(current?.getAttribute('aria-expanded')==='true'){
+        const live=nativeModelMenu(current);
+        if(nativeOptions(live).some(v=>v.role===o.role&&v.value===o.value&&v.selected))return true;
+      }else if(i>=3&&current){
+        const live=await openNativeModel(current);
+        return nativeOptions(live).some(v=>v.role===o.role&&v.value===o.value&&v.selected);
+      }
+    }
+    return false;
   }
   async function processModelRequest(dest){
     if(modelBusy||autoBusy||activeAsk||dictationRun||streamActive())return;
@@ -1335,28 +1427,28 @@
       b=nativeModelButton();if(!b||b.disabled||b.getAttribute('aria-disabled')==='true')throw Error('Native model control unavailable');
       if(b.getAttribute('aria-expanded')==='true')throw Error('Close the existing native model menu first');
       opened=true;menu=await openNativeModel(b);if(!menu)throw Error('Native model menu did not open or could not be identified');
-      const options=nativeOptions(menu);
-      linkLog('native-model-menu',{trigger:{label:b.getAttribute('aria-label'),expanded:b.getAttribute('aria-expanded'),controls:b.getAttribute('aria-controls')},menu:{tag:menu.tagName,role:menu.getAttribute('role'),id:menu.id||null,children:[...menu.querySelectorAll('button,[role],mat-option')].slice(0,30).map(n=>({tag:n.tagName,role:n.getAttribute('role'),label:normalizeChat(n.innerText||n.textContent).slice(0,120),disabled:n.disabled||n.getAttribute('aria-disabled')==='true'}))}});
+      const options=nativeOptions(menu);linkLog('native-model-menu',modelMenuEvidence(menu));
       if(c.action==='list'){
-        modelReceipt={id:c.id,sender:c.sender,phase:'listed',at:Date.now(),options:options.map(({label,role,selected})=>({label,role,selected})),model:nativeModel()};
-        if(!options.length)throw Error('No identifiable native model options; use AI Pill Capture popup');
+        if(!options.length)throw Error('No identifiable native model options; capture live HTML');
+        modelReceipt={id:c.id,sender:c.sender,phase:'listed',at:Date.now(),options:options.map(({label,role,value,selected})=>({label,role,value,selected})),model:nativeModel()};
       }else{
-        const matches=options.filter(o=>o.label===c.label&&o.role===c.role);
+        const matches=options.filter(o=>o.role===c.role&&o.value===c.value&&o.label===c.label);
         if(matches.length!==1)throw Error('Model option missing or ambiguous; reopen picker');
-        if(!await allowedDestination({target:dest})||Date.now()>c.expires||streamActive()||editorText(chatEditor())||composerAttachments(chatEditor()))throw Error('Receiver or composer changed; no selection made');
-        const before=nativeModel();matches[0].n.click();
-        let after=nativeModel();for(let i=0;i<15;i++){await new Promise(r=>setTimeout(r,100));after=nativeModel();if(after&&!after.expanded&&(after.label!==before?.label||after.effort!==before?.effort||matches[0].selected))break;}
-        const changed=!!after&&!after.expanded&&(after.label!==before?.label||after.effort!==before?.effort||matches[0].selected);
-        modelReceipt={id:c.id,sender:c.sender,phase:changed?'selected':'uncertain',at:Date.now(),before,model:after,requested:c.label,detail:changed?'Native selection observed':'Selection not confirmed; inspect receiver'};
+        const before=nativeModel(),o=matches[0],beforeMenu=modelMenuEvidence(menu);
+        const stillAllowed=async()=>Date.now()<=c.expires&&await allowedDestination({target:dest})&&!streamActive()&&!editorText(chatEditor())&&!composerAttachments(chatEditor())&&!dictationRun;
+        if(!await stillAllowed())throw Error('Receiver or composer changed; no selection made');
+        const verified=o.selected||await activateModelOption(b,menu,o,stillAllowed);
+        const after=nativeModel(),live=nativeModelMenu(nativeModelButton());
+        modelReceipt={id:c.id,sender:c.sender,phase:verified?'selected':'uncertain',at:Date.now(),before,model:after,requested:c.label,verified,changed:verified&&!o.selected,beforeMenu,afterMenu:modelMenuEvidence(live||menu),detail:verified?(o.selected?'Already selected':'Requested native setting verified'):'Requested setting not confirmed; inspect receiver'};
       }
     }catch(e){modelReceipt={id:c.id,sender:c.sender,phase:'failed',at:Date.now(),detail:String(e?.message||e).slice(0,180),model:nativeModel()};}
-    finally{if(opened)closeNativeModel(b,menu);modelBusy=false;linkLog('model-control',{...modelReceipt});if(c.sender===instance&&c.selfTest){modelTestReceipt={...modelReceipt,action:c.action};lifeEvent('model-self-test',modelTestReceipt);paintModelTest();}}
+    finally{if(opened)await closeNativeModel(b,nativeModelMenu(nativeModelButton())||menu);modelBusy=false;linkLog('model-control',{...modelReceipt});if(c.sender===instance&&c.selfTest){modelTestReceipt={...modelReceipt,action:c.action};lifeEvent('model-self-test',modelTestReceipt);paintModelTest();}}
   }
   function paintModel(){
     const b=$('model-picker'),sel=$('model-options'),out=$('model-status');
     const here=chatURL(location.href),heart=lastHeart?.target===target&&lastHeart.worker===selectedWorker?lastHeart:null;
     const state=heart?.model,receipt=heart?.modelReceipt;
-    b.textContent='Model · '+(state?.label||state?.effort||'Current');b.disabled=!target||!selectedWorker||!state||state.disabled||!!here;
+    b.textContent='Model · '+(state?.effort&&state.effort!=='none'?state.effort[0].toUpperCase()+state.effort.slice(1):state?.effort==='none'?'Instant':state?.label||'Current');b.disabled=!target||!selectedWorker||!state||state.disabled||!!here;
     if(modelPending&&modelPending.target!==target){modelPending=null;modelChoices=null;sel.hidden=true;out.textContent='';}
     if(modelPending&&receipt?.id===modelPending.id&&receipt.sender===instance&&receipt.phase!=='working'){
       modelPending=null;
@@ -1371,7 +1463,7 @@
   }
   async function queueModel(action,option){
     if(!store||!target||!selectedWorker||modelPending)return;
-    const c={id:uid(),sender:instance,target,worker:selectedWorker,action,at:Date.now(),expires:Date.now()+20000,...(option?{label:option.label,role:option.role}:{})};
+    const c={id:uid(),sender:instance,target,worker:selectedWorker,action,at:Date.now(),expires:Date.now()+20000,...(option?{label:option.label,role:option.role,value:option.value}:{})};
     modelPending=c;$('model-status').textContent=action==='list'?'Reading receiver menu…':'Applying native selection…';$('model-options').hidden=true;paintModel();
     try{await store.set(MODEL_REQUEST+c.target,c);wakeTransport();}catch(e){modelPending=null;$('model-status').textContent=String(e?.message||e);paintModel();}
   }
@@ -1379,14 +1471,14 @@
   $('model-options').addEventListener('change',e=>{if(!e.isTrusted||e.target.value==='')return;const o=modelChoices?.options[Number(e.target.value)];if(o&&modelChoices.target===target)void queueModel('choose',o);});
   function paintModelTest(){
     const out=$('model-test-status'),sel=$('model-test-options'),r=modelTestReceipt;
-    if(!r)return;out.textContent=r.phase==='listed'?'Choose a different native option to test selection.':r.phase==='selected'?(r.before?.label===r.model?.label&&r.before?.effort===r.model?.effort?'No change · choose a different option.':'PASS · '+(r.model?.label||r.model?.effort||'selection observed')):r.phase==='uncertain'?'Unconfirmed · '+r.detail:r.phase==='failed'?'FAIL · '+r.detail:'Working…';
+    if(!r)return;out.textContent=r.phase==='listed'?'Choose a different native option to test selection.':r.phase==='selected'?(!r.changed?'No change · choose a different option.':'PASS · '+r.requested):r.phase==='uncertain'?'Unconfirmed · '+r.detail:r.phase==='failed'?'FAIL · '+r.detail:'Working…';
     if(r.phase==='listed'&&modelTestChoices?.id!==r.id){modelTestChoices={id:r.id,options:r.options||[]};sel.replaceChildren(new Option('Choose…',''),...modelTestChoices.options.map((o,i)=>new Option(o.label+(o.selected?' ✓':''),String(i))));sel.hidden=false;}
     else if(r.phase!=='listed')sel.hidden=true;
   }
   async function queueModelTest(action,option){
     const here=chatURL(location.href);if(!store||!selectedHere()||!here){$('model-test-status').textContent='Add this tab as a receiver first.';return;}
     if(modelBusy||autoBusy||activeAsk||dictationRun||streamActive()||editorText(chatEditor())||composerAttachments(chatEditor())){$('model-test-status').textContent='Finish the active operation or draft first.';return;}
-    const c={id:uid(),sender:instance,target:here,worker:instance,action,selfTest:true,at:Date.now(),expires:Date.now()+20000,...(option?{label:option.label,role:option.role}:{})};
+    const c={id:uid(),sender:instance,target:here,worker:instance,action,selfTest:true,at:Date.now(),expires:Date.now()+20000,...(option?{label:option.label,role:option.role,value:option.value}:{})};
     modelTestReceipt={id:c.id,phase:'working',action};paintModelTest();await store.set(MODEL_REQUEST+here,c);await processModelRequest(here);wakeTransport();
   }
   action('model-test',()=>queueModelTest('list'));
