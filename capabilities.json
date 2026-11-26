@@ -1,0 +1,673 @@
+{
+  "schema": "ai_pill_os.capability_atlas",
+  "version": 1,
+  "updated": "2026-11-25",
+  "purpose": "Can I operate at the speed of thought? Living design inventory, not a promise of implementation.",
+  "design_rules": {
+    "method": [
+      "REM-01.01/01.04",
+      "REM-02.05",
+      "REM-03.01",
+      "REM-04.01–04.03",
+      "RSM-01/02/04/05",
+      "FKEN-16/17/20"
+    ],
+    "priority": {
+      "P0": "Strong first-week utility or a prerequisite; estimated, not measured",
+      "P1": "High-value compositional extension after its prerequisites",
+      "P2": "Conditional or lower-frequency; do not build without observed demand"
+    },
+    "status": {
+      "user_observed": "User reports this exact baseline works",
+      "documented": "Platform capability documented; target flow not tested",
+      "existing_precedent": "Existing project demonstrates a useful pattern; new flow untested",
+      "candidate": "Hypothesis; implementation and acceptance outstanding",
+      "verified": "Reserved for actual target-device evidence"
+    },
+    "maintenance": "Append or refine stable IDs in this canonical file. Consolidate overlapping intentions; change priority with observed use; promote only on actual evidence. Keep rare operations discoverable without placing them on the main surface. Record a concrete failure and decision when abandoning a branch. No telemetry or persistent personal captures in this public repo.",
+    "week_review": "After seven days of real use, compare frequency, interactions avoided, interruptions, rediscovery without docs, failures and whether the result advanced a real goal. Review after one month too. No invented scores or usage counts.",
+    "public_privacy": "This public atlas is design metadata only, not a screenshot archive, task log, credential store or personal research inbox."
+  },
+  "sources": {
+    "REM": "https://github.com/JadanPoll/Learning_Visualizations_Taxonomy/blob/main/Navigationals/The_Richer_Engineering_Method.md",
+    "RSM": "https://github.com/JadanPoll/Learning_Visualizations_Taxonomy/blob/main/Navigationals/The_Richer_Scientific_Method.md",
+    "FKEN": "https://github.com/JadanPoll/Learning_Visualizations_Taxonomy/blob/main/Navigationals/Fractal_Knowledge_And_Ecosystem_Navigation.md",
+    "kami": "https://github.com/JadanPoll/Kami_Uploads_RSM_Tree",
+    "reading": "https://github.com/JadanPoll/Learning_Visualizations_Taxonomy/blob/main/Kami_Wikipedia.user.js",
+    "ecosystem": "https://github.com/JadanPoll/FKEN_Ecosystem",
+    "logical": "https://github.com/JadanPoll/Logical_Cloud",
+    "labx": "https://github.com/JadanPoll/LabX",
+    "microsoft": "https://github.com/JadanPoll/microsoft",
+    "gigs": "https://github.com/JadanPoll/gig_economics",
+    "assistive": "https://support.apple.com/guide/ipad/use-assistivetouch-ipad9a2466d3/ipados",
+    "voice": "https://support.apple.com/en-ie/118275",
+    "voice_ipad": "https://support.apple.com/en-euro/guide/ipad/ipad4b6c9ee4/ipados",
+    "vocal": "https://support.apple.com/en-ie/guide/ipad/ipaddc8c53732/27/ipados/27",
+    "screenshot": "https://www.macstories.net/Shortcuts/",
+    "js": "https://support.apple.com/guide/shortcuts/apd218e2187d/ios",
+    "userscripts": "https://github.com/quoid/userscripts",
+    "ish": "https://github.com/ish-app/ish",
+    "ish_files": "https://github.com/ish-app/ish/issues/1070",
+    "ish_lifecycle": "https://github.com/ish-app/ish/issues/1516",
+    "ish_proxy": "https://github.com/DanHouseman/proxyISH",
+    "ish_shortcut": "https://github.com/ish-app/ish/issues/1289",
+    "shortcuts": "https://support.apple.com/guide/shortcuts/use-apple-intelligence-in-shortcuts-tpg3vrvwmclv/ios",
+    "oauth": "https://developers.openai.com/siwc",
+    "scriptable": "https://scriptable.app/",
+    "cherri": "https://github.com/electrikmilk/cherri",
+    "ambient": "https://github.com/JadanPoll/AI_Pill_OS/blob/main/research/APPLE_SHORTCUTS.md"
+  },
+  "capabilities": [
+    {
+      "id": "capture.screen",
+      "name": "Screenshot",
+      "family": "capture",
+      "priority": "P0",
+      "status": "user_observed",
+      "intentions": [
+        "Screenshot this"
+      ],
+      "why": "Existing double-tap AssistiveTouch gesture is an already-internalized baseline; preserve it.",
+      "mechanisms": [
+        "AssistiveTouch double tap",
+        "optional voice command or separate Shortcut for processing"
+      ],
+      "depends_on": [],
+      "acceptance": "Existing double tap captures the intended screen without navigating away; no regression.",
+      "week_later": "Keep the existing gesture unchanged; measure new routes against it.",
+      "sources": [
+        "assistive"
+      ],
+      "boundary": "User reports the gesture works; automated routing and continuous capture are not established."
+    },
+    {
+      "id": "capture.route",
+      "name": "Ask about what I see",
+      "family": "capture",
+      "priority": "P0",
+      "status": "candidate",
+      "intentions": [
+        "Explain this screenshot",
+        "What's wrong here?",
+        "Save this diagram"
+      ],
+      "why": "Visual context is essential for figures, equations, UI state, remote desktops and bugs; avoids explaining what is already visible.",
+      "mechanisms": [
+        "Screenshot share sheet or Take Screenshot action; choose image; attach to supported AI app; OCR only when text is needed",
+        "Optional explicit crop/redaction"
+      ],
+      "depends_on": [
+        "capture.screen"
+      ],
+      "acceptance": "From a real Kami diagram and remote desktop error, deliver the intended image plus one dictated question to an AI and retain original source where available.",
+      "week_later": "One remembered phrase or share action; do not force a separate screenshot management workflow.",
+      "sources": [
+        "screenshot",
+        "assistive",
+        "shortcuts"
+      ],
+      "boundary": "No automatic silent uploads; protected content and current-screen capture may be restricted; image model input/return must be tested."
+    },
+    {
+      "id": "capture.selection",
+      "name": "Capture passage or page",
+      "family": "capture",
+      "priority": "P0",
+      "status": "candidate",
+      "intentions": [
+        "Save this passage",
+        "Ask about this paragraph",
+        "Capture the current page"
+      ],
+      "why": "Text, source URL, page number and quote preserve far more useful context than a bare screenshot.",
+      "mechanisms": [
+        "Userscript selection and DOM extraction",
+        "Share sheet JavaScript with active Safari page",
+        "Kami adapter for document/page anchors"
+      ],
+      "depends_on": [],
+      "acceptance": "Capture a selected paragraph from Wikipedia and a real book passage from Kami; reopen the exact source or documented fallback.",
+      "week_later": "Same Capture/Ask verb regardless of source.",
+      "sources": [
+        "reading",
+        "kami",
+        "userscripts",
+        "js"
+      ],
+      "boundary": "Selection in PDFs or canvases is not guaranteed accessible as DOM text; use existing supported adapter or explicit image."
+    },
+    {
+      "id": "control.native",
+      "name": "Hands-free native control",
+      "family": "control",
+      "priority": "P0",
+      "status": "documented",
+      "intentions": [
+        "Tap Search",
+        "Show numbers",
+        "Go back",
+        "Scroll down"
+      ],
+      "why": "Eliminate routine touch interactions without writing an accessibility clone.",
+      "mechanisms": [
+        "iPad Voice Control named elements, numbered overlays and custom gestures",
+        "Custom command or Vocal Shortcut for named workflows"
+      ],
+      "depends_on": [],
+      "acceptance": "Navigate an actual Safari page and native app without touch; record which controls fail.",
+      "week_later": "Use existing Apple vocabulary; only add custom phrases that recur.",
+      "sources": [
+        "voice",
+        "voice_ipad",
+        "vocal"
+      ],
+      "boundary": "Voice Control dictation modes differ from ordinary dictation; availability varies by OS/language; cannot arbitrarily inspect other apps."
+    },
+    {
+      "id": "control.dom",
+      "name": "Semantic DOM control",
+      "family": "control",
+      "priority": "P0",
+      "status": "candidate",
+      "intentions": [
+        "Open commit history",
+        "Next question",
+        "Expand that section",
+        "Click 4"
+      ],
+      "why": "Browser commands should reference actual page semantics rather than brittle coordinates; local execution should be fast and independent of inference.",
+      "mechanisms": [
+        "Userscript accessible names, roles, stable site adapters and visible target IDs",
+        "Native voice control can tap the pill; dictate a command or use a named custom shortcut",
+        "Deterministic routing first"
+      ],
+      "depends_on": [
+        "control.native"
+      ],
+      "acceptance": "On GitHub and Kami, issue three spoken commands, verify actual resulting page states; handle ambiguous targets by asking which one, never click blindly.",
+      "week_later": "One Command entry; show available verbs and contextual actions; no memorized selector syntax.",
+      "sources": [
+        "userscripts",
+        "voice",
+        "reading",
+        "microsoft"
+      ],
+      "boundary": "Voice-to-userscript bridge must be proved. Synthetic clicks may fail for trusted gestures, cross-origin frames or canvas; use native control fallback."
+    },
+    {
+      "id": "intelligence.ask",
+      "name": "Contextual AI request",
+      "family": "intelligence",
+      "priority": "P0",
+      "status": "candidate",
+      "intentions": [
+        "Explain this",
+        "Investigate this",
+        "What am I missing?"
+      ],
+      "why": "Make intelligence callable without reconstructing page context or switching research modes.",
+      "mechanisms": [
+        "Explicit ChatGPT/Gemini handoff initially",
+        "Shortcuts Use Model or eligible official subscription transport",
+        "Separate API if useful"
+      ],
+      "depends_on": [
+        "capture.selection"
+      ],
+      "acceptance": "Ask a novel question about a real article and receive a relevant response, distinguishing manual handoff from automatic same-page return.",
+      "week_later": "Ask is the default entry; provider remembered but visible; same interaction across sites.",
+      "sources": [
+        "shortcuts",
+        "oauth",
+        "labx",
+        "gigs"
+      ],
+      "boundary": "Existing subscriptions do not automatically grant API access; no scraping or unauthorized consumer automation."
+    },
+    {
+      "id": "control.intent",
+      "name": "AI-proposed browser operations",
+      "family": "control",
+      "priority": "P1",
+      "status": "candidate",
+      "intentions": [
+        "Find the relevant implementation and open it",
+        "Take me to the underlying mechanism"
+      ],
+      "why": "Higher-level goals map to a sequence of low-level operations, after local command coverage is established.",
+      "mechanisms": [
+        "Bounded action list from supported model; validate against current visible targets; local executor"
+      ],
+      "depends_on": [
+        "control.dom",
+        "intelligence.ask"
+      ],
+      "acceptance": "Open the correct relevant link on a real unfamiliar page after inspecting a model-proposed action; refuse stale or ambiguous targets.",
+      "week_later": "Use ordinary language; preview consequential actions rather than exposing programming vocabulary.",
+      "sources": [
+        "logical",
+        "userscripts",
+        "REM"
+      ],
+      "boundary": "No arbitrary code from model or page; no automatic purchases, messages, permission changes or other consequential actions."
+    },
+    {
+      "id": "persist.inbox",
+      "name": "Capture an idea, question or resource",
+      "family": "persistence",
+      "priority": "P0",
+      "status": "candidate",
+      "intentions": [
+        "Remember this",
+        "Add this question",
+        "Save this project"
+      ],
+      "why": "Many good questions disappear because categorization or repository navigation interrupts the encounter.",
+      "mechanisms": [
+        "One local JSON inbox with stable ID, source, capture time, kind and optional note",
+        "Existing Kami/FKEN adapters; explicit review before canonical commit"
+      ],
+      "depends_on": [
+        "capture.selection"
+      ],
+      "acceptance": "Capture one question, one paper and one repo from different sources; recover all later with their original provenance.",
+      "week_later": "One Save entry, deferred classification; never require choosing a folder first.",
+      "sources": [
+        "kami",
+        "ecosystem",
+        "FKEN",
+        "gigs"
+      ],
+      "boundary": "No duplication of canonical research; private captures stay local until reviewed."
+    },
+    {
+      "id": "persist.annotation",
+      "name": "Anchor an insight to a book",
+      "family": "persistence",
+      "priority": "P1",
+      "status": "existing_precedent",
+      "intentions": [
+        "Highlight this",
+        "Attach this thought to the passage",
+        "Add a question to this page"
+      ],
+      "why": "Kami already provides source-linked reading and durable question/insight records; reuse that capability.",
+      "mechanisms": [
+        "Existing Kami Reading Companion and supported page/annotation mechanisms",
+        "Dictation and explicit capture confirmation"
+      ],
+      "depends_on": [
+        "capture.selection"
+      ],
+      "acceptance": "Save a real question with a passage/page and reopen the original book after reload; verify annotation survives.",
+      "week_later": "Keep direct highlight and note actions; no generic assistant ceremony for simple annotations.",
+      "sources": [
+        "reading",
+        "kami"
+      ],
+      "boundary": "Existing code is precedent, not evidence the new iPad workflow works; do not export credentials."
+    },
+    {
+      "id": "retrieve.resume",
+      "name": "Resume investigation",
+      "family": "retrieval",
+      "priority": "P0",
+      "status": "candidate",
+      "intentions": [
+        "Where was I?",
+        "Resume manufacturing",
+        "Open the next unresolved question"
+      ],
+      "why": "Avoid reconstructing investigation state across chats, books and repositories; preserve trajectories not just summaries.",
+      "mechanisms": [
+        "Small local working-context pointer to canonical investigation/question/source IDs",
+        "Existing RSM Tree Viewer and Kami/Drive links"
+      ],
+      "depends_on": [
+        "persist.inbox"
+      ],
+      "acceptance": "After a day, recover one real research branch, last source, unresolved question and next action without searching history.",
+      "week_later": "Resume shows current work and recent contexts; no exact ID memorization.",
+      "sources": [
+        "kami",
+        "RSM",
+        "FKEN"
+      ],
+      "boundary": "Do not clone canonical investigation data or claim private chat history access."
+    },
+    {
+      "id": "retrieve.landscape",
+      "name": "Explore a domain or unfamiliar concept",
+      "family": "retrieval",
+      "priority": "P1",
+      "status": "candidate",
+      "intentions": [
+        "What is metastability?",
+        "Show me projects that use this",
+        "What should I learn next?"
+      ],
+      "why": "FKEN connects vocabulary, questions, working projects, axioms and practical probes; quick routing supports opportunistic learning.",
+      "mechanisms": [
+        "Existing RSM Tree Viewer with scoped domain/query where supported",
+        "FKEN glossary, domain JSON and project links",
+        "Search fallback"
+      ],
+      "depends_on": [
+        "retrieve.resume"
+      ],
+      "acceptance": "Start from an unfamiliar term in a paper; find relevant FKEN concept or domain, real implementation and a practical probe.",
+      "week_later": "A single Explore action, not separate launchers for each dataset.",
+      "sources": [
+        "ecosystem",
+        "kami",
+        "FKEN"
+      ],
+      "boundary": "Viewer query parameters and private access must be checked; unknown terms should surface absence rather than fabricated links."
+    },
+    {
+      "id": "persist.reconcile",
+      "name": "Reconcile captures into knowledge",
+      "family": "persistence",
+      "priority": "P1",
+      "status": "candidate",
+      "intentions": [
+        "Organize today's discoveries",
+        "Add useful questions to FKEN/Kami"
+      ],
+      "why": "Fast capture and deliberate synthesis are different cognitive modes; batch organization prevents live interruption.",
+      "mechanisms": [
+        "Local inbox to reviewable JSON patch or prompt",
+        "Agent-assisted deduplication, canonical stable IDs and source links"
+      ],
+      "depends_on": [
+        "persist.inbox"
+      ],
+      "acceptance": "Review a small real mixed capture batch; merge two related items without losing provenance; leave unresolved items recoverable.",
+      "week_later": "One review queue, not a separate tagging ritual per capture.",
+      "sources": [
+        "kami",
+        "ecosystem",
+        "RSM",
+        "FKEN"
+      ],
+      "boundary": "Human reviews canonical writes; no silent destructive merges or public upload."
+    },
+    {
+      "id": "compute.shell",
+      "name": "Local shell and file transformations",
+      "family": "computation",
+      "priority": "P0",
+      "status": "candidate",
+      "intentions": [
+        "Run this Python",
+        "Validate this JSON",
+        "Diff these files",
+        "Search this repository"
+      ],
+      "why": "iSH is already installed; ordinary git, jq, grep, curl and Python can remove repetitive file/JSON operations without an AI request.",
+      "mechanisms": [
+        "iSH Alpine x86 emulation; install needed packages via apk",
+        "Files app / explicit import-export or user-selected mount"
+      ],
+      "depends_on": [],
+      "acceptance": "On target iPad clone a public project, transform a real investigation JSON and reopen result in Files; measure setup friction.",
+      "week_later": "Use a small named set of reviewed jobs; retain terminal for arbitrary explicit commands.",
+      "sources": [
+        "ish",
+        "ish_files",
+        "ecosystem"
+      ],
+      "boundary": "iSH does not grant native iPad UI access; package compatibility and file-provider paths require verification."
+    },
+    {
+      "id": "compute.bridge",
+      "name": "Safari/Shortcuts to iSH",
+      "family": "computation",
+      "priority": "P1",
+      "status": "candidate",
+      "intentions": [
+        "Run a local calculation",
+        "Render this dataset",
+        "Validate the proposed patch"
+      ],
+      "why": "A real local computation provider could support the pill without a deployed backend.",
+      "mechanisms": [
+        "Loopback HTTP canary while iSH foreground or split screen",
+        "Explicit file exchange as suspension-tolerant alternative"
+      ],
+      "depends_on": [
+        "compute.shell"
+      ],
+      "acceptance": "From Safari or Shortcuts, send a nonce-bearing real JSON job to local iSH, return validated result, then repeat after app switch; compare file handoff.",
+      "week_later": "Invoke from Ask/Run without managing a server; only promote if startup and recovery are tolerable.",
+      "sources": [
+        "ish",
+        "ish_proxy",
+        "ish_shortcut",
+        "ish_lifecycle"
+      ],
+      "boundary": "No assumption of persistent daemon, direct shortcut shell execution or Safari localhost cross-origin access. Bind loopback only, authenticate, allowlist operations; never execute arbitrary model-generated shell."
+    },
+    {
+      "id": "compute.remote",
+      "name": "Run work on available compute",
+      "family": "computation",
+      "priority": "P1",
+      "status": "existing_precedent",
+      "intentions": [
+        "Run this build",
+        "Test this experiment",
+        "Check the result"
+      ],
+      "why": "Local emulation is useful for small jobs; existing remote systems can do heavier work and leave durable artifacts.",
+      "mechanisms": [
+        "Existing Logical Cloud/Fire task contracts and authorized SSH or GitHub Actions",
+        "Explicit job request with result link"
+      ],
+      "depends_on": [
+        "compute.shell"
+      ],
+      "acceptance": "Submit one real existing project's reproducible build or analysis, retrieve artifact/result and distinguish queued/running/completed.",
+      "week_later": "One Run action; provider selection only when material.",
+      "sources": [
+        "logical",
+        "microsoft",
+        "labx"
+      ],
+      "boundary": "No new always-on service assumed; authenticated authorized resources only."
+    },
+    {
+      "id": "compute.update",
+      "name": "Accelerated code and Shortcut delivery",
+      "family": "computation",
+      "priority": "P1",
+      "status": "candidate",
+      "intentions": [
+        "Update the pill",
+        "Install this shortcut",
+        "Try the new version"
+      ],
+      "why": "The feedback loop from agent commit to running iPad behavior is itself a frequent workflow.",
+      "mechanisms": [
+        "Git pull or raw .user.js install via Userscripts",
+        "Cherri source-to-Shortcut compilation and supported signing/import"
+      ],
+      "depends_on": [
+        "compute.shell"
+      ],
+      "acceptance": "Update a versioned real script, verify visible version and behavior, roll back; separately prove one Cherri Shortcut imports and runs.",
+      "week_later": "One update path and one rollback; no repeated manual block construction when avoidable.",
+      "sources": [
+        "userscripts",
+        "cherri",
+        "ish",
+        "microsoft"
+      ],
+      "boundary": "Userscripts popup reload and Shortcut signing may require user gestures; never auto-install unreviewed code."
+    },
+    {
+      "id": "ambient.curate",
+      "name": "Curated ambient intelligence",
+      "family": "ambient",
+      "priority": "P1",
+      "status": "candidate",
+      "intentions": [
+        "Give me something worth thinking about",
+        "Refresh my research screen"
+      ],
+      "why": "Use otherwise idle attention for novel questions, useful discoveries and unresolved ideas without notification overload.",
+      "mechanisms": [
+        "Explicit context snapshot; model selects one item",
+        "Scriptable/native image rendering; widget or wallpaper; time/Focus automation after manual test"
+      ],
+      "depends_on": [
+        "intelligence.ask",
+        "retrieve.resume"
+      ],
+      "acceptance": "Display one genuine relevant question on the actual iPad widget or wallpaper, then test scheduled refresh and usefulness over a week.",
+      "week_later": "One refresh control; at most a few high-value items, quiet by default.",
+      "sources": [
+        "ambient",
+        "scriptable",
+        "shortcuts",
+        "ecosystem"
+      ],
+      "boundary": "No arbitrary custom screensaver or guaranteed refresh; do not expose sensitive data on lock screen."
+    },
+    {
+      "id": "ambient.brief",
+      "name": "Selective research briefing",
+      "family": "ambient",
+      "priority": "P2",
+      "status": "candidate",
+      "intentions": [
+        "What deserves my attention today?",
+        "Read my next steps aloud"
+      ],
+      "why": "Useful only if it reduces repeated checking and adds intellectual variance rather than generic summaries.",
+      "mechanisms": [
+        "Explicit project pointers and public source changes; summarize with source links; native speech or widget"
+      ],
+      "depends_on": [
+        "retrieve.resume",
+        "intelligence.ask"
+      ],
+      "acceptance": "Generate a briefing from actual selected work and discoveries; after a week compare whether it changed a question or action.",
+      "week_later": "Opt-in cadence; skip when nothing consequential; one place to find it.",
+      "sources": [
+        "FKEN",
+        "RSM",
+        "shortcuts"
+      ],
+      "boundary": "No continuous device surveillance or assumption of autonomous personal chat access."
+    },
+    {
+      "id": "control.recover",
+      "name": "What's happening / stop / copy report",
+      "family": "control",
+      "priority": "P0",
+      "status": "existing_precedent",
+      "intentions": [
+        "Stop",
+        "What happened?",
+        "Copy report"
+      ],
+      "why": "A fast workflow is only fast if failures don't require reconstructing implementation details.",
+      "mechanisms": [
+        "Single visible status, stop, recent stage history, sanitized report",
+        "Existing Microsoft/LabX lifecycle patterns"
+      ],
+      "depends_on": [],
+      "acceptance": "Induce realistic failure (tab switch, unavailable provider or stale target), see correct status and export sufficient diagnostic details without developer tools.",
+      "week_later": "Same Details/Stop labels across workflows; ordinary UI remains small.",
+      "sources": [
+        "microsoft",
+        "labx",
+        "REM"
+      ],
+      "boundary": "Never include tokens, full screenshots, private text or secrets by default; no hidden retries."
+    }
+  ],
+  "workflows": [
+    {
+      "id": "reading-loop",
+      "example": "See a circuit diagram in Kami -> screenshot or passage -> ask why -> save a source-linked question -> resume later",
+      "uses": [
+        "capture.screen",
+        "capture.route",
+        "capture.selection",
+        "intelligence.ask",
+        "persist.annotation",
+        "persist.inbox",
+        "retrieve.resume"
+      ]
+    },
+    {
+      "id": "hands-free-web",
+      "example": "Speak open commit history -> deterministic DOM route -> read changes -> ask about a file -> navigate to it",
+      "uses": [
+        "control.native",
+        "control.dom",
+        "intelligence.ask",
+        "control.intent"
+      ]
+    },
+    {
+      "id": "fken-discovery",
+      "example": "Encounter an unfamiliar mechanism -> capture term/source -> open domain landscape -> choose a skill probe -> reconcile discovery",
+      "uses": [
+        "capture.selection",
+        "retrieve.landscape",
+        "persist.inbox",
+        "persist.reconcile"
+      ]
+    },
+    {
+      "id": "engineering-debug",
+      "example": "Screenshot real failure -> copy diagnostics -> ask for interpretation -> validate JSON/patch in iSH -> run authorized build -> inspect result",
+      "uses": [
+        "capture.route",
+        "control.recover",
+        "intelligence.ask",
+        "compute.shell",
+        "compute.remote"
+      ]
+    },
+    {
+      "id": "ambient-continuity",
+      "example": "Recover selected unresolved research -> choose one valuable question -> render to widget/wallpaper -> reopen its source",
+      "uses": [
+        "retrieve.resume",
+        "intelligence.ask",
+        "ambient.curate"
+      ]
+    }
+  ],
+  "next_experiments": [
+    "Preserve existing AssistiveTouch double tap; manually test screenshot+question handoff.",
+    "Enable Voice Control and test known native commands; then test dictation to a minimal DOM pill on GitHub/Kami.",
+    "Test inference transport separately from browser execution.",
+    "Use iSH for a real JSON operation, then a short loopback request and app-switch recovery test only if valuable.",
+    "Capture and resume one real Kami/FKEN investigation before inventing a new state system."
+  ],
+  "observations": [
+    {
+      "date": "2026-11-25",
+      "capability": "capture.screen",
+      "evidence": "User reports screenshotting is linked to double tapping the accessibility virtual button.",
+      "scope": "User-reported existing baseline; no direct device inspection."
+    },
+    {
+      "date": "2026-11-25",
+      "capability": "compute.shell",
+      "evidence": "User reports iSH installed.",
+      "scope": "Installation reported; shell commands and integration not tested."
+    }
+  ],
+  "thoughts": [
+    "Screenshots are a universal visual context channel; DOM is a semantic context and execution channel. Neither subsumes the other.",
+    "The common unit of acceleration is the transition from an encounter to a useful next state, not a shortcut action.",
+    "Fast capture and slow reconciliation should be separate; the human should not classify every idea at the instant of discovery.",
+    "A local computation provider can be useful even if iPadOS never permits dependable background execution."
+  ]
+}
