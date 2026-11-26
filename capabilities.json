@@ -1,6 +1,6 @@
 {
   "schema": "ai_pill_os.capability_atlas",
-  "version": 13,
+  "version": 14,
   "updated": "2026-11-25",
   "purpose": "Can I operate at the speed of thought? Living design inventory, not a promise of implementation.",
   "design_rules": {
@@ -106,7 +106,8 @@
     "chatgpt_apps": "https://help.openai.com/en/articles/11487775",
     "drive_actions": "https://help.openai.com/en/articles/10929079-google-drive-app-and-setup-in-chatgpt",
     "github_access": "https://help.openai.com/en/articles/11145903-connecting-github-to-chatgpt",
-    "clipboard_api": "https://developer.mozilla.org/en-US/docs/Web/API/Clipboard_API"
+    "clipboard_api": "https://developer.mozilla.org/en-US/docs/Web/API/Clipboard_API",
+    "capture_renderer": "https://github.com/yorickshan/html2canvas-pro"
   },
   "capabilities": [
     {
@@ -790,6 +791,7 @@
       ],
       "why": "Reduces the time between encountering a site or userscript problem and giving AI actionable evidence.",
       "mechanisms": [
+        "AI Pill v0.4.0 relative touchpad precision inspector: visible cursor, live DOM hit-test highlight, parent selection, explicit inspect and cancel; direct tap retained under More.",
         "AI_Pill.user.js v0.1.1: Eruda pinned dependency; element geometry/attributes/ancestors; bounded interaction and resource timing report; explicit review and copy",
         "v0.2.1 large opacity/height controls and dedicated source browser: explicit file selection, raw/format toggle, search and bounded excerpt review",
         "v0.3.0 compact four-action toolbar, contextual evidence and source controls, stateful recording, icon-based debugger controls"
@@ -913,6 +915,7 @@
       ],
       "why": "Do not interrupt an investigation to transfer each observation.",
       "mechanisms": [
+        "Pocket v0.3.1 region snipping with html2canvas-pro@2.6.4, modern CSS colors, local image previews and composite PNG clipboard export. DOM reconstruction, not framebuffer capture.",
         "v0.2.1 implements ordered text/JSON working tray with clear and copy-all; handoffs snapshot tray content. Image capture remains unimplemented.",
         "Rectangular crop of supported capture; native screenshot import for real pixels; explicitly distinguish DOM reconstruction",
         "Ordered screenshots, text, structured JSON, file references; numbered composite PNG or individual attachments",
@@ -926,7 +929,8 @@
       "week_later": "Capture, review, copy, remove; no screenshot manager ceremony.",
       "sources": [
         "clipboard_api",
-        "pocket"
+        "pocket",
+        "capture_renderer"
       ],
       "boundary": "No privileged tab capture claim, GM binary quota and image paste untested; no automatic uploads. Text/JSON slice executed against mocked DOM and GM; no real Safari storage or image capture established."
     },
@@ -942,6 +946,7 @@
       ],
       "why": "Move intention/context across tabs without losing origin, retyping or rebuilding context.",
       "mechanisms": [
+        "Pocket v0.3.1 single contextual chat icon and gold selected-destination indicator; exact conversation URL or explicit new-chat home route. Existing-tab activation not certified.",
         "Pocket v0.2.1: pin exact existing ChatGPT/Gemini conversation once; Ask with tray stores per-request snapshot and source; source opens selected conversation, destination reviews/copies; acknowledgment means clipboard copy only. Reload/resume reads local state.",
         "Same universal installed script's GM storage, immutable request ID, exact chosen destination, acknowledgment and durable pending state; resume pull fallback",
         "Borrow LabX task attribution and stale-operation guards, not localhost service",
@@ -1045,6 +1050,7 @@
     }
   ],
   "next_experiments": [
+    "Update Pocket v0.3.1 and AI Pill v0.4.0; repeat same Grokipedia/ChatGPT crop, paste two images, select current chat and verify gold then route from source; test precision inspector on small real controls. No further capture/pointer complexity until results.",
     "Pocket v0.2.1: install as update (same script identity), open existing AI conversation and Use this chat; collect a passage on Wikipedia and another on GitHub, dictate question at source, Ask with tray, Open chat, open Pocket, copy/paste/send explicitly; return to source and refresh, verify copied not sent status. Reload and verify prior saved records.",
     "On an explicit request to preserve a useful answer, update the matching existing Kami_Uploads_RSM_Tree domain investigation or FKEN canonical record using authorized connector, inspect schema and read back exact commit/path.",
     "Implement visual tray only after the text handoff is established; test three real crops and composite export, preserve native screenshot fallback.",
@@ -1092,6 +1098,18 @@
       "capability": "control.handoff",
       "evidence": "Pocket v0.2.1 executed with mocked DOM, URL, GM and clipboard: nine checks passed (selected destination, two-origin collection, snapshot content, reload recovery, wrong conversation rejection, clipboard failure preserves draft/no ack, success copy-only ack, source receipt, clear tray preserves saved and queued snapshot).",
       "scope": "Actual script in mock environment; not Safari, actual GM manager, real AI provider or UX acceptance."
+    },
+    {
+      "date": "2026-11-25",
+      "capability": "persist.tray",
+      "evidence": "User screenshots show Pocket v0.3.0 running on Grokipedia and ChatGPT with the same collected text; capture fails respectively on CSS color() and oklab().",
+      "scope": "Target Safari text recall and version evidence; image capture failed; no successful Ask receipt."
+    },
+    {
+      "date": "2026-11-25",
+      "capability": "control.handoff",
+      "evidence": "Five extracted actual routing-function checks passed with mocked URL/DOM: unconfigured external, unconfigured home, configured external, selected current, other conversation.",
+      "scope": "Not actual Safari navigation, provider inference or GM storage test."
     }
   ],
   "thoughts": [
