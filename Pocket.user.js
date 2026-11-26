@@ -888,8 +888,8 @@
   }
   async function copyConnectionReport(){
     const here=chatURL(location.href);let savedTrace=null,traceReadError=null;
-    try{await traceWrites;if(store&&here)savedTrace=await store.get(TRACE+here);}catch(e){traceReadError=String(e?.message||e).slice(0,200);}
-    await copyText(JSON.stringify({version:VERSION,instance,target:linkTarget,state:linkState,challenge,lastProof,lastHeart,ageMs:lastHeart?Date.now()-lastHeart.at:null,error:linkError,visibility:document.visibilityState,intervalMs:LINK_INTERVAL,expiryMs:LINK_TTL,mailbox:'metadata index; direct request keys',autoStartExpiryMs:AUTO_START_TTL,events:linkEvents,selfTest:lastSelfTest||savedTrace?.selfTest||null,execution:executionTrace||savedTrace?.execution||null,traceReadError,traceError,request:pending?{id:pending.id,created:pending.created,worker:pending.autoWorker||null,seen:pending.seen,copied:pending.copied,returned:!!pending.reply,manualReason:pending.manualReason||null,run:pending.run}:null,scope:'Local GM ping/pong, editor/stop observations and explicit Ask transaction events. No prompt or answer text in this report.'},null,2));}
+    try{await traceWrites;if(store&&(here||target))savedTrace=await store.get(TRACE+(here||target));}catch(e){traceReadError=String(e?.message||e).slice(0,200);}
+    await copyText(JSON.stringify({version:VERSION,instance,target:linkTarget,state:linkState,challenge,lastProof,lastHeart,ageMs:lastHeart?Date.now()-lastHeart.at:null,error:linkError,visibility:document.visibilityState,intervalMs:LINK_INTERVAL,expiryMs:LINK_TTL,mailbox:'metadata index; direct request keys',autoStartExpiryMs:AUTO_START_TTL,events:linkEvents,selfTest:lastSelfTest||savedTrace?.selfTest||null,execution:executionTrace||savedTrace?.execution||null,traceReadError,traceError,request:pending?{id:pending.id,created:pending.created,worker:pending.autoWorker||null,seen:pending.seen,copied:pending.copied,returned:!!pending.reply,manualReason:pending.manualReason||null,run:pending.run}:null,scope:'GM ping/pong and persisted latest execution/self-test stages, DOM observations and receipt evidence. No custom prompt or answer body. A saved trace can predate this tab instance; compare IDs and timestamps.'},null,2));}
   action('link-report',copyConnectionReport);
   function extractPocketAnswer(last) {
     if(!last)return '';
@@ -1020,14 +1020,16 @@
     const here=chatURL(location.href);
     if(document.hidden||!here?.startsWith('https://chatgpt.com/')||here==='https://chatgpt.com/'){$('self-test-status').textContent='Open an existing ChatGPT conversation first.';return;}
     if(autoBusy||activeAsk||handoffBusy){$('self-test-status').textContent='An Ask is already running. Wait until it finishes.';return;}
-    const editor=chatEditor();
-    if(!editor||editorText(editor)||composerAttachments(editor)||streamActive()){$('self-test-status').textContent='Finish the current response or draft first. Nothing sent.';return;}
     const id=uid(),marker='POCKET_'+id.replace(/[^a-z0-9]/gi,'').slice(-10).toUpperCase();
     const custom=$('self-test-prompt').value.trim();
     const text=custom||'Pocket self-test. Reply with exactly this token and nothing else: '+marker;
     if(text.length>LIMIT){$('self-test-status').textContent='Test message is too large.';return;}
     const r={id,created:new Date().toISOString(),sourcePage:here,target:here,text,autoWorker:instance,selfTest:true};
     lastSelfTest={id,started:Date.now(),target:here,surface:chatSurface(),custom:!!custom,expectedMarker:custom?null:marker,phase:'starting',stages:[]};
+    const editor=chatEditor();
+    if(!editor||editorText(editor)||composerAttachments(editor)||streamActive()){
+      testStage(r,'failed',!editor?'Composer unavailable. Nothing sent.':'Finish the current response or draft first. Nothing sent.');return;
+    }
     autoBusy=true;
     testStage(r,'starting','Starting same-tab self-test…');
     try{
