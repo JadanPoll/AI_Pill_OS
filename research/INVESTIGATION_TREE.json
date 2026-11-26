@@ -1,6 +1,6 @@
 {
   "schema": "ai_pill_os.rsm_investigation",
-  "version": 7,
+  "version": 8,
   "updated": "2026-11-25",
   "parent_purpose": "Reduce mechanical distance from human intention to useful realization; preserve agency, context, and recoverability.",
   "scope": "Safari-first personal computing: direct touch for low-information operations, dictation and AI collaboration for high-information intentions, universal pill plus contextual mini-pills, local working state and context-aware canonical persistence.",
@@ -770,9 +770,9 @@
       ],
       "status": "active_debugging",
       "why": "Visual debugging needs several ordered observations; screenshots are not interchangeable with DOM reconstruction.",
-      "model": "Restore v0.3.1 html2canvas-pro 2.6.4 direct drag workflow at user's explicit direction; investigate clone, parse, resource preload, render, encode and GM persistence separately. Keep bitmap editor as optional fallback. Do not substitute another renderer.",
+      "model": "SnapDOM 3.8.3 direct drag capture. Factor package availability, fetch and CORS, module/classic execution, Safari userscript realm, SVG serialization, rasterization, encode/decode, storage and clipboard. Separate standalone lab from actual Pocket context. No renderer substitution.",
       "belief": "Clipboard supports PNG on modern browsers with user activation constraints. Cross-origin canvas/frame fidelity and manager large payload limits unresolved.",
-      "certificate": "Existing Copy Screenshot branch remains pixel-accurate fallback; universal tray should not promise privileged tab capture. No binary storage claim until measured. Ordered text tray implemented in Pocket v0.2.1; rectangle/image capture remains open. Safari screenshots show html2canvas-pro parsing failure on ChatGPT and unfinished Grokipedia capture; source inspection of SnapDOM core.clip.test.js and type declarations establishes page-coordinate region clipping and offscreen culling, not device fidelity. User reported v0.3.2 launcher missing, triggering stop of renderer trials. v0.4.1 removes all @require dependencies and passes eight mocked startup/crop lifecycle and coordinate checks. Real Safari clipboard, file picker, pixels and layout remain untested. User screenshot of v0.4.2 shows restored launcher and crop editor plus a retained DOM reconstruction record with missing/broken thumbnail. This is evidence of stored record, not successful bitmap. v0.5.1 restores known prior renderer and includes phase checkpoints, last clone CSS property reads, bounded resource failures, cancellation request, and pre/post-write image decode. Mock pipeline success/parser/empty-canvas checks passed; actual renderer not exercised.",
+      "certificate": "Existing Copy Screenshot branch remains pixel-accurate fallback; universal tray should not promise privileged tab capture. No binary storage claim until measured. Ordered text tray implemented in Pocket v0.2.1; rectangle/image capture remains open. Safari screenshots show html2canvas-pro parsing failure on ChatGPT and unfinished Grokipedia capture; source inspection of SnapDOM core.clip.test.js and type declarations establishes page-coordinate region clipping and offscreen culling, not device fidelity. User reported v0.3.2 launcher missing, triggering stop of renderer trials. v0.4.1 removes all @require dependencies and passes eight mocked startup/crop lifecycle and coordinate checks. Real Safari clipboard, file picker, pixels and layout remain untested. User screenshot of v0.4.2 shows restored launcher and crop editor plus a retained DOM reconstruction record with missing/broken thumbnail. This is evidence of stored record, not successful bitmap. v0.5.1 restores known prior renderer and includes phase checkpoints, last clone CSS property reads, bounded resource failures, cancellation request, and pre/post-write image decode. Mock pipeline success/parser/empty-canvas checks passed; actual renderer not exercised. User provided actual v0.5.2 report: startup 4ms, loading renderer 62ms, import failure 68ms, rendererLoaded false, modern GM, older html2canvas-pro PNG record 253934 characters. This establishes module load failure only. Exact upstream v3.8.3 package manifest declares dist/snapdom.mjs and dist/snapdom.js. Standalone lab and Pocket v0.5.3 diagnostics committed, syntax checked, device results pending.",
       "evidence": [
         "clipboard_api",
         "copy_screenshot",
@@ -784,9 +784,9 @@
         "safari_capture_mdn",
         "webkit_clipboard"
       ],
-      "stop": "Repeat the actual Grokipedia and ChatGPT regions; gather capture report identifying obstructing phase or CSS property, then make evidence-directed fix and repeat. Stop on two legible, correctly cropped images with verified storage and composite paste. No blind renderer substitutions. If capture never initializes, restore dependency-free v0.4.2 and diagnose @require separately.",
+      "stop": "Resolve loading by evidence, then establish correct actual region capture, persistence, visible preview and composite paste on Grokipedia and ChatGPT. If classic succeeds and ESM fails, investigate execution/packaging rather than renderer. If both contexts fail fetch, inspect distribution/network. If only actual site fails, inspect CSP/manager boundary. Do not infer unavailable cross-origin headers mean absent headers.",
       "reopen": "Reopen on actual fidelity, attachment or storage failure.",
-      "next": "Install v0.5.1; one actual crop on each site; copy capture report from More for each failure. Verify image visually if success. If browser freezes, reopen and copy latest durable milestone; asynchronous cancellation cannot interrupt blocked main thread.",
+      "next": "Run research/snapdom_lab.html once in Safari, compare HTTP responses, hashes, CSP events, ESM versus classic script, known-pixel root clip and image decode/clipboard. Then repeat one real Grokipedia drag in Pocket v0.5.3 and copy report. Compare identical dependency URLs across contexts before deciding next intervention.",
       "depends_on": [
         "I14"
       ]
@@ -926,6 +926,11 @@
       "date": "2026-11-25",
       "decision": "User explicitly reopened direct drag reconstruction branch; retained record warrants discriminating capture/storage/render evidence, not assuming successful screenshot. Restore same renderer and instrument rather than switching libraries.",
       "method": "RSM-04.07; REM-04.02"
+    },
+    {
+      "date": "2026-11-25",
+      "decision": "User requests comprehensive triangulation rather than successive guessed fixes. Add separate standalone lab and actual-context transport diagnostics; keep renderer pinned.",
+      "method": "RSM-03.01–03.03; RSM-04.07; REM-04.02"
     }
   ],
   "functional_intent": {
