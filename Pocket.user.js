@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         AI Pill OS - Pocket
 // @namespace    https://github.com/JadanPoll/AI_Pill_OS
-// @version      0.7.20
+// @version      0.7.21
 // @updateURL    https://raw.githubusercontent.com/JadanPoll/AI_Pill_OS/main/Pocket.user.js
 // @downloadURL  https://raw.githubusercontent.com/JadanPoll/AI_Pill_OS/main/Pocket.user.js
 // @description  Universal Safari pill: collect evidence, keep discoveries, and hand a question to a chosen chat.
@@ -26,7 +26,7 @@
 (() => {
   'use strict';
   if (window.top !== window) return;
-  const VERSION='0.7.20';
+  const VERSION='0.7.21';
   // Report initialization failures without depending on the main UI, storage or a CDN.
   function bootFailure(error,phase){
     const message=String(error?.message||error).slice(0,500);
@@ -52,7 +52,7 @@
     if(document.getElementById('ai-pill-pocket'))return;
     let phase='storage setup';
     try{
-  const PREFIX='pocket.v1.', TRAY='tray.v1.', HANDOFF='handoff.v1.', ACK='ack.v1.', SEEN='seen.v1.', REPLY='reply.v1.', RUN='run.v1.', TRACE='trace.v1.', REQUEST_TRACE='request.trace.v1.', VISUAL='request.visual.v1.', HISTORY='telemetry.history.v1', JOURNAL='telemetry.journal.v1.', MAILBOX='mailbox.v1', TARGET='target.v1', WORKER='target.worker.v1', TITLE='chat.title.v1.', LIMIT=100000, MAX_ITEMS=250;
+  const PREFIX='pocket.v1.', TRAY='tray.v1.', HANDOFF='handoff.v1.', ACK='ack.v1.', SEEN='seen.v1.', REPLY='reply.v1.', RUN='run.v1.', TRACE='trace.v1.', REQUEST_TRACE='request.trace.v1.', VISUAL='request.visual.v1.', HISTORY='telemetry.history.v1', JOURNAL='telemetry.journal.v1.', MAILBOX='mailbox.v1', TARGET='target.v1', WORKER='target.worker.v1', FOCUS_REQUEST='focus.request.v1', FOCUS_RECEIPT='focus.receipt.v1', TITLE='chat.title.v1.', LIMIT=100000, MAX_ITEMS=250;
   const uid=()=>globalThis.crypto?.randomUUID?.()||Date.now().toString(36)+'-'+Math.random().toString(36).slice(2);
   // Deliberately no localStorage fallback: that would appear to work but silently
   // partition the data by site. Only this installed script owns these GM keys.
@@ -704,12 +704,70 @@
   // Userscripts' GM.openInTab delegates to browser.tabs.create in the
   // extension background. Do not use location.assign or a synthetic anchor:
   // iPadOS can route those navigations into the installed ChatGPT app.
-  let openingChat=false,lastNavigation=null;
+  let openingChat=false,lastNavigation=null,focusFallback=null,focusBusy=false,lastFocusHandled=null,lastFocusReceipt=null;
+  const FOCUS_TTL=12000;
+  const focusState=()=>({visibility:document.visibilityState,hasFocus:document.hasFocus()});
+  function navEvent(detail){lastNavigation=detail;linkLog('navigation',detail);}
+  function focusWait(promise,ms=2500){let timer;return Promise.race([promise,new Promise((_,reject)=>{timer=setTimeout(()=>reject(Error('Focus storage timed out')),ms);})]).finally(()=>clearTimeout(timer));}
+  async function focusTick(){
+    if(!store||focusBusy||!chatURL(location.href)||selectedWorker!==instance)return;
+    focusBusy=true;
+    try{
+      const req=await store.get(FOCUS_REQUEST);
+      if(!req||req.id===lastFocusHandled||req.worker!==instance||req.target!==chatURL(location.href)||Date.now()>req.expires||req.sender===instance)return;
+      const b=await store.get(WORKER);
+      if(b?.worker!==instance||b.target!==req.target||Date.now()>req.expires)return;
+      lastFocusHandled=req.id;
+      const before=focusState(),attemptedAt=Date.now();let error=null;
+      // No user activation is transferred through GM storage. Safari is free
+      // to ignore this call. Do not infer a switch from its return value.
+      try{window.focus();}catch(e){error=String(e?.message||e).slice(0,180);}
+      const receipt={id:req.id,worker:instance,sender:req.sender,target:req.target,attemptedAt,before,after:focusState(),error,phase:'attempted'};
+      lastFocusReceipt=receipt;linkLog('focus-attempt',receipt);await store.set(FOCUS_RECEIPT,receipt);
+      await new Promise(resolve=>setTimeout(resolve,700));
+      const after=focusState();
+      lastFocusReceipt={...receipt,after,observedAt:Date.now(),phase:after.visibility==='visible'&&after.hasFocus?'foreground-observed':'not-foreground'};
+      linkLog('focus-result',lastFocusReceipt);await store.set(FOCUS_RECEIPT,lastFocusReceipt);
+    }catch(e){linkLog('focus-error',{message:String(e?.message||e).slice(0,180)});}
+    finally{focusBusy=false;}
+  }
+  async function requestExistingFocus(url,binding){
+    const req={id:uid(),sender:instance,worker:binding.worker,target:url,at:Date.now(),expires:Date.now()+FOCUS_TTL};
+    navEvent({at:req.at,target:url,method:'window.focus via GM',phase:'requested',id:req.id,worker:req.worker,source:focusState()});
+    status('Trying to switch to selected chat…');
+    let receipt=null;
+    try{
+      await focusWait(store.set(FOCUS_REQUEST,req));
+      while(Date.now()<req.expires){
+        const a=await focusWait(store.get(FOCUS_RECEIPT));
+        if(a?.id===req.id&&a.worker===req.worker&&a.sender===instance&&a.target===url){receipt=a;if(a.phase==='foreground-observed'||a.phase==='not-foreground')break;}
+        const current=await focusWait(store.get(FOCUS_REQUEST));if(current?.id!==req.id)break;
+        await new Promise(resolve=>setTimeout(resolve,400));
+      }
+    }catch(e){navEvent({...lastNavigation,phase:'focus-error',error:String(e?.message||e).slice(0,180)});}
+    const foreground=receipt?.phase==='foreground-observed',source=focusState();
+    const switched=foreground&&(source.visibility==='hidden'||!source.hasFocus);
+    navEvent({...lastNavigation,phase:switched?'switch-observed':foreground?'receiver-foreground-source-not-switched':receipt?'focus-not-confirmed':'no-receipt',receipt,source});
+    if(switched){focusFallback=null;status('Selected chat in foreground.');}
+    else{focusFallback=url;status(receipt?'Safari did not confirm switching · tap chat again to open a new tab.':'Selected tab did not acknowledge · tap chat again to open a new tab.');}
+  }
   async function openChat(dest){
     const url=chatURL(dest);if(!url||openingChat)return;
     if(chatURL(location.href)===url){status('Already in this conversation.');return;}
+    openingChat=true;
+    try{
+      if(focusFallback!==url&&store){
+        const binding=await focusWait(store.get(WORKER));
+        if(binding?.target===url&&typeof binding.worker==='string'){await requestExistingFocus(url,binding);return;}
+      }
+      focusFallback=null;
+      await openBrowserTab(url);
+    }catch(e){focusFallback=url;navEvent({at:Date.now(),target:url,method:'window.focus via GM',phase:'focus-error',error:String(e?.message||e).slice(0,180)});status('Could not request focus · tap chat again to open a new tab.');}
+    finally{openingChat=false;}
+  }
+  async function openBrowserTab(url){
     const open=typeof GM!=='undefined'&&typeof GM.openInTab==='function'?(u)=>GM.openInTab(u,false):typeof GM_openInTab==='function'?(u)=>GM_openInTab(u,false):null;
-    openingChat=true;lastNavigation={at:Date.now(),target:url,method:open?'GM.openInTab':'copy-link',phase:'starting'};
+    lastNavigation={at:Date.now(),target:url,method:open?'GM.openInTab':'copy-link',phase:'starting'};
     try{
       if(!open)throw Error('Browser tab API unavailable');
       const tab=await open(url);lastNavigation={...lastNavigation,phase:'opened',tabId:tab?.id??null,active:tab?.active??null};linkLog('navigation',lastNavigation);
@@ -719,7 +777,7 @@
       // Never fall back to universal-link navigation. The URL remains
       // available for native Safari address-bar paste or long-press.
       $('fallback').value=url;$('fallback').hidden=false;$('fallback-copy').hidden=false;status('Could not open browser tab. Copy link into Safari or switch to the existing chat tab.');
-    }finally{openingChat=false;}
+    }
   }
   const cleanChatTitle=v=>String(v||'').replace(/\s+/g,' ').trim().slice(0,160);
   function localChatTitle(){return cleanChatTitle(document.title).replace(/\s*[|–—-]\s*(ChatGPT|Google Gemini|Gemini)\s*$/i,'').trim();}
@@ -1182,7 +1240,7 @@
       }
     }catch(e){traceReadError=String(e?.message||e).slice(0,200);}
     const exactExecution=request?(executionTrace?.id===request.id?executionTrace:[history?.recent?.find(e=>e.id===request.id),history?.historical?.find(e=>e.id===request.id),requestTrace?.execution,savedTrace?.execution].filter(e=>e?.id===request.id).sort((a,b)=>(b.updated||b.started)-(a.updated||a.started))[0]||null):null;
-    return JSON.stringify({version:VERSION,exportedAt:new Date().toISOString(),reportId:uid(),instance,selectedWorker,target:linkTarget,state:linkState,challenge,lastProof,lastHeart,ageMs:lastHeart?Date.now()-lastHeart.at:null,error:linkError,visibility:document.visibilityState,intervalMs:LINK_INTERVAL,expiryMs:LINK_TTL,mailbox:'metadata index; direct request keys',autoStartExpiryMs:AUTO_START_TTL,events:linkEvents,uiEvents,watchdog:pulseSnapshot(),priorPulse,history,retention:{full:HISTORY_FULL,compact:HISTORY_COMPACT,failureExamples:HISTORY_EXAMPLES,distinctFailureSignatures:HISTORY_SIGNATURES,journal:'per tab, survives ordinary reload; sessionStorage'},live,environment:{surface:here?chatSurface():null,storage:modern?'GM async':legacy?'GM legacy':'unavailable',viewport:[innerWidth,innerHeight],visualViewport:window.visualViewport?[window.visualViewport.width,window.visualViewport.height]:null,hasFocus:document.hasFocus(),clipboard:!!navigator.clipboard,position:dock,navigation:lastNavigation,overlay:{mode:layerMode,error:layerError,zIndex:getComputedStyle(host).zIndex}},selfTest:lastSelfTest||savedTrace?.selfTest||null,execution:exactExecution||(!request?(executionTrace||savedTrace?.execution||null):null),latestConversationExecution:request&&!exactExecution?(savedTrace?.execution||null):null,traceReadError,traceError,clipboard:lastCopy,request:request?{id:request.id,target:request.target,chatTitle:request.chatTitle||null,created:request.created,worker:request.autoWorker||null,promptCharacters:request.text?.length||0,marker:request.marker||null,visuals:request.visuals||[],seen:request.seen,copied:request.copied,returned:!!request.reply,manualReason:request.manualReason||null,run:request.run,receipts}:null,scope:'Exact request trace when available, recent UI and connection events, live worker DOM and receipt metadata. No custom prompt or answer body. Archive retains recent full executions, compact history, aggregate outcomes and bounded rare failure examples; journal survives ordinary refresh. Latest conversation execution is separate when it belongs to another request.'},null,2);}
+    return JSON.stringify({version:VERSION,exportedAt:new Date().toISOString(),reportId:uid(),instance,selectedWorker,target:linkTarget,state:linkState,challenge,lastProof,lastHeart,ageMs:lastHeart?Date.now()-lastHeart.at:null,error:linkError,visibility:document.visibilityState,intervalMs:LINK_INTERVAL,expiryMs:LINK_TTL,mailbox:'metadata index; direct request keys',autoStartExpiryMs:AUTO_START_TTL,events:linkEvents,uiEvents,watchdog:pulseSnapshot(),priorPulse,history,retention:{full:HISTORY_FULL,compact:HISTORY_COMPACT,failureExamples:HISTORY_EXAMPLES,distinctFailureSignatures:HISTORY_SIGNATURES,journal:'per tab, survives ordinary reload; sessionStorage'},live,environment:{surface:here?chatSurface():null,storage:modern?'GM async':legacy?'GM legacy':'unavailable',viewport:[innerWidth,innerHeight],visualViewport:window.visualViewport?[window.visualViewport.width,window.visualViewport.height]:null,hasFocus:document.hasFocus(),clipboard:!!navigator.clipboard,position:dock,navigation:lastNavigation,focusReceipt:lastFocusReceipt,overlay:{mode:layerMode,error:layerError,zIndex:getComputedStyle(host).zIndex}},selfTest:lastSelfTest||savedTrace?.selfTest||null,execution:exactExecution||(!request?(executionTrace||savedTrace?.execution||null):null),latestConversationExecution:request&&!exactExecution?(savedTrace?.execution||null):null,traceReadError,traceError,clipboard:lastCopy,request:request?{id:request.id,target:request.target,chatTitle:request.chatTitle||null,created:request.created,worker:request.autoWorker||null,promptCharacters:request.text?.length||0,marker:request.marker||null,visuals:request.visuals||[],seen:request.seen,copied:request.copied,returned:!!request.reply,manualReason:request.manualReason||null,run:request.run,receipts}:null,scope:'Exact request trace when available, recent UI and connection events, live worker DOM and receipt metadata. No custom prompt or answer body. Archive retains recent full executions, compact history, aggregate outcomes and bounded rare failure examples; journal survives ordinary refresh. Latest conversation execution is separate when it belongs to another request.'},null,2);}
   action('link-report',copyConnectionReport);
   function extractPocketAnswer(last) {
     if(!last)return '';
@@ -1647,10 +1705,10 @@
     if(document.hidden&&(!target||chatURL(location.href)!==target))return;
     pollBusy=true;try{await refreshHandoff(loadEpoch);}catch(e){linkLog('error',{message:'Mailbox: '+String(e?.message||e).slice(0,180)});}finally{pollBusy=false;}
   }
-  let transportTimer=null,transportBusy=false,transportWake=false,nextLink=0,nextPoll=0,nextAuto=0;
+  let transportTimer=null,transportBusy=false,transportWake=false,nextLink=0,nextPoll=0,nextAuto=0,nextFocus=0;
   function wakeTransport(){
     if(!store)return;
-    nextLink=nextPoll=nextAuto=0;
+    nextLink=nextPoll=nextAuto=nextFocus=0;
     if(transportBusy){transportWake=true;return;}
     clearTimeout(transportTimer);transportTimer=setTimeout(transportTick,0);
   }
@@ -1664,6 +1722,7 @@
       // Each lane has its own in-flight guard. A blocked autoTick must
       // not prevent the heartbeat or mailbox from making progress.
       if(now>=nextLink){nextLink=now+(active?2000:LINK_INTERVAL);void linkTick();}
+      if(worker&&now>=nextFocus){nextFocus=now+1500;void focusTick();}
       if((worker||activeAsk)&&now>=nextAuto){nextAuto=now+(activeAsk?1000:2000);void autoTick();}
       if((!document.hidden||worker)&&now>=nextPoll){nextPoll=now+(active?1000:8000);void pollHandoff();}
     }finally{
