@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         AI Pill OS - Pocket
 // @namespace    https://github.com/JadanPoll/AI_Pill_OS
-// @version      0.5.0
+// @version      0.5.1
 // @updateURL    https://raw.githubusercontent.com/JadanPoll/AI_Pill_OS/main/Pocket.user.js
 // @downloadURL  https://raw.githubusercontent.com/JadanPoll/AI_Pill_OS/main/Pocket.user.js
 // @description  Universal Safari pill: collect evidence, keep discoveries, and hand a question to a chosen chat.
@@ -22,7 +22,7 @@
 (() => {
   'use strict';
   if (window.top !== window) return;
-  const VERSION='0.5.0';
+  const VERSION='0.5.1';
   // Report initialization failures without depending on the main UI, storage or a CDN.
   function bootFailure(error,phase){
     const message=String(error?.message||error).slice(0,500);
@@ -236,7 +236,15 @@
     if(captureRun===run)status('Capture: '+stage+(detail?.percent!==undefined?' '+detail.percent+'%':'')+' · '+Math.round(entry.ms/1000)+'s');
   }
   async function checkpointCapture(run){
-    try{await store.set(CAPTURE_KEY,JSON.parse(JSON.stringify(run.report)));}catch{}
+    const snapshot=JSON.parse(JSON.stringify(run.report));
+    const previous=run.checkpoint||Promise.resolve();
+    run.checkpoint=previous.catch(()=>{}).then(()=>store.set(CAPTURE_KEY,snapshot)).catch(()=>{});
+    await run.checkpoint;
+  }
+  function checkpointStage(run,stage){
+    if(run.lastCheckpointStage===stage)return;
+    run.lastCheckpointStage=stage;
+    void checkpointCapture(run);
   }
   async function validateBitmap(data){
     if(!/^data:image\/(?:png|jpeg);base64,/i.test(data)||data.length<100)throw Error('Canvas returned empty or invalid image data');
@@ -255,16 +263,16 @@
       // Yield so Safari can paint the status before the synchronous clone/parse work.
       await new Promise(resolve=>setTimeout(resolve,50));
       const ignore=el=>['ai-pill-pocket','ai-pill-os','eruda','ai-pocket-snip-overlay'].includes(el.id);
-      watchdog=setTimeout(()=>{controller.abort();recordCapture(run,'deadline requested');},45000);
+      watchdog=setTimeout(()=>{run.report.deadlineAt=run.report.stage;controller.abort();status('Capture deadline reached · cancellation requested');void checkpointCapture(run);},45000);
       clock=setInterval(()=>{if(captureRun===run)status('Capture: '+run.report.stage+' · '+Math.round((performance.now()-run.started)/1000)+'s');},1000);
       const canvas=await captureLib(document.documentElement,{
         x:sx+x,y:sy+y,width:w,height:h,scrollX:sx,scrollY:sy,windowWidth:innerWidth,windowHeight:innerHeight,
         scale:Math.min(2,1600/Math.max(w,h)),useCORS:true,allowTaint:false,logging:false,imageTimeout:8000,signal:controller.signal,
         ignoreElements:ignore,
-        onProgress:(phase,percent)=>recordCapture(run,phase,{percent}),
+        onProgress:(phase,percent)=>{recordCapture(run,phase,{percent});checkpointStage(run,phase);},
         onError:err=>{if(run.report.resourceErrors.length<12)run.report.resourceErrors.push(redactCSS(String(err?.message||err)).replace(/https?:\/\/\S+/g,'[url omitted]'));},
         onclone:doc=>{
-          recordCapture(run,'clone ready',{elements:doc.getElementsByTagName('*').length});
+          recordCapture(run,'clone ready',{elements:doc.getElementsByTagName('*').length});checkpointStage(run,'clone ready');
           traceCloneStyles(run,doc.defaultView);traceCloneStyles(run,window);
         }
       });
@@ -295,7 +303,9 @@
   action('capture-cancel',()=>{if(captureRun){captureRun.controller.abort();status('Cancellation requested.');}});
   action('capture-report',async()=>{
     const report=latestCapture||await store?.get(CAPTURE_KEY)||{version:VERSION,rendererLoaded:!!captureLib,stage:'no capture attempted'};
-    await copyText(JSON.stringify(report,null,2));
+    const images=[...tray,...records].filter(r=>r.image).slice(-12).map(r=>({id:r.id,renderer:r.renderer||null,characters:String(r.image).length,format:String(r.image).split(',')[0].slice(0,50),storedDimensions:r.storedDimensions||null}));
+    const output={...report,rendererLoaded:!!captureLib,storage:modern?'modern GM':legacy?'legacy GM':'unavailable',imageRecords:images};
+    await copyText(JSON.stringify(output,null,2));
   });
   // Native bitmap acquisition is separate from crop geometry. No DOM renderer or network dependency.
   let cropEpoch=0,cropURL=null,cropRect=null,cropDrag=null,cropSource='',cropBusy=false;
