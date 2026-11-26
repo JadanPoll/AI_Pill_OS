@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         AI Pill OS - Pocket
 // @namespace    https://github.com/JadanPoll/AI_Pill_OS
-// @version      0.5.8
+// @version      0.5.9
 // @updateURL    https://raw.githubusercontent.com/JadanPoll/AI_Pill_OS/main/Pocket.user.js
 // @downloadURL  https://raw.githubusercontent.com/JadanPoll/AI_Pill_OS/main/Pocket.user.js
 // @description  Universal Safari pill: collect evidence, keep discoveries, and hand a question to a chosen chat.
@@ -24,7 +24,7 @@
 (() => {
   'use strict';
   if (window.top !== window) return;
-  const VERSION='0.5.8';
+  const VERSION='0.5.9';
   // Report initialization failures without depending on the main UI, storage or a CDN.
   function bootFailure(error,phase){
     const message=String(error?.message||error).slice(0,500);
@@ -50,7 +50,7 @@
     if(document.getElementById('ai-pill-pocket'))return;
     let phase='storage setup';
     try{
-  const PREFIX='pocket.v1.', TRAY='tray.v1.', HANDOFF='handoff.v1.', ACK='ack.v1.', TARGET='target.v1', LIMIT=100000, MAX_ITEMS=250;
+  const PREFIX='pocket.v1.', TRAY='tray.v1.', HANDOFF='handoff.v1.', ACK='ack.v1.', SEEN='seen.v1.', REPLY='reply.v1.', TARGET='target.v1', LIMIT=100000, MAX_ITEMS=250;
   const uid=()=>globalThis.crypto?.randomUUID?.()||Date.now().toString(36)+'-'+Math.random().toString(36).slice(2);
   // Deliberately no localStorage fallback: that would appear to work but silently
   // partition the data by site. Only this installed script owns these GM keys.
@@ -66,12 +66,12 @@
   Object.assign(icons,{bookmark:'<path d="M6 3h12v18l-6-4-6 4z"/>',back:'<path d="m15 18-6-6 6-6"/>',trash:'<path d="M3 6h18M9 6V3h6v3M6 6l1 15h10l1-15M10 10v7M14 10v7"/>',settings:'<circle cx="5" cy="12" r="1"/><circle cx="12" cy="12" r="1"/><circle cx="19" cy="12" r="1"/>',arrow:'<path d="M7 17 17 7M7 7h10v10"/>',pin:'<path d="m16 3 5 5-4 2-3 5-2-2-6 6-1-1 6-6-2-2 5-3z"/>',search:'<circle cx="10" cy="10" r="6"/><path d="m14 14 6 6"/>'});
   icons.crop='<path d="M6 3v15h15M3 6h15v15"/>';icons.chat='<path d="M20 11a8 8 0 0 1-8 8H4l2-4a8 8 0 1 1 14-4Z"/><path d="M9 11h6"/>';const icon=k=>'<svg width="21" height="21" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round" stroke-linecap="round" aria-hidden="true">'+icons[k]+'</svg>';
   const btn=(id,k,title,words='')=>'<button id="'+id+'" type="button" aria-label="'+title+'" title="'+title+'">'+icon(k)+(words?' '+words:'')+'</button>';
-  root.innerHTML='<style>:host{all:initial;position:fixed;left:12px;bottom:18px;z-index:2147483645;color:#172033;font:14px system-ui}*{box-sizing:border-box}[hidden]{display:none!important}button,input,textarea{font:inherit;color:inherit}button{min-height:44px;min-width:44px;border:0;border-radius:8px;background:transparent;display:inline-flex;align-items:center;justify-content:center;gap:5px;padding:8px;cursor:pointer}button:disabled{opacity:.35}button:focus-visible,a:focus-visible,summary:focus-visible{outline:2px solid #2563eb}#open[data-storage-error=true]{outline:2px solid #dc2626}#open{font-size:11px;border-radius:22px;background:#172033;color:#fff;box-shadow:0 2px 10px #0004}#panel{width:min(380px,calc(100vw - 24px));max-height:78vh;overflow:auto;background:rgba(255,255,255,.86);backdrop-filter:blur(3px);-webkit-backdrop-filter:blur(3px);border:1px solid #cbd5e1;border-radius:14px;padding:10px;box-shadow:0 4px 20px #0004}.row{display:flex;gap:4px;align-items:center;margin:4px 0}.grow{flex:1;min-width:0}textarea,input{width:100%;border:1px solid #cbd5e1;border-radius:8px;padding:9px;background:#fff;font-size:16px}input{min-height:44px}textarea{resize:vertical}small,#status{font-size:12px;color:#475569;overflow-wrap:anywhere}h3{font-size:16px;margin:0}#list{max-height:30vh;overflow:auto}.entry{display:block;text-align:left;width:100%;border-bottom:1px solid #e2e8f0;border-radius:0;overflow-wrap:anywhere}.entry b,.entry small{display:block}#detail{border-top:1px solid #e2e8f0;margin-top:6px;padding-top:6px}#body,#handoff-preview{white-space:pre-wrap;overflow-wrap:anywhere;max-height:25vh;overflow:auto;background:#f8fafc;padding:8px;font:13px/1.45 ui-monospace,monospace;user-select:text}#ask{background:#172033;color:white}button[aria-pressed=true]{background:#e2e8f0;font-weight:600}#handoff{border:1px solid #cbd5e1;border-radius:8px;padding:5px;margin:6px 0}#handoff-open{color:#1d4ed8;min-height:44px;min-width:44px;display:inline-flex;align-items:center;justify-content:center}#status:empty,#count:empty{display:none}details{border-top:1px solid #e2e8f0;padding:4px 0}summary{cursor:pointer;min-height:44px;display:flex;align-items:center;gap:6px;list-style:none}summary::-webkit-details-marker{display:none}#settings summary{justify-content:flex-end}#settings .settings-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:5px;margin:8px 0}#settings .settings-grid>button,#settings .settings-grid>span{min-width:0;width:100%;font-size:12px}#settings .settings-grid button{border:1px solid #cbd5e1;white-space:normal;overflow-wrap:anywhere;line-height:1.25;text-align:center}#settings .settings-grid>span>button{width:100%}#chat-target{min-height:44px;min-width:44px;border-radius:8px;display:inline-flex;align-items:center;justify-content:center;padding:8px;color:inherit;text-decoration:none;flex:none;-webkit-touch-callout:default}#source-label{font-size:11px}#pin{border:1px solid #cbd5e1}#remove,#clear-tray{color:#991b1b}#open[data-pinned=true],#chat-target[data-pinned=true]{background:#e9bf58;color:#392804}#chat-target{border:1px solid #cbd5e1}#target-label{display:block;line-height:1.3}#target-label:empty{display:none}#ask{background:rgba(23,32,51,.94)}#draft{background:rgba(255,255,255,.75)}#collection-head{margin-top:6px}#crop-editor{position:fixed;inset:8px;z-index:2147483647;display:flex;flex-direction:column;background:#f8fafc;border:1px solid #94a3b8;border-radius:12px;padding:10px;box-shadow:0 4px 20px #0005}#crop-stage{flex:1;min-height:0;display:flex;align-items:center;justify-content:center;overflow:hidden;background:#e2e8f0;border-radius:8px;position:relative}#crop-image-wrap{position:relative;max-width:100%;max-height:100%;display:flex;align-items:center;justify-content:center;touch-action:none;user-select:none}#crop-image{display:block;max-width:100%;max-height:100%;object-fit:contain;pointer-events:none}#crop-selection{position:absolute;outline:2px solid #2563eb;background:rgba(37,99,235,.12);pointer-events:none;box-shadow:0 0 0 200vmax #0004}#crop-stage:has(#crop-image-wrap:not([hidden])) #crop-empty{display:none}#crop-help{padding:5px 2px}#crop-editor .row{flex-wrap:wrap}#crop-add{background:#172033;color:white}#crop-empty{padding:16px;text-align:center;color:#475569}</style>'+
+  root.innerHTML='<style>:host{all:initial;position:fixed;left:12px;bottom:18px;z-index:2147483645;color:#172033;font:14px system-ui}*{box-sizing:border-box}[hidden]{display:none!important}button,input,textarea{font:inherit;color:inherit}button{min-height:44px;min-width:44px;border:0;border-radius:8px;background:transparent;display:inline-flex;align-items:center;justify-content:center;gap:5px;padding:8px;cursor:pointer}button:disabled{opacity:.35}button:focus-visible,a:focus-visible,summary:focus-visible{outline:2px solid #2563eb}#open[data-storage-error=true]{outline:2px solid #dc2626}#open{font-size:11px;border-radius:22px;background:#172033;color:#fff;box-shadow:0 2px 10px #0004}#panel{width:min(380px,calc(100vw - 24px));max-height:78vh;overflow:auto;background:rgba(255,255,255,.86);backdrop-filter:blur(3px);-webkit-backdrop-filter:blur(3px);border:1px solid #cbd5e1;border-radius:14px;padding:10px;box-shadow:0 4px 20px #0004}.row{display:flex;gap:4px;align-items:center;margin:4px 0}.grow{flex:1;min-width:0}textarea,input{width:100%;border:1px solid #cbd5e1;border-radius:8px;padding:9px;background:#fff;font-size:16px}input{min-height:44px}textarea{resize:vertical}small,#status{font-size:12px;color:#475569;overflow-wrap:anywhere}h3{font-size:16px;margin:0}#list{max-height:30vh;overflow:auto}.entry{display:block;text-align:left;width:100%;border-bottom:1px solid #e2e8f0;border-radius:0;overflow-wrap:anywhere}.entry b,.entry small{display:block}#detail{border-top:1px solid #e2e8f0;margin-top:6px;padding-top:6px}#body,#handoff-preview{white-space:pre-wrap;overflow-wrap:anywhere;max-height:25vh;overflow:auto;background:#f8fafc;padding:8px;font:13px/1.45 ui-monospace,monospace;user-select:text}#ask{background:#172033;color:white}button[aria-pressed=true]{background:#e2e8f0;font-weight:600}#handoff{border:1px solid #cbd5e1;border-radius:8px;padding:5px;margin:6px 0}#open[data-incoming=true]{outline:2px solid #16a34a}#handoff-reply{max-height:26vh;overflow:auto;white-space:pre-wrap;overflow-wrap:anywhere;font:14px/1.5 system-ui;background:#f8fafc;padding:8px;border-radius:6px}#reply-draft{margin:6px 0}#handoff-open{color:#1d4ed8;min-height:44px;min-width:44px;display:inline-flex;align-items:center;justify-content:center}#status:empty,#count:empty{display:none}details{border-top:1px solid #e2e8f0;padding:4px 0}summary{cursor:pointer;min-height:44px;display:flex;align-items:center;gap:6px;list-style:none}summary::-webkit-details-marker{display:none}#settings summary{justify-content:flex-end}#settings .settings-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:5px;margin:8px 0}#settings .settings-grid>button,#settings .settings-grid>span{min-width:0;width:100%;font-size:12px}#settings .settings-grid button{border:1px solid #cbd5e1;white-space:normal;overflow-wrap:anywhere;line-height:1.25;text-align:center}#settings .settings-grid>span>button{width:100%}#chat-target{min-height:44px;min-width:44px;border-radius:8px;display:inline-flex;align-items:center;justify-content:center;padding:8px;color:inherit;text-decoration:none;flex:none;-webkit-touch-callout:default}#source-label{font-size:11px}#pin{border:1px solid #cbd5e1}#remove,#clear-tray{color:#991b1b}#open[data-pinned=true],#chat-target[data-pinned=true]{background:#e9bf58;color:#392804}#chat-target{border:1px solid #cbd5e1}#target-label{display:block;line-height:1.3}#target-label:empty{display:none}#ask{background:rgba(23,32,51,.94)}#draft{background:rgba(255,255,255,.75)}#collection-head{margin-top:6px}#crop-editor{position:fixed;inset:8px;z-index:2147483647;display:flex;flex-direction:column;background:#f8fafc;border:1px solid #94a3b8;border-radius:12px;padding:10px;box-shadow:0 4px 20px #0005}#crop-stage{flex:1;min-height:0;display:flex;align-items:center;justify-content:center;overflow:hidden;background:#e2e8f0;border-radius:8px;position:relative}#crop-image-wrap{position:relative;max-width:100%;max-height:100%;display:flex;align-items:center;justify-content:center;touch-action:none;user-select:none}#crop-image{display:block;max-width:100%;max-height:100%;object-fit:contain;pointer-events:none}#crop-selection{position:absolute;outline:2px solid #2563eb;background:rgba(37,99,235,.12);pointer-events:none;box-shadow:0 0 0 200vmax #0004}#crop-stage:has(#crop-image-wrap:not([hidden])) #crop-empty{display:none}#crop-help{padding:5px 2px}#crop-editor .row{flex-wrap:wrap}#crop-add{background:#172033;color:white}#crop-empty{padding:16px;text-align:center;color:#475569}</style>'+
     btn('open','pocket','Open AI Pocket','v'+VERSION)+
     '<section id="panel" hidden><div class="row"><h3 class="grow">Pocket <small>v'+VERSION+'</small></h3>'+btn('saved-tab','bookmark','Open saved discoveries')+btn('close','close','Close Pocket')+'</div>'+
     '<textarea id="draft" rows="2" placeholder="Ask, or select text to collect…" aria-label="Question or selected text"></textarea>'+
     '<div class="row">'+btn('collect','plus','Collect in working tray')+btn('snip','crop','Drag to capture webpage region')+'<button id="ask" class="grow">Ask</button>'+'<a id="chat-target" href="https://chatgpt.com/" target="_blank" rel="noopener noreferrer" aria-label="Open or set ChatGPT" title="Open or set ChatGPT">'+icon('chat')+'</a>'+'</div><small id="target-label"></small>'+
-    '<section id="handoff" hidden><div class="row"><small class="grow" id="handoff-status"></small><a id="handoff-open" target="_blank" rel="noopener noreferrer" aria-label="Open selected chat" title="Open selected chat" hidden>'+icon('arrow')+'</a>'+btn('handoff-copy','copy','Copy prepared question')+btn('handoff-clear','close','Dismiss handoff')+'</div><pre id="handoff-preview" hidden></pre></section>'+
+    '<section id="handoff" hidden><div class="row"><small class="grow" id="handoff-status"></small><a id="handoff-open" target="_blank" rel="noopener noreferrer" aria-label="Open selected chat" title="Open selected chat" hidden>'+icon('arrow')+'</a>'+btn('handoff-copy','copy','Copy prepared question')+btn('handoff-clear','close','Dismiss handoff')+'</div><pre id="handoff-preview" hidden></pre><div id="reply-compose" hidden><textarea id="reply-draft" rows="3" placeholder="Paste the answer from this chat…" aria-label="Answer to return"></textarea><button id="reply-return">Return answer</button></div><section id="reply-result" hidden><div class="row"><strong class="grow">Answer</strong>'+btn('reply-copy','copy','Copy returned answer')+'</div><div id="handoff-reply"></div></section></section>'+
     '<div class="row" id="collection-head">'+btn('tray-tab','back','Return to collected items')+'<strong id="collection-title" class="grow"></strong>'+btn('copy-tray','copy','Copy collected evidence')+'</div>'+
     '<div class="row" id="filter-row" hidden><input id="filter" class="grow" placeholder="Find items…" aria-label="Find items"></div><small id="count"></small><div id="list"></div>'+
     '<section id="detail" hidden><div class="row">'+btn('done','back','Back to items')+'<small class="grow" id="meta"></small>'+btn('copy','copy','Copy selected text')+'</div><pre id="body"></pre><details><summary>More</summary><div class="row"><button id="copy-record">Copy with source</button><button id="keep">Keep in saved</button>'+btn('remove','trash','Delete item')+'</div></details></section>'+
@@ -82,7 +82,7 @@
   for(const type of ['keydown','keypress','keyup'])root.addEventListener(type,e=>{if(e.composedPath().some(el=>el instanceof Element&&el.matches('textarea,input,[contenteditable]')))e.stopPropagation();});
   document.documentElement.append(host);
   phase='event binding';
-  let records=[],tray=[],selected=null,busy=false,loadEpoch=0,view='tray',target=null,pending=null,handoffBusy=false;
+  let records=[],tray=[],selected=null,busy=false,loadEpoch=0,view='tray',target=null,pending=null,handoffBusy=false,handoffRead=0,replyDraftId=null,pollBusy=false;
   const status=t=>$('status').textContent=t;
   const action=(id,fn)=>{$(id).addEventListener('click',e=>{if(!e.isTrusted)return;try{Promise.resolve(fn()).catch(err=>status('Error: '+String(err?.message||err).slice(0,250)));}catch(err){status('Error: '+String(err?.message||err).slice(0,250));}});};
   function sourceURL(){try{const u=new URL(location.href);return u.origin+u.pathname;}catch{return '';}}
@@ -526,29 +526,67 @@
     await store.set(TARGET,dest);if(await store.get(TARGET)!==dest)throw Error('Chat setting could not be read back');
     await load();status('This conversation is now the Ask destination.');
   }
+  function validReply(v,r){return v&&v.id===r.id&&v.target===r.target&&v.sourcePage===r.sourcePage&&typeof v.text==='string'&&v.text.length>0&&v.text.length<=LIMIT&&typeof v.created==='string';}
+  function validSeen(v,r){return v&&v.id===r.id&&v.target===r.target&&typeof v.seenAt==='string';}
   async function refreshHandoff(epoch){
+    const read=++handoffRead,here=chatURL(location.href),source=sourceURL();
     const dest=chatURL(await store.get(TARGET));
     const keys=(await store.keys()).filter(k=>typeof k==='string'&&k.startsWith(HANDOFF));
     const found=[];
     for(const k of keys){
       const r=await store.get(k);if(!r||r.id!==k.slice(HANDOFF.length)||typeof r.text!=='string'||typeof r.created!=='string'||!chatURL(r.target))continue;
-      const ack=await store.get(ACK+r.id);found.push({...r,copied:ack?.id===r.id&&typeof ack.copiedAt==='string'});
+      if(r.target!==here&&r.sourcePage!==source)continue;
+      const [ack,seen,reply]=await Promise.all([store.get(ACK+r.id),store.get(SEEN+r.id),store.get(REPLY+r.id)]);
+      found.push({...r,copied:ack?.id===r.id&&typeof ack.copiedAt==='string',seen:validSeen(seen,r),reply:validReply(reply,r)?reply:null});
     }
-    if(epoch!==loadEpoch)return;
-    target=dest;
-    paintTarget();
-    const here=chatURL(location.href),source=sourceURL();
-    const matching=found.filter(r=>r.target===here||r.sourcePage===source).sort((a,b)=>b.created.localeCompare(a.created));
-    pending=matching.find(r=>!r.copied)||matching[0]||null;
+    if(epoch!==loadEpoch||read!==handoffRead||here!==chatURL(location.href)||source!==sourceURL())return;
+    target=dest;paintTarget();
+    const matching=found.sort((a,b)=>b.created.localeCompare(a.created));
+    // Source displays newest request; destination prioritizes unanswered requests.
+    pending=here&&matching.some(r=>r.target===here)?matching.find(r=>r.target===here&&!r.reply&&!r.copied)||matching.find(r=>r.target===here&&!r.reply)||matching[0]||null:matching[0]||null;
+    if(pending&&pending.target===here&&!pending.seen&&!pending.reply){
+      const receipt={id:pending.id,target:pending.target,seenAt:new Date().toISOString()};
+      const r=pending;
+      if(await store.get(HANDOFF+r.id)){
+        await store.set(SEEN+r.id,receipt);
+        const check=await store.get(SEEN+r.id);
+        if(epoch!==loadEpoch||read!==handoffRead||here!==chatURL(location.href)||pending?.id!==r.id)return;
+        pending.seen=validSeen(check,r);
+      }
+    }
+    const atChat=!!pending&&pending.target===here,hasReply=!!pending?.reply;
+    if(replyDraftId!==pending?.id){$('reply-draft').value='';replyDraftId=pending?.id||null;}
     $('handoff').hidden=!pending;
-    $('handoff-preview').hidden=!pending||pending.target!==here;
-    $('handoff-preview').textContent=pending&&pending.target===here?pending.text:'';
-    $('handoff-copy').hidden=!pending||pending.target!==here;
-    $('handoff-open').hidden=!pending||pending.target===here;
+    $('handoff-preview').hidden=!atChat;
+    $('handoff-preview').textContent=atChat?pending.text:'';
+    $('handoff-copy').hidden=!atChat;
+    $('handoff-open').hidden=!pending||atChat;
+    $('reply-compose').hidden=!atChat||!pending.copied||hasReply;
+    $('reply-result').hidden=!hasReply;
+    $('handoff-reply').textContent=hasReply?pending.reply.text:'';
+    $('open').setAttribute('data-incoming',String(!!pending&&(atChat?!pending.copied:hasReply)));
     if(pending){
       $('handoff-open').href=chatURL(pending.target);
-      $('handoff-status').textContent=pending.copied?'Copied · not confirmed sent':(pending.target===here?'Ready to copy':'Ready · open chat');
+      $('handoff-status').textContent=hasReply?(atChat?'Answer returned':'Answer received'):pending.copied?'Question copied · awaiting answer':atChat?'Question received · copy to chat':pending.seen?'Chat received question':'Queued · open chat';
     }else $('handoff-open').removeAttribute('href');
+  }
+  async function returnAnswer(){
+    if(!store||!pending||handoffBusy||chatURL(location.href)!==pending.target||!pending.copied||pending.reply)return;
+    const r=pending,text=$('reply-draft').value.trim();
+    if(!text){status('Paste the answer first.');return;}
+    if(text.length>LIMIT){status('Answer exceeds 100,000 characters. Shorten it before returning.');return;}
+    handoffBusy=true;$('reply-return').disabled=true;
+    try{
+      const original=await store.get(HANDOFF+r.id);
+      if(!original||original.target!==r.target||original.sourcePage!==r.sourcePage||chatURL(location.href)!==r.target)throw Error('Original request is no longer available in this chat');
+      if(validReply(await store.get(REPLY+r.id),r)){await refreshHandoff(loadEpoch);status('An answer was already returned.');return;}
+      const reply={id:r.id,target:r.target,sourcePage:r.sourcePage,created:new Date().toISOString(),text,provenance:'user-pasted'};
+      await store.set(REPLY+r.id,reply);
+      const check=await store.get(REPLY+r.id);
+      if(!validReply(check,r)||check.text!==text)throw Error('Answer could not be read back');
+      if($('reply-draft').value.trim()===text)$('reply-draft').value='';
+      await refreshHandoff(loadEpoch);status('Answer returned to original page. No automatic model submission or extraction.');
+    }finally{handoffBusy=false;$('reply-return').disabled=false;}
   }
   async function prepareHandoff(){
     if(!store||handoffBusy)return;
@@ -567,7 +605,7 @@
       const id=uid(),r={id,created:new Date().toISOString(),sourcePage:origin,target:dest,text};
       await store.set(HANDOFF+id,r);
       const check=await store.get(HANDOFF+id);if(check?.id!==id||check.text!==text||check.target!==dest)throw Error('Handoff could not be read back');
-      if($('draft').value.trim()===question)$('draft').value='';await load();status('Question queued. Open the selected chat; copy, paste and send yourself.');
+      if($('draft').value.trim()===question)$('draft').value='';await load();status('Question queued. The selected chat can receive it when active.');
     }finally{handoffBusy=false;$('ask').disabled=false;}
   }
   async function copyHandoff(){
@@ -584,20 +622,20 @@
   }
   async function clearHandoff(){
     if(!store||!pending||handoffBusy)return;
-    const r=pending;if(!confirm('Dismiss this prepared question? Tray and saved items remain.'))return;
-    handoffBusy=true;try{await store.del(HANDOFF+r.id);await store.del(ACK+r.id);await load();}finally{handoffBusy=false;}
+    const r=pending;if(!confirm('Dismiss this question and any returned answer? Tray and saved items remain.'))return;
+    handoffBusy=true;try{await store.del(HANDOFF+r.id);await store.del(ACK+r.id);await store.del(SEEN+r.id);await store.del(REPLY+r.id);await load();}finally{handoffBusy=false;}
   }
   action('open',async()=>{
     $('open').hidden=true;$('panel').hidden=false;
     if(!$('draft').value){$('draft').value=picked||selection();$('source').value=sourceURL();}
     picked='';await load();
   });
-  action('close',()=>{++loadEpoch;hideDetail();$('fallback').hidden=true;$('fallback').value='';records=[];tray=[];pending=null;$('handoff-preview').textContent='';$('handoff').hidden=true;$('list').replaceChildren();$('panel').hidden=true;$('open').hidden=false;});
+  action('close',()=>{++loadEpoch;hideDetail();$('fallback').hidden=true;$('fallback').value='';records=[];tray=[];pending=null;$('handoff-preview').textContent='';$('handoff-reply').textContent='';$('handoff').hidden=true;$('list').replaceChildren();$('panel').hidden=true;$('open').hidden=false;});
   action('save',()=>save(PREFIX));action('collect',()=>save(TRAY));action('refresh',async()=>{await load();status((modern?'GM async':legacy?'GM legacy':'GM unavailable')+' · '+tray.length+' in tray · '+records.length+' saved');});
   action('tray-tab',()=>{view='tray';$('filter').value='';hideDetail();render();});action('saved-tab',()=>{view='saved';$('filter').value='';hideDetail();render();});
   action('copy-tray',()=>copyCollection(tray));action('snip',startSnip);action('bitmap-crop',startBitmapCrop);
   action('clear-tray',async()=>{if(!store||busy||!tray.length||!confirm('Clear the current working tray? Saved items and prepared handoffs remain.'))return;const ids=tray.map(r=>r.id);busy=true;try{for(const id of ids)await store.del(TRAY+id);hideDetail();await load();}finally{busy=false;}});
-  action('pin',pinChat);$('chat-target').addEventListener('click',e=>{if(!e.isTrusted){e.preventDefault();return;}if(!$('chat-target').hasAttribute('href')){e.preventDefault();Promise.resolve(chatAction()).catch(err=>status('Error: '+String(err?.message||err).slice(0,250)));}});action('ask',prepareHandoff);action('handoff-copy',copyHandoff);action('handoff-clear',clearHandoff);
+  action('pin',pinChat);$('chat-target').addEventListener('click',e=>{if(!e.isTrusted){e.preventDefault();return;}if(!$('chat-target').hasAttribute('href')){e.preventDefault();Promise.resolve(chatAction()).catch(err=>status('Error: '+String(err?.message||err).slice(0,250)));}});action('ask',prepareHandoff);action('handoff-copy',copyHandoff);action('handoff-clear',clearHandoff);action('reply-return',returnAnswer);action('reply-copy',()=>{if(pending?.reply)return copyText(pending.reply.text);});
   $('filter').addEventListener('input',e=>{if(e.isTrusted){hideDetail();render();}});
   action('done',hideDetail);
   action('copy',()=>{if(selected)return selected.image?copyCollection([selected]):copyText(selected.text);});
@@ -609,6 +647,13 @@
   phase='initial refresh';
   refreshVisible();
   let lastChatURL=chatURL(location.href);const routeTimer=setInterval(()=>{if(document.hidden)return;const here=chatURL(location.href);if(here!==lastChatURL){lastChatURL=here;refreshVisible();}},1200);
+  // Read only handoff metadata while the panel or selected chat is active. Never scan images on the poll.
+  async function pollHandoff(){
+    if(!store||document.hidden||busy||handoffBusy||pollBusy||selecting||captureRun||cropBusy)return;
+    if($('panel').hidden&&(!target||chatURL(location.href)!==target))return;
+    pollBusy=true;try{await refreshHandoff(loadEpoch);}catch(e){console.warn('[Pocket v'+VERSION+'] handoff poll',e);}finally{pollBusy=false;}
+  }
+  setInterval(pollHandoff,3000);
   window.addEventListener('popstate',refreshVisible);
   window.addEventListener('pageshow',refreshVisible);
   document.addEventListener('visibilitychange',refreshVisible);
