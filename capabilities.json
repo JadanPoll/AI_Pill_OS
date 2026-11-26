@@ -1,6 +1,6 @@
 {
   "schema": "ai_pill_os.capability_atlas",
-  "version": 10,
+  "version": 11,
   "updated": "2026-11-25",
   "purpose": "Can I operate at the speed of thought? Living design inventory, not a promise of implementation.",
   "design_rules": {
@@ -91,7 +91,21 @@
     "pocket": "https://github.com/JadanPoll/AI_Pill_OS/blob/main/Pocket.user.js",
     "gm_storage": "https://github.com/quoid/userscripts/blob/main/README.md",
     "gm_scope": "https://stackoverflow.com/questions/77011466/how-do-i-access-the-same-json-file-from-two-different-tampermonkey-scripts",
-    "copy_screenshot": "https://www.reddit.com/r/shortcuts/comments/1nn8qc4/"
+    "copy_screenshot": "https://www.reddit.com/r/shortcuts/comments/1nn8qc4/",
+    "labx_contract": "https://github.com/JadanPoll/LabX/blob/main/docs/HUB_ENGINEERING.md",
+    "labx_bridge": "https://github.com/JadanPoll/LabX/blob/main/hub/labx_bridge.user.js",
+    "labx_audit": "https://github.com/JadanPoll/LabX/blob/main/docs/BROWSER_TRANSITION_AUDIT.md",
+    "fken_structure": "https://github.com/JadanPoll/FKEN_Ecosystem/blob/main/STRUCTURE.md",
+    "kami_canonical": "https://github.com/JadanPoll/Kami_Uploads_RSM_Tree",
+    "gm_listener": "https://www.tampermonkey.net/documentation.php?locale=en&q=GM_values",
+    "gm_manager": "https://github.com/quoid/userscripts/blob/main/README.md",
+    "webkit_lifecycle": "https://webkit.org/blog/8970/how-web-content-can-affect-power-usage/",
+    "openai_terms": "https://openai.com/policies/terms-of-use/",
+    "google_terms": "https://policies.google.com/terms?hl=en-US",
+    "chatgpt_apps": "https://help.openai.com/en/articles/11487775",
+    "drive_actions": "https://help.openai.com/en/articles/10929079-google-drive-app-and-setup-in-chatgpt",
+    "github_access": "https://help.openai.com/en/articles/11145903-connecting-github-to-chatgpt",
+    "clipboard_api": "https://developer.mozilla.org/en-US/docs/Web/API/Clipboard_API"
   },
   "capabilities": [
     {
@@ -252,6 +266,7 @@
       ],
       "why": "Make intelligence callable without reconstructing page context or switching research modes.",
       "mechanisms": [
+        "Prepare reviewed context packet, route to user-selected existing conversation, preserve originating reference; use supported connected actions when requested. Same-page return remains desired but unverified.",
         "Primary: existing signed-in Safari ChatGPT/Gemini web conversations, explicit contextual copy/paste; improve navigation/transfer before considering separate inference.",
         "Explicit ChatGPT/Gemini handoff initially",
         "Shortcuts Use Model or eligible official subscription transport",
@@ -268,7 +283,7 @@
         "labx",
         "gigs"
       ],
-      "boundary": "Existing subscriptions do not automatically grant API access; no scraping or unauthorized consumer automation."
+      "boundary": "Existing subscriptions do not automatically grant API access; no scraping or unauthorized consumer automation. No automatic consumer output extraction; hidden tabs may suspend; provider-specific supported integration must be established."
     },
     {
       "id": "control.intent",
@@ -318,7 +333,7 @@
         "capture.selection"
       ],
       "acceptance": "Capture one question, one paper and one repo from different sources; recover all later with their original provenance.",
-      "week_later": "One Save entry, deferred classification; never require choosing a folder first.",
+      "week_later": "One universal entry; temporary working tray differs from explicit durable save; searchable source-linked recall; avoid parallel canonical knowledge.",
       "sources": [
         "kami",
         "ecosystem",
@@ -426,6 +441,7 @@
       ],
       "why": "Fast capture and deliberate synthesis are different cognitive modes; batch organization prevents live interruption.",
       "mechanisms": [
+        "Context-aware suggested destination: Kami document anchor/domain research, FKEN appropriate resource/project/thought/investigation, selected existing Drive document/folder. Explicit user-directed write via authorized connector, then readback receipt.",
         "Local inbox to reviewable JSON patch or prompt",
         "Agent-assisted deduplication, canonical stable IDs and source links"
       ],
@@ -438,9 +454,14 @@
         "kami",
         "ecosystem",
         "RSM",
-        "FKEN"
+        "FKEN",
+        "fken_structure",
+        "kami_canonical",
+        "chatgpt_apps",
+        "drive_actions",
+        "github_access"
       ],
-      "boundary": "Human reviews canonical writes; no silent destructive merges or public upload."
+      "boundary": "Human reviews canonical writes; no silent destructive merges or public upload. Destination must be inspected and user-authorized, not guessed; public repositories must not receive private data without explicit authorization."
     },
     {
       "id": "compute.shell",
@@ -540,12 +561,13 @@
       ],
       "why": "The feedback loop from agent commit to running iPad behavior is itself a frequent workflow.",
       "mechanisms": [
+        "Manager-native @version/@updateURL/@downloadURL plus one version inventory, copyable diagnostics and manual known-good rollback; no arbitrary remote eval or silent replacement.",
         "Git pull or raw .user.js install via Userscripts",
         "Cherri source-to-Shortcut compilation and supported signing/import",
         "Cherri iPad/browser compile/sign/import; Viticci Shortcuts Playground Codex/Claude Code validation and signing; iPadOS 27 Describe a Shortcut on eligible devices"
       ],
       "depends_on": [],
-      "acceptance": "Update one userscript from raw GitHub, verify visible version and preserved Pocket data, roll back if needed. Native Shortcut authoring only when a real OS-only requirement arises.",
+      "acceptance": "Real defect fixed, update installed and visible version confirmed, Pocket record survives, known-good rollback works on target manager.",
       "week_later": "One update path and one rollback; no repeated manual block construction when avoidable.",
       "sources": [
         "userscripts",
@@ -555,7 +577,8 @@
         "cherri_ipad",
         "cherri_sign",
         "shortcut_playground",
-        "native_author"
+        "native_author",
+        "gm_manager"
       ],
       "boundary": "Userscripts popup reload and Shortcut signing may require user gestures; never auto-install unreviewed code. No iSH dependency; native import/signing and permission acceptance remain target-device tests."
     },
@@ -872,6 +895,69 @@
         "REM"
       ],
       "boundary": "No silent installation, OS-wide arbitrary UI control, or assumption a Shortcut can access the active Safari DOM. AssistiveTouch action picker and native trigger behavior require device verification."
+    },
+    {
+      "id": "persist.tray",
+      "name": "Ordered multimodal working tray",
+      "family": "persistence",
+      "priority": "P0",
+      "status": "candidate",
+      "intentions": [
+        "Collect these observations",
+        "Capture multiple regions",
+        "Share evidence together"
+      ],
+      "why": "Do not interrupt an investigation to transfer each observation.",
+      "mechanisms": [
+        "Rectangular crop of supported capture; native screenshot import for real pixels; explicitly distinguish DOM reconstruction",
+        "Ordered screenshots, text, structured JSON, file references; numbered composite PNG or individual attachments",
+        "Temporary tray; promote to durable Pocket on request"
+      ],
+      "depends_on": [
+        "capture.route",
+        "persist.inbox"
+      ],
+      "acceptance": "Collect three useful views of an actual UI defect and transfer them together legibly, with order and source; test opaque canvas/PDF fallback.",
+      "week_later": "Capture, review, copy, remove; no screenshot manager ceremony.",
+      "sources": [
+        "clipboard_api",
+        "pocket"
+      ],
+      "boundary": "No privileged tab capture claim, GM binary quota and image paste untested; no automatic uploads."
+    },
+    {
+      "id": "control.handoff",
+      "name": "Recoverable browser-local request routing",
+      "family": "control",
+      "priority": "P0",
+      "status": "candidate",
+      "intentions": [
+        "Ask about this page",
+        "Continue selected AI investigation"
+      ],
+      "why": "Move intention/context across tabs without losing origin, retyping or rebuilding context.",
+      "mechanisms": [
+        "Same universal installed script's GM storage, immutable request ID, exact chosen destination, acknowledgment and durable pending state; resume pull fallback",
+        "Borrow LabX task attribution and stale-operation guards, not localhost service",
+        "Explicit user handoff to existing conversation; supported transport only for automatic inference"
+      ],
+      "depends_on": [
+        "persist.inbox",
+        "intelligence.ask"
+      ],
+      "acceptance": "Exchange a real nonce and user-authored payload between two trusted origins, verify acknowledgment on visibility change and reload; then complete real conversation handoff without duplicate or lost draft.",
+      "week_later": "One visible destination, queued/ready status only when relevant; no tab babysitting.",
+      "sources": [
+        "labx_contract",
+        "labx_bridge",
+        "labx_audit",
+        "gm_listener",
+        "gm_manager",
+        "webkit_lifecycle",
+        "openai_terms",
+        "google_terms"
+      ],
+      "boundary": "Same-script storage and browser lifecycle unverified on target; no consumer response scraping, background auto-submit or arbitrary cross-script privilege bridge."
     }
   ],
   "workflows": [
@@ -953,11 +1039,11 @@
     }
   ],
   "next_experiments": [
-    "Install Pocket.user.js v0.1.1 on two trusted sites. Save selected text plus provenance on Wikipedia/GitHub, open on ChatGPT, copy it into a real conversation, reload and verify persistence. Test copy-all JSON; no fallback to per-origin storage.",
-    "Create Copy Screenshot with Take Screenshot -> Copy to Clipboard, invoke on a real diagram or UI problem, paste into web ChatGPT/Gemini. Preserve existing screenshot gesture until it works.",
-    "Use current AI Pill DevTools to capture one actual defect, move evidence through Pocket or native clipboard, make a real script improvement, and reload. Verify version and stored data across an update.",
-    "After a week, compare app switches, copy operations and discoverability; unify launcher only if useful. Defer native/general agent integration unless recurring workflow demands it.",
-    "Test a direct selected passage-to-source-linked Kami/FKEN workflow using existing scripts; defer cross-script adapters until shared data contract is justified."
+    "I15: test same-script GM handoff on two trusted non-provider sites, with queued/acknowledged status and foreground/resume/reload recovery. Verify installed manager/version.",
+    "I14/I19: test Copy Screenshot and collect three real visual crops in an ordered tray, transfer as composite or separate files; compare actual pixels and reconstruction.",
+    "I16: route one contextual dictated question to exact existing AI conversation through explicit handoff; compare dual Safari windows with tab switch. Do not implement automated consumer response extraction.",
+    "I17: on explicit request, persist one useful discovery to existing canonical destination, read back receipt; no private data in public repos or inferred Drive folder.",
+    "I20/I12: update a real script through manager, preserve Pocket, verify rollback and end-to-end debugging utility; revisit after a week/month."
   ],
   "observations": [
     {
@@ -1012,7 +1098,8 @@
     "OpenMinis and iCTRL materially change the build-versus-reuse decision. The unique value of AI Pill OS may be specialized personal interfaces and context/action routing, not a new general agent harness.",
     "Use Minis App Intents as the first inference transport; separate evidence capture, model execution, and action execution. A reported built-in browser success does not certify Safari access.",
     "Safari-first is a deliberate locality decision: keep cognition and iteration in the already-open workspace. Stable native bridges should be rare; general-purpose agent functionality does not justify a second everyday workspace.",
-    "Pocket is a narrow cross-site shared memory, not a new knowledge lake. GM storage belongs to the same installed script, not automatically every script. Preserve canonical Kami/FKEN data and use explicit export/reconciliation."
+    "Pocket is a narrow cross-site shared memory, not a new knowledge lake. GM storage belongs to the same installed script, not automatically every script. Preserve canonical Kami/FKEN data and use explicit export/reconciliation.",
+    "The universal pill is a workspace-level shell, not a monolithic replacement for every website. Mini-pills own site-specific interaction and canonical adapters. Borrow LabX request identity and recovery without its server. Speech is high-bandwidth input for language, not a substitute for spatial touch."
   ],
   "site_scripts": {
     "purpose": "A collection of focused personal interface implementations. Existing code remains canonical in its own repository; this is a source index, not duplicate scripts or a universal injected runtime.",
@@ -1258,14 +1345,18 @@
     "path": "research/INVESTIGATION_TREE.json",
     "purpose": "Mechanism-independent RSM question landscape and selected investigations with source-linked certificates, stopping/reopening conditions and prioritized device tests.",
     "active_queue": [
-      "I13",
+      "I15",
       "I14",
+      "I19",
+      "I16",
+      "I17",
+      "I20",
       "I12"
     ]
   },
   "current_strategy": {
     "date": "2026-11-25",
-    "primary": "Safari userscripts, web ChatGPT/Gemini with explicit user handoff",
+    "primary": "One universal Safari pill + contextual site mini-pills; user-authored context and shared local coordination; existing ChatGPT/Gemini conversations via explicit or supported handoffs. Touch for spatial/familiar operations, speech for writing/collaboration.",
     "secondary": "Few stable native Shortcuts for OS-only actions; first Copy Screenshot",
     "deferred": [
       "OpenMinis integration",
@@ -1275,8 +1366,14 @@
       "automatic consumer UI extraction",
       "backend or universal agent runtime"
     ],
-    "reason": "User prioritizes portability, minimal app switching and maintenance, and rapid GitHub iteration from web chat. Existing Minis acceptance preserved; use specialist only when concrete task justifies switching.",
-    "acceptance": "Cross-site capture and recall of real data, screenshot paste into web chat, and one actual userscript fix in Safari before further integration.",
-    "limits": "Web consumer plans may have limits; no separate API billing assumed."
+    "reason": "User resolved functional preferences A–H. Optimize speed, persistence, portability and iteration, not autonomous OS control. Prefer no context switch where supported; preserve provider permissions, no automatic consumer output extraction, no unsupported background execution.",
+    "acceptance": "Actual cross-site request/acknowledgment; multi-region visual evidence in one transfer; explicitly selected canonical persistence with verified receipt; real userscript update/rollback with retained data.",
+    "limits": "GM storage is same installed script; cross-tab notifications/hidden execution and existing-tab focus depend on manager and iPadOS. Consumer web plans have limits and terms; no separate inference runtime assumed.",
+    "persistence_layers": [
+      "Temporary ordered working tray (local, explicitly retained if useful)",
+      "Durable Pocket (unclassified thoughts/evidence)",
+      "Canonical Kami/FKEN/Drive (explicit request, existing authority, source anchor and write receipt)",
+      "Versioned capabilities (GitHub scripts and investigation contracts)"
+    ]
   }
 }
