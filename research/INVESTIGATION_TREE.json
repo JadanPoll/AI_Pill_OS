@@ -1,6 +1,6 @@
 {
   "schema": "ai_pill_os.rsm_investigation",
-  "version": 3,
+  "version": 4,
   "updated": "2026-11-25",
   "parent_purpose": "Reduce mechanical distance from human intention to useful realization; preserve agency, context, and recoverability.",
   "scope": "Safari-first personal computing: direct touch for low-information operations, dictation and AI collaboration for high-information intentions, universal pill plus contextual mini-pills, local working state and context-aware canonical persistence.",
@@ -656,11 +656,11 @@
         "Q5.2",
         "Q3.4"
       ],
-      "status": "highest_priority_device_test",
+      "status": "implemented_awaiting_device",
       "why": "Certify the browser-local substrate without AI service traffic.",
       "model": "Same universal script per installation, GM storage with immutable request ID, designated destination, source reference and explicit acknowledgment; notifications are optimization, durable pull on resume is fallback.",
       "belief": "Tampermonkey documents cross-tab value listeners; quoid Userscripts main README lists asynchronous get/set/list/delete and openInTab but no value-change listener. Installed manager unknown. WebKit explicitly suspends inactive iOS tabs when possible.",
-      "certificate": "GM same-script sharing is plausible and used by Kami, not arbitrary cross-script sharing; BroadcastChannel is same-origin. No reliable hidden-tab execution assumption.",
+      "certificate": "GM same-script sharing is plausible and used by Kami, not arbitrary cross-script sharing; BroadcastChannel is same-origin. No reliable hidden-tab execution assumption. Pocket v0.2.1 executed in mock GM/DOM/URL/clipboard with two source sites and a selected destination. Nine checks passed, including reload, wrong conversation, failed copy and retained saved item; no real device execution.",
       "evidence": [
         "gm_listener",
         "gm_manager",
@@ -669,9 +669,9 @@
         "kami_companion",
         "labx_contract"
       ],
-      "stop": "Two real origins using same installed script exchange one user-authored nonce and payload with acknowledgement; verify while both visible, background, after resume and reload. Show queued/unavailable rather than retry indefinitely. Stop after foreground/resume works; require observed utility before background infrastructure.",
+      "stop": "One real cross-site task and its copy-only acknowledgment survive reload and tab resume; retain prior saved data. No requirement for autonomous background execution.",
       "reopen": "Reopen on actual lost state or unacceptable handoff latency.",
-      "next": "Implement transport canary on trusted non-provider pages, not AI service automation. Test manager/version, one pending request, acknowledgement, reload; no secrets.",
+      "next": "Install Pocket update, pin existing AI conversation, collect two real passages across sites, prepare question, open exact chat, review/copy/paste/send manually. Return to source, refresh, verify copied-only receipt and old saved records. If manager fails, record actual diagnostic.",
       "depends_on": []
     },
     {
@@ -697,7 +697,7 @@
       ],
       "stop": "From real Kami/engineering context, open chosen chat and transfer one prepared request without reconstructing it or losing source; preserve request if unsent. No automatic consumer response extraction. If zero-switch essential and not supported, compare an explicitly authorized provider transport only then.",
       "reopen": "Reopen if switching or manual transfer repeatedly dominates whole workflow and a supported alternative is available.",
-      "next": "Test configured conversation URL, human-reviewed clipboard/paste/send and manual result or supported connected write. Compare two visible windows against switching; avoid duplicate submission.",
+      "next": "Use Pocket v0.2.1 explicit Ask with tray -> Open chat -> Copy question. Evaluate latency and app/tab switches in real use; no automated submission or extraction.",
       "depends_on": [
         "I15"
       ]
@@ -711,7 +711,7 @@
       ],
       "status": "active_after_bus",
       "why": "Use existing canonical sources instead of duplicating knowledge in universal storage.",
-      "model": "Working tray -> durable Pocket only if requested -> context-aware destination proposal -> authorized write -> readback receipt. Separate raw user thought from AI synthesis; retain source anchors and canonical IDs.",
+      "model": "Working tray -> optional durable Pocket -> requested canonical Kami_Uploads_RSM_Tree investigation.json or FKEN/Drive target -> authorized write -> readback receipt. User explicitly clarified Kami means research repository, not annotation sync.",
       "belief": "Kami code persists reading state via document anchor with local conflict detection. FKEN README and structure distinguish resource/project/idea/investigation records; Kami repo canonical domain JSON and glossary independent. User's supplied Drive root inspected as dated docs plus a project; no direct Kami folder visible.",
       "certificate": "ChatGPT connected app actions are capability-specific. GitHub standard connector can be read-only; use available authorized write-capable connector where present, otherwise patch. Current connector inspection establishes access only; no Drive/FKEN/Kami writes in this investigation.",
       "evidence": [
@@ -726,7 +726,7 @@
       ],
       "stop": "One real thought saved to an explicitly selected existing canonical destination, read back with exact link/path/commit and source. Do not mark saved before verified; if ambiguous keep Pocket. No automatic public writes or cross-site token handling.",
       "reopen": "Reopen for actual duplicate, missing anchor, concurrent change or wrong destination.",
-      "next": "First use existing ChatGPT authorized actions on request, then add routing hints (not new schemas) after repeated cases. Confirm exact Kami Drive destination when a real write is requested.",
+      "next": "On real user request, inspect existing canonical domain schema, retain source refs and stable IDs, update relevant record using authorized GitHub connector, return exact path/commit. Do not create a duplicate research database.",
       "depends_on": [
         "I15"
       ]
@@ -767,7 +767,7 @@
       "why": "Visual debugging needs several ordered observations; screenshots are not interchangeable with DOM reconstruction.",
       "model": "Capture rectangle -> ordered tray -> numbered composite or individual files; native actual pixels via screenshot import; DOM-rendered images labeled reconstructed. Text/HTML/JSON/file references share evidence identity and source, not necessarily same binary storage.",
       "belief": "Clipboard supports PNG on modern browsers with user activation constraints. Cross-origin canvas/frame fidelity and manager large payload limits unresolved.",
-      "certificate": "Existing Copy Screenshot branch remains pixel-accurate fallback; universal tray should not promise privileged tab capture. No binary storage claim until measured.",
+      "certificate": "Existing Copy Screenshot branch remains pixel-accurate fallback; universal tray should not promise privileged tab capture. No binary storage claim until measured. Ordered text tray implemented in Pocket v0.2.1; rectangle/image capture remains open.",
       "evidence": [
         "clipboard_api",
         "copy_screenshot",
@@ -792,7 +792,7 @@
       "why": "Every improvement should reach the iPad cheaply and remain recoverable.",
       "model": "GitHub versioned canonical scripts + manager-native update metadata; one read-only inventory of installed/release version and diagnostics; user-mediated installation/rollback. Universal shell plus site adapters only where reuse pays.",
       "belief": "quoid README documents @version/@updateURL/@downloadURL and opening extension popup after external edits; exact installed manager/version unknown. No ordinary userscript authority to silently edit other installed scripts.",
-      "certificate": "Existing separate DevTools and Pocket execution scopes should not be merged before grants/realm and actual UI behavior tested. Preserve stable script identity and storage compatibility.",
+      "certificate": "Existing separate DevTools and Pocket execution scopes should not be merged before grants/realm and actual UI behavior tested. Preserve stable script identity and storage compatibility. Pocket v0.2.1 includes native @updateURL and @downloadURL metadata; manager behavior untested.",
       "evidence": [
         "gm_manager",
         "atlas",
@@ -901,6 +901,11 @@
       "date": "2026-11-25",
       "decision": "User resolved functional A–H: one universal pill plus mini-pills; multimodal evidence; tray vs durable memory; existing AI conversations; natural dictation plus direct actions; unified updates; context-aware canonical persistence. Desired same-tab AI collaboration remains an implementation/permission boundary.",
       "method": "RSM-02.07; RSM-03.01–03.03; REM-04.01"
+    },
+    {
+      "date": "2026-11-25",
+      "decision": "Begin implementation in existing Pocket script; preserve prior records. User clarified Kami persistence is the research repository. Prefer stable verbs over agent management; mocked integration slice passed; iPad test remains necessary.",
+      "method": "REM-04.01–04.03"
     }
   ],
   "functional_intent": {
