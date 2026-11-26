@@ -1,6 +1,6 @@
 {
   "schema": "ai_pill_os.rsm_investigation",
-  "version": 5,
+  "version": 6,
   "updated": "2026-11-25",
   "parent_purpose": "Reduce mechanical distance from human intention to useful realization; preserve agency, context, and recoverability.",
   "scope": "Safari-first personal computing: direct touch for low-information operations, dictation and AI collaboration for high-information intentions, universal pill plus contextual mini-pills, local working state and context-aware canonical persistence.",
@@ -768,11 +768,11 @@
         "Q2.4",
         "Q5.4"
       ],
-      "status": "parallel_device_test",
+      "status": "implemented_awaiting_device",
       "why": "Visual debugging needs several ordered observations; screenshots are not interchangeable with DOM reconstruction.",
-      "model": "Separate actual pixels from DOM reconstruction. One SnapDOM region-clipping trial (SVG rendering, no custom CSS painter), with independent native image import and composite export; extension pixel capture requires actual supported API/manager access.",
+      "model": "Native screenshot bitmap input → normalized rectangle → Canvas drawImage crop → local collection → composite PNG. Acquisition separate; no external DOM reconstruction.",
       "belief": "Clipboard supports PNG on modern browsers with user activation constraints. Cross-origin canvas/frame fidelity and manager large payload limits unresolved.",
-      "certificate": "Existing Copy Screenshot branch remains pixel-accurate fallback; universal tray should not promise privileged tab capture. No binary storage claim until measured. Ordered text tray implemented in Pocket v0.2.1; rectangle/image capture remains open. Safari screenshots show html2canvas-pro parsing failure on ChatGPT and unfinished Grokipedia capture; source inspection of SnapDOM core.clip.test.js and type declarations establishes page-coordinate region clipping and offscreen culling, not device fidelity.",
+      "certificate": "Existing Copy Screenshot branch remains pixel-accurate fallback; universal tray should not promise privileged tab capture. No binary storage claim until measured. Ordered text tray implemented in Pocket v0.2.1; rectangle/image capture remains open. Safari screenshots show html2canvas-pro parsing failure on ChatGPT and unfinished Grokipedia capture; source inspection of SnapDOM core.clip.test.js and type declarations establishes page-coordinate region clipping and offscreen culling, not device fidelity. User reported v0.3.2 launcher missing, triggering stop of renderer trials. v0.4.1 removes all @require dependencies and passes eight mocked startup/crop lifecycle and coordinate checks. Real Safari clipboard, file picker, pixels and layout remain untested.",
       "evidence": [
         "clipboard_api",
         "copy_screenshot",
@@ -784,9 +784,9 @@
         "safari_capture_mdn",
         "webkit_clipboard"
       ],
-      "stop": "One representative SnapDOM capture on each of Grokipedia and ChatGPT; if either remains unreliable, stop renderer replacement and prioritize native import + composite. Success requires legible image, correct region, no freeze, paste; no claim of general pixel fidelity. Reopen only if a specific working pixel capture interface becomes available.",
+      "stop": "Verify launcher and old data, then paste or choose native screenshot, collect two crops from one bitmap, copy composite into chat. No further DOM renderer experiments. Reopen pixel acquisition only if a supported, usable browser capture interface is identified.",
       "reopen": "Reopen on actual fidelity, attachment or storage failure.",
-      "next": "Pocket v0.3.2: repeat exact failing real pages; verify 12s async deadline, not synchronous freeze cure. Import two native screenshots and composite separately to discriminate capture from storage/clipboard.",
+      "next": "Install v0.4.1 and execute actual native screenshot-to-crop-to-chat flow; use file selection if clipboard unavailable.",
       "depends_on": [
         "I14"
       ]
@@ -916,6 +916,11 @@
       "date": "2026-11-25",
       "decision": "Begin implementation in existing Pocket script; preserve prior records. User clarified Kami persistence is the research repository. Prefer stable verbs over agent management; mocked integration slice passed; iPad test remains necessary.",
       "method": "REM-04.01–04.03"
+    },
+    {
+      "date": "2026-11-25",
+      "decision": "Stop renderer substitution after reported missing UI; factorize bitmap acquisition from cropping; no mandatory renderer dependency.",
+      "method": "REM-01.04; REM-02.05; RSM-04.07"
     }
   ],
   "functional_intent": {
