@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         AI Pill OS - DevTools and Ask
 // @namespace    https://github.com/JadanPoll/AI_Pill_OS
-// @version      0.1.0
+// @version      0.1.1
 // @description  Inspect, record, export browser evidence; hand it to ChatGPT and run bounded read-only investigation requests.
 // @match        https://*/*
 // @match        http://*/*
@@ -13,8 +13,8 @@
 (() => {
   'use strict';
   if (window.top !== window || document.getElementById('ai-pill-os')) return;
-  const VERSION = '0.1.0', MAX = 100, MAX_REPORT = 100000;
-  let host, root, status, preview, question, scope, includeText, planBox, output, pill;
+  const VERSION = '0.1.1', MAX = 100, MAX_REPORT = 100000;
+  let host, root, status, preview, question, scope, includeText, planBox, pill;
   let picked = null, selection = '', armed = false, recording = false, observer = null;
   let events = [], dropped = 0, started = 0, lastReport = null, erudaReady = false;
   const safe = (v, n = 200) => String(v ?? '').slice(0, n);
@@ -98,7 +98,7 @@
     if (armed && e.isTrusted) {
       armed = false; e.preventDefault(); e.stopImmediatePropagation();
       picked = e.composedPath().find(x=>x instanceof Element) || e.target;
-      pill.hidden = false; show(report()); return;
+      pill.hidden = false; root.getElementById('open').hidden = true; root.getElementById('open').textContent = 'AI'; show(report()); return;
     }
     if (e.isTrusted) push('click',{target:shape(e.target)});
   }
@@ -132,7 +132,7 @@
   }
   function stop() {
     observer?.disconnect(); observer=null; recording=false; armed=false;
-    show(report()); setStatus('Stopped. Review the captured report.');
+    if (show(report())) setStatus('Stopped. Review the captured report.');
   }
   async function copy() {
     if (!preview.value) {setStatus('Prepare a report or prompt first.');return;}
