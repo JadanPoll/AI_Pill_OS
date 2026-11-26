@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         AI Pill OS - DevTools and Ask
 // @namespace    https://github.com/JadanPoll/AI_Pill_OS
-// @version      0.4.2
+// @version      0.4.3
 // @description  Inspect, record, export browser evidence; hand it to ChatGPT and run bounded read-only investigation requests.
 // @match        https://*/*
 // @match        http://*/*
@@ -17,7 +17,7 @@
 (() => {
   'use strict';
   if (window.top !== window || document.getElementById('ai-pill-os')) return;
-  const VERSION = '0.4.2', MAX = 100, MAX_REPORT = 100000;
+  const VERSION = '0.4.3', MAX = 100, MAX_REPORT = 100000;
   let host, root, status, preview, question, scope, includeText, planBox, pill;
   let picked = null, selection = '', armed = false, recording = false, observer = null;
   let events = [], dropped = 0, started = 0, lastReport = null, erudaReady = false;
@@ -195,11 +195,23 @@
     observer?.disconnect(); observer=null; recording=false; armed=false;syncRecord();
     if (show(report())) setStatus('Stopped. Review the captured report.');
   }
-  async function copy() {
-    if (!preview.value) {setStatus('Prepare a report or prompt first.');return;}
-    try { await navigator.clipboard.writeText(preview.value);setStatus('Copied. Paste into your AI conversation or Shortcut.'); }
-    catch {preview.focus();preview.select();setStatus('Clipboard unavailable. Use the native Copy action on the selected text.');}
+  let copying=false;
+  async function copyPrepared(text,label='Evidence'){
+    if(copying)return;
+    if(!text){setStatus('Prepare a report or prompt first.');return;}
+    copying=true;
+    const size=text.length.toLocaleString()+' characters';
+    setStatus('Copying '+label.toLowerCase()+'…');
+    try{
+      await navigator.clipboard.writeText(text);
+      setStatus(label+' copied · '+size+'. Review before sharing.');
+    }catch(e){
+      // Retain the exact snapshot; the existing Copy button is the retry.
+      preview.value=text;syncEvidence();preview.focus();preview.select();
+      setStatus('Not copied: '+safe(e.message||e,160)+' · '+size+'. Tap Copy again or use native Copy.');
+    }finally{copying=false;}
   }
+  function copy(){return copyPrepared(preview.value);}
   // Explicit local clipboard export of the current top-level DOM, not a refetch
   // or a bounded report. Never send it to another site automatically.
   async function copyHTML() {
@@ -212,14 +224,7 @@
       const doctype=document.doctype?new XMLSerializer().serializeToString(document.doctype)+'\n':'';
       html=doctype+snapshot.outerHTML;
     }catch(e){setStatus('HTML capture failed: '+safe(e.message));return;}
-    const size=html.length.toLocaleString()+' characters';
-    try {
-      await navigator.clipboard.writeText(html);
-      setStatus('Live HTML copied · '+size+'. Review for private data before sharing.');
-    }catch(e){
-      preview.value=html;syncEvidence();preview.focus();preview.select();
-      setStatus('Clipboard unavailable: '+safe(e.message)+'. Live HTML selected · '+size+'. Use native Copy; review before sharing.');
-    }
+    return copyPrepared(html,'Live HTML');
   }
   function ask() {
     const q=question.value.trim(); if(!q){setStatus('Enter a question.');return;}
