@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         AI Pill OS - Pocket
 // @namespace    https://github.com/JadanPoll/AI_Pill_OS
-// @version      0.7.4
+// @version      0.7.5
 // @updateURL    https://raw.githubusercontent.com/JadanPoll/AI_Pill_OS/main/Pocket.user.js
 // @downloadURL  https://raw.githubusercontent.com/JadanPoll/AI_Pill_OS/main/Pocket.user.js
 // @description  Universal Safari pill: collect evidence, keep discoveries, and hand a question to a chosen chat.
@@ -24,7 +24,7 @@
 (() => {
   'use strict';
   if (window.top !== window) return;
-  const VERSION='0.7.4';
+  const VERSION='0.7.5';
   // Report initialization failures without depending on the main UI, storage or a CDN.
   function bootFailure(error,phase){
     const message=String(error?.message||error).slice(0,500);
@@ -66,9 +66,9 @@
   Object.assign(icons,{bookmark:'<path d="M6 3h12v18l-6-4-6 4z"/>',back:'<path d="m15 18-6-6 6-6"/>',trash:'<path d="M3 6h18M9 6V3h6v3M6 6l1 15h10l1-15M10 10v7M14 10v7"/>',settings:'<circle cx="5" cy="12" r="1"/><circle cx="12" cy="12" r="1"/><circle cx="19" cy="12" r="1"/>',arrow:'<path d="M7 17 17 7M7 7h10v10"/>',pin:'<path d="m16 3 5 5-4 2-3 5-2-2-6 6-1-1 6-6-2-2 5-3z"/>',search:'<circle cx="10" cy="10" r="6"/><path d="m14 14 6 6"/>'});
   icons.point='<path d="m4 3 15 9-7 2-3 7z"/>';icons.notes='<rect x="5" y="3" width="14" height="18" rx="2"/><path d="M8 8h8M8 12h8M8 16h5"/>';icons.crop='<path d="M6 3v15h15M3 6h15v15"/>';icons.chat='<path d="M20 11a8 8 0 0 1-8 8H4l2-4a8 8 0 1 1 14-4Z"/><path d="M9 11h6"/>';const icon=k=>'<svg width="21" height="21" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round" stroke-linecap="round" aria-hidden="true">'+icons[k]+'</svg>';
   const btn=(id,k,title,words='')=>'<button id="'+id+'" type="button" aria-label="'+title+'" title="'+title+'">'+icon(k)+(words?' '+words:'')+'</button>';
-  root.innerHTML='<style>:host{all:initial;position:fixed;left:12px;bottom:18px;z-index:2147483645;color:#172033;font:14px system-ui}*{box-sizing:border-box}[hidden]{display:none!important}button,input,textarea{font:inherit;color:inherit}button{min-height:44px;min-width:44px;border:0;border-radius:8px;background:transparent;display:inline-flex;align-items:center;justify-content:center;gap:5px;padding:8px;cursor:pointer}button:disabled{opacity:.35}button:focus-visible,a:focus-visible,summary:focus-visible{outline:2px solid #2563eb}#open[data-storage-error=true]{outline:2px solid #dc2626}#open{font-size:11px;border-radius:22px;background:#172033;color:#fff;box-shadow:0 2px 10px #0004}#panel{width:min(380px,calc(100vw - 24px));max-height:78vh;overflow:auto;background:rgba(255,255,255,.86);backdrop-filter:blur(3px);-webkit-backdrop-filter:blur(3px);border:1px solid #cbd5e1;border-radius:14px;padding:10px;box-shadow:0 4px 20px #0004}.row{display:flex;gap:4px;align-items:center;margin:4px 0}.grow{flex:1;min-width:0}textarea,input{width:100%;border:1px solid #cbd5e1;border-radius:8px;padding:9px;background:#fff;font-size:16px}input{min-height:44px}textarea{resize:vertical}small,#status{font-size:12px;color:#475569;overflow-wrap:anywhere}h3{font-size:16px;margin:0}#list{max-height:30vh;overflow:auto}.entry{display:block;text-align:left;width:100%;border-bottom:1px solid #e2e8f0;border-radius:0;overflow-wrap:anywhere}.entry b,.entry small{display:block}#detail{border-top:1px solid #e2e8f0;margin-top:6px;padding-top:6px}#body,#handoff-preview{white-space:pre-wrap;overflow-wrap:anywhere;max-height:25vh;overflow:auto;background:#f8fafc;padding:8px;font:13px/1.45 ui-monospace,monospace;user-select:text}#ask{background:#172033;color:white}button[aria-pressed=true]{background:#e2e8f0;font-weight:600}#handoff{border:1px solid #cbd5e1;border-radius:8px;padding:5px;margin:6px 0}#open[data-incoming=true]{outline:2px solid #16a34a}#handoff-reply{max-height:26vh;overflow:auto;white-space:pre-wrap;overflow-wrap:anywhere;font:14px/1.5 system-ui;background:#f8fafc;padding:8px;border-radius:6px}#reply-draft{margin:6px 0}#handoff-open{color:#1d4ed8;min-height:44px;min-width:44px;display:inline-flex;align-items:center;justify-content:center}#status:empty,#count:empty{display:none}details{border-top:1px solid #e2e8f0;padding:4px 0}summary{cursor:pointer;min-height:44px;display:flex;align-items:center;gap:6px;list-style:none}summary::-webkit-details-marker{display:none}#settings summary{justify-content:flex-end}#settings .settings-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:5px;margin:8px 0}#settings .settings-grid>button,#settings .settings-grid>span{min-width:0;width:100%;font-size:12px}#settings .settings-grid button{border:1px solid #cbd5e1;white-space:normal;overflow-wrap:anywhere;line-height:1.25;text-align:center}#settings .settings-grid>span>button{width:100%}#chat-target{min-height:44px;min-width:44px;border-radius:8px;display:inline-flex;align-items:center;justify-content:center;padding:8px;color:inherit;text-decoration:none;flex:none;-webkit-touch-callout:default}#source-label{font-size:11px}#pin{border:1px solid #cbd5e1}#remove,#clear-tray{color:#991b1b}#open[data-pinned=true],#chat-target[data-pinned=true]{background:#e9bf58;color:#392804}#chat-target{border:1px solid #cbd5e1}#target-label{display:block;line-height:1.3}#target-label:empty{display:none}#ask{background:rgba(23,32,51,.94)}#draft{background:rgba(255,255,255,.75)}#quote{border-left:3px solid #64748b;padding:4px 8px;margin:4px 0;background:#f1f5f9;border-radius:4px}#quote-text{font-size:12px;white-space:pre-wrap;overflow-wrap:anywhere;max-height:74px;overflow:auto}#quote .row{margin:0}#quote-clear{min-height:44px}#include-row{display:flex;align-items:center;gap:8px;font-size:12px;color:#475569;min-height:34px}#include-tray{width:18px;min-height:18px;height:18px;flex:none}#collection-head{margin-top:6px}#crop-editor{position:fixed;inset:8px;z-index:2147483647;display:flex;flex-direction:column;background:#f8fafc;border:1px solid #94a3b8;border-radius:12px;padding:10px;box-shadow:0 4px 20px #0005}#crop-stage{flex:1;min-height:0;display:flex;align-items:center;justify-content:center;overflow:hidden;background:#e2e8f0;border-radius:8px;position:relative}#crop-image-wrap{position:relative;max-width:100%;max-height:100%;display:flex;align-items:center;justify-content:center;touch-action:none;user-select:none}#crop-image{display:block;max-width:100%;max-height:100%;object-fit:contain;pointer-events:none}#crop-selection{position:absolute;outline:2px solid #2563eb;background:rgba(37,99,235,.12);pointer-events:none;box-shadow:0 0 0 200vmax #0004}#crop-stage:has(#crop-image-wrap:not([hidden])) #crop-empty{display:none}#crop-help{padding:5px 2px}#crop-editor .row{flex-wrap:wrap}#crop-add{background:#172033;color:white}#crop-empty{padding:16px;text-align:center;color:#475569}#primary{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:6px;margin:6px 0}#primary button{flex-direction:column;gap:3px;min-height:66px;border:1px solid #cbd5e1;font-size:13px}#primary svg{width:25px;height:25px}#panel[data-mode=home] #workspace,#panel:not([data-mode=notes]) #note-tools,#panel:not([data-mode=notes]) #note-context,#panel:not([data-mode=ask]) #ask-tools,#panel:not([data-mode=ask]) #handoff,#panel:not([data-mode=notes]) #notes-list,#panel:not([data-mode=ask]) #ask-context{display:none}#note-context,#ask-context{display:flex;flex-wrap:wrap;gap:5px;margin:6px 0}#note-context button,#ask-context button,#note-tools button{border:1px solid #cbd5e1}#attachments{font-size:12px;overflow-wrap:anywhere}#attachments .row{margin:2px 0}#notes-list{margin-top:8px}.note-entry{display:flex;align-items:center;border-bottom:1px solid #e2e8f0;gap:4px}.note-entry .entry{flex:1;min-width:0;border-bottom:0}.note-entry .ask-note{border:1px solid #cbd5e1;flex:none}.note-entry .ask-note svg{width:19px;height:19px}#mode-ask[data-pinned=true]{background:#e9bf58;color:#392804}#settings summary{min-height:36px}#mode-ask[data-incoming=true]{outline:2px solid #16a34a}#mode-ask[data-pinned=true]{background:#e9bf58;color:#392804}[data-link=ready]{box-shadow:inset 0 0 0 2px #16a34a!important}[data-link=responding]{box-shadow:inset 0 0 0 2px #2563eb!important}[data-link=checking],[data-link=uncertain]{box-shadow:inset 0 0 0 2px #d97706!important}[data-link=stale]{box-shadow:inset 0 0 0 2px #94a3b8!important}#link-health{display:block;margin:4px 0;font-size:12px}#link-health:empty{display:none}#panel[data-chat=true]{width:min(310px,calc(100vw - 24px))}#panel[data-chat=true] #primary,#panel[data-chat=true] #settings,#panel[data-chat=true] #workspace,#panel[data-chat=true] #handoff{display:none}#panel[data-chat=true][data-mode=notes] #workspace,#panel[data-chat=true][data-mode=notes] #settings{display:block}#panel[data-chat=true][data-mode=worker] #handoff{display:block}#panel:not([data-chat=true]) #worker,#panel[data-chat=true][data-mode=notes] #worker{display:none}#panel[data-chat=true] #handoff{border:0;padding:0}#worker-status{font-size:13px}#worker-pin{background:#172033;color:white}#worker-recovery summary{min-height:36px;font-size:12px}#worker-recovery button{border:1px solid #cbd5e1}#open[data-pinned=true]{background:#172033;color:white}#open[data-chat=true]{padding:7px 10px}#panel[data-chat=true] #handoff-reply{display:none}</style>'+
+  root.innerHTML='<style>:host{all:initial;position:fixed;left:12px;bottom:18px;z-index:2147483645;color:#172033;font:14px system-ui}*{box-sizing:border-box}[hidden]{display:none!important}button,input,textarea{font:inherit;color:inherit}button{min-height:44px;min-width:44px;border:0;border-radius:8px;background:transparent;display:inline-flex;align-items:center;justify-content:center;gap:5px;padding:8px;cursor:pointer}button:disabled{opacity:.35}button:focus-visible,a:focus-visible,summary:focus-visible{outline:2px solid #2563eb}#open[data-storage-error=true]{outline:2px solid #dc2626}#open{font-size:11px;border-radius:22px;background:#172033;color:#fff;box-shadow:0 2px 10px #0004}#panel{width:min(380px,calc(100vw - 24px));max-height:78vh;overflow:auto;background:rgba(255,255,255,.86);backdrop-filter:blur(3px);-webkit-backdrop-filter:blur(3px);border:1px solid #cbd5e1;border-radius:14px;padding:10px;box-shadow:0 4px 20px #0004}.row{display:flex;gap:4px;align-items:center;margin:4px 0}.grow{flex:1;min-width:0}textarea,input{width:100%;border:1px solid #cbd5e1;border-radius:8px;padding:9px;background:#fff;font-size:16px}input{min-height:44px}textarea{resize:vertical}small,#status{font-size:12px;color:#475569;overflow-wrap:anywhere}h3{font-size:16px;margin:0}#list{max-height:30vh;overflow:auto}.entry{display:block;text-align:left;width:100%;border-bottom:1px solid #e2e8f0;border-radius:0;overflow-wrap:anywhere}.entry b,.entry small{display:block}#detail{border-top:1px solid #e2e8f0;margin-top:6px;padding-top:6px}#body,#handoff-preview{white-space:pre-wrap;overflow-wrap:anywhere;max-height:25vh;overflow:auto;background:#f8fafc;padding:8px;font:13px/1.45 ui-monospace,monospace;user-select:text}#ask{background:#172033;color:white}button[aria-pressed=true]{background:#e2e8f0;font-weight:600}#handoff{border:1px solid #cbd5e1;border-radius:8px;padding:5px;margin:6px 0}#open[data-incoming=true]{outline:2px solid #16a34a}#handoff-reply{max-height:26vh;overflow:auto;white-space:pre-wrap;overflow-wrap:anywhere;font:14px/1.5 system-ui;background:#f8fafc;padding:8px;border-radius:6px}#reply-draft{margin:6px 0}#handoff-open{color:#1d4ed8;min-height:44px;min-width:44px;display:inline-flex;align-items:center;justify-content:center}#status:empty,#count:empty{display:none}details{border-top:1px solid #e2e8f0;padding:4px 0}summary{cursor:pointer;min-height:44px;display:flex;align-items:center;gap:6px;list-style:none}summary::-webkit-details-marker{display:none}#settings summary{justify-content:flex-end}#settings .settings-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:5px;margin:8px 0}#settings .settings-grid>button,#settings .settings-grid>span{min-width:0;width:100%;font-size:12px}#settings .settings-grid button{border:1px solid #cbd5e1;white-space:normal;overflow-wrap:anywhere;line-height:1.25;text-align:center}#settings .settings-grid>span>button{width:100%}#chat-target{min-height:44px;min-width:44px;border-radius:8px;display:inline-flex;align-items:center;justify-content:center;padding:8px;color:inherit;text-decoration:none;flex:none;-webkit-touch-callout:default}#source-label{font-size:11px}#pin{border:1px solid #cbd5e1}#remove,#clear-tray{color:#991b1b}#open[data-pinned=true],#chat-target[data-pinned=true]{background:#e9bf58;color:#392804}#chat-target{border:1px solid #cbd5e1}#target-label{display:block;line-height:1.3}#target-label:empty{display:none}#ask{background:rgba(23,32,51,.94)}#draft{background:rgba(255,255,255,.75)}#quote{border-left:3px solid #64748b;padding:4px 8px;margin:4px 0;background:#f1f5f9;border-radius:4px}#quote-text{font-size:12px;white-space:pre-wrap;overflow-wrap:anywhere;max-height:74px;overflow:auto}#quote .row{margin:0}#quote-clear{min-height:44px}#include-row{display:flex;align-items:center;gap:8px;font-size:12px;color:#475569;min-height:34px}#include-tray{width:18px;min-height:18px;height:18px;flex:none}#collection-head{margin-top:6px}#crop-editor{position:fixed;inset:8px;z-index:2147483647;display:flex;flex-direction:column;background:#f8fafc;border:1px solid #94a3b8;border-radius:12px;padding:10px;box-shadow:0 4px 20px #0005}#crop-stage{flex:1;min-height:0;display:flex;align-items:center;justify-content:center;overflow:hidden;background:#e2e8f0;border-radius:8px;position:relative}#crop-image-wrap{position:relative;max-width:100%;max-height:100%;display:flex;align-items:center;justify-content:center;touch-action:none;user-select:none}#crop-image{display:block;max-width:100%;max-height:100%;object-fit:contain;pointer-events:none}#crop-selection{position:absolute;outline:2px solid #2563eb;background:rgba(37,99,235,.12);pointer-events:none;box-shadow:0 0 0 200vmax #0004}#crop-stage:has(#crop-image-wrap:not([hidden])) #crop-empty{display:none}#crop-help{padding:5px 2px}#crop-editor .row{flex-wrap:wrap}#crop-add{background:#172033;color:white}#crop-empty{padding:16px;text-align:center;color:#475569}#primary{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:6px;margin:6px 0}#primary button{flex-direction:column;gap:3px;min-height:66px;border:1px solid #cbd5e1;font-size:13px}#primary svg{width:25px;height:25px}#panel[data-mode=home] #workspace,#panel:not([data-mode=notes]) #note-tools,#panel:not([data-mode=notes]) #note-context,#panel:not([data-mode=ask]) #ask-tools,#panel:not([data-mode=ask]) #handoff,#panel:not([data-mode=notes]) #notes-list,#panel:not([data-mode=ask]) #ask-context{display:none}#note-context,#ask-context{display:flex;flex-wrap:wrap;gap:5px;margin:6px 0}#note-context button,#ask-context button,#note-tools button{border:1px solid #cbd5e1}#attachments{font-size:12px;overflow-wrap:anywhere}#attachments .row{margin:2px 0}#notes-list{margin-top:8px}.note-entry{display:flex;align-items:center;border-bottom:1px solid #e2e8f0;gap:4px}.note-entry .entry{flex:1;min-width:0;border-bottom:0}.note-entry .ask-note{border:1px solid #cbd5e1;flex:none}.note-entry .ask-note svg{width:19px;height:19px}#mode-ask[data-pinned=true]{background:#e9bf58;color:#392804}#settings summary{min-height:36px}#mode-ask[data-incoming=true]{outline:2px solid #16a34a}#mode-ask[data-pinned=true]{background:#e9bf58;color:#392804}[data-link=ready]{box-shadow:inset 0 0 0 2px #16a34a!important}[data-link=responding]{box-shadow:inset 0 0 0 2px #2563eb!important}[data-link=checking],[data-link=uncertain]{box-shadow:inset 0 0 0 2px #d97706!important}[data-link=stale]{box-shadow:inset 0 0 0 2px #94a3b8!important}#link-health{display:block;margin:4px 0;font-size:12px}#link-health:empty{display:none}#panel[data-chat=true]{width:min(310px,calc(100vw - 24px))}#panel[data-chat=true] #primary,#panel[data-chat=true] #settings,#panel[data-chat=true] #workspace,#panel[data-chat=true] #handoff{display:none}#panel[data-chat=true][data-mode=notes] #workspace,#panel[data-chat=true][data-mode=notes] #settings{display:block}#panel[data-chat=true][data-mode=worker] #handoff{display:block}#panel:not([data-chat=true]) #worker,#panel[data-chat=true][data-mode=notes] #worker{display:none}#panel[data-chat=true] #handoff{border:0;padding:0}#worker-status{font-size:13px}#self-test{border-top:1px solid #e2e8f0;margin-top:8px;padding-top:4px}#self-test input{min-width:0;width:100%}#self-test-status{display:block;font-size:12px;overflow-wrap:anywhere}#self-test-status[data-result=pass]{color:#15803d}#self-test-status[data-result=fail]{color:#b91c1c}#self-test-status:empty{display:none}#self-test-run{border:1px solid #cbd5e1}#worker-pin{background:#172033;color:white}#worker-recovery summary{min-height:36px;font-size:12px}#worker-recovery button{border:1px solid #cbd5e1}#open[data-pinned=true]{background:#172033;color:white}#open[data-chat=true]{padding:7px 10px}#panel[data-chat=true] #handoff-reply{display:none}</style>'+
     btn('open','pocket','Open AI Pocket','v'+VERSION)+
-    '<section id="panel" data-mode="home" hidden><div class="row"><h3 class="grow" id="panel-title">Pocket <small>v'+VERSION+'</small></h3>'+btn('worker-notes','notes','Open Notes', '')+btn('close','close','Close Pocket')+'</div><div id="worker" hidden><div class="row"><span class="grow" id="worker-status">Checking connection…</span><button id="worker-pin" hidden>Use this chat</button></div><small id="worker-detail" role="status"></small><details id="worker-tools"><summary>Connection details</summary><button id="worker-report">Copy connection report</button><button id="worker-refresh">Refresh connection</button></details></div><nav id="primary" aria-label="Pocket actions">'+btn('mode-notes','notes','Open notes','Notes')+btn('mode-ask','chat','Ask or read answer','Ask')+'</nav><div id="workspace">'+
+    '<section id="panel" data-mode="home" hidden><div class="row"><h3 class="grow" id="panel-title">Pocket <small>v'+VERSION+'</small></h3>'+btn('worker-notes','notes','Open Notes', '')+btn('close','close','Close Pocket')+'</div><div id="worker" hidden><div class="row"><span class="grow" id="worker-status">Checking connection…</span><button id="worker-pin" hidden>Use this chat</button></div><small id="worker-detail" role="status"></small><section id="self-test" hidden><div class="row"><input id="self-test-prompt" class="grow" placeholder="Optional test message" aria-label="Optional self-test message"><button id="self-test-run" title="Send a real message in this chat and verify its response">Self-test</button></div><small id="self-test-status" role="status"></small></section><details id="worker-tools"><summary>Connection details</summary><button id="worker-report">Copy connection report</button><button id="worker-refresh">Refresh connection</button></details></div><nav id="primary" aria-label="Pocket actions">'+btn('mode-notes','notes','Open notes','Notes')+btn('mode-ask','chat','Ask or read answer','Ask')+'</nav><div id="workspace">'+
     '<section id="quote" hidden><div class="row"><small class="grow">Selected passage</small>'+btn('quote-clear','close','Remove selected passage')+'</div><div id="quote-text"></div></section><textarea id="draft" rows="2" placeholder="What do you want to know or do?" aria-label="Question or draft"></textarea>'+
     '<div id="note-context">'+btn('snip','crop','Drag to capture webpage region','Region')+'<button id="whole-page">Page text</button></div><div class="row" id="note-tools"><button id="save-note" class="grow">Save note</button>'+btn('collect','plus','Collect temporary evidence')+btn('saved-tab','bookmark','Open saved notes')+'</div><div id="ask-context">'+btn('ask-snip','crop','Capture region for this question','Region')+'<button id="ask-page">Page text</button><button id="copy-context">Copy text</button><button id="copy-ask-images" hidden>Copy images</button></div><div id="attachments" hidden></div><div id="ask-tools"><div class="row"><button id="ask" class="grow">Ask</button>'+'<a id="chat-target" href="https://chatgpt.com/" target="_blank" rel="noopener noreferrer" aria-label="Open or set ChatGPT" title="Open or set ChatGPT">'+icon('chat')+'</a>'+'</div><small id="target-label"></small><small id="link-health" role="status"></small><label id="include-row" hidden><input id="include-tray" type="checkbox"><span id="include-label">Include collected evidence</span></label></div>'+
     '<section id="handoff" hidden><div class="row"><small class="grow" id="handoff-status"></small><a id="handoff-open" target="_blank" rel="noopener noreferrer" aria-label="Open selected chat" title="Open selected chat" hidden>'+icon('arrow')+'</a>'+btn('handoff-clear','close','Dismiss question or answer')+'</div><button id="worker-send" hidden>Send question</button><details id="worker-recovery" hidden><summary>Manual recovery</summary><pre id="handoff-preview" hidden></pre>'+btn('handoff-copy','copy','Copy prepared question','Copy question')+'<details id="reply-compose" hidden><summary>Return answer manually</summary><textarea id="reply-draft" rows="3" placeholder="Paste the answer from this chat…" aria-label="Answer to return"></textarea><button id="reply-return">Return answer</button></details></details><section id="reply-result" hidden><div class="row"><strong class="grow">Answer</strong>'+btn('reply-copy','copy','Copy returned answer')+'</div><div id="handoff-reply"></div></section></section>'+
@@ -544,6 +544,7 @@
     const chat=!!here,wasChat=$('panel').dataset.chat==='true';
     $('panel').dataset.chat=String(chat);$('open').dataset.chat=String(chat);
     $('worker').hidden=!chat;$('worker-notes').hidden=!chat;
+    $('self-test').hidden=!(here?.startsWith('https://chatgpt.com/')&&here!=='https://chatgpt.com/');
     if(chat!==wasChat){setMode(chat?'worker':'home');$('worker-recovery').open=false;}
     $('panel-title').firstChild.textContent=chat?'Pocket connection ':'Pocket ';
     $('worker-pin').hidden=!chat||pinned;
@@ -587,7 +588,7 @@
   async function rebuildMailbox(){
     const keys=(await store.keys()).filter(k=>typeof k==='string'&&k.startsWith(HANDOFF));
     const entries=[];
-    for(const k of keys){const r=await store.get(k);if(r?.id===k.slice(HANDOFF.length)&&typeof r.sourcePage==='string'&&typeof r.created==='string'&&chatURL(r.target))entries.push(mailboxEntry(r));}
+    for(const k of keys){const r=await store.get(k);if(!r?.selfTest&&r?.id===k.slice(HANDOFF.length)&&typeof r.sourcePage==='string'&&typeof r.created==='string'&&chatURL(r.target))entries.push(mailboxEntry(r));}
     // Merge concurrently published entries rather than replacing their snapshot.
     const latest=await store.get(MAILBOX),byId=new Map((validMailbox(latest)?latest:[]).map(e=>[e.id,e]));
     for(const e of entries)if(!byId.has(e.id))byId.set(e.id,e);
@@ -769,6 +770,7 @@
   action('worker-notes',async()=>{if(mode==='notes'){setMode('worker');await refreshHandoff(loadEpoch);}else{view='saved';setMode('notes');await load();}});
   action('worker-pin',pinChat);action('worker-send',recoverSend);
   action('worker-report',copyConnectionReport);
+  action('self-test-run',runSelfTest);
   action('worker-refresh',async()=>{if(!store)return;await rebuildMailbox();await refreshTarget();await refreshHandoff(loadEpoch);wakeTransport();status('Connection refreshed.');});
   action('whole-page',pageContext);action('ask-page',pageContext);action('save-note',saveNote);action('ask-snip',startSnip);
   action('note-ask',()=>{if(selected){attach(selected);hideDetail();setMode('ask');}});
@@ -866,7 +868,7 @@
     }catch(e){linkError=String(e?.message||e).slice(0,300);paintLink('stale','Chat connection check failed');linkLog('error',{message:linkError});}
     finally{linkBusy=false;}
   }
-  async function copyConnectionReport(){await copyText(JSON.stringify({version:VERSION,instance,target:linkTarget,state:linkState,challenge,lastProof,lastHeart,ageMs:lastHeart?Date.now()-lastHeart.at:null,error:linkError,visibility:document.visibilityState,intervalMs:LINK_INTERVAL,expiryMs:LINK_TTL,mailbox:'metadata index; direct request keys',autoStartExpiryMs:AUTO_START_TTL,events:linkEvents,request:pending?{id:pending.id,created:pending.created,worker:pending.autoWorker||null,seen:pending.seen,copied:pending.copied,returned:!!pending.reply,manualReason:pending.manualReason||null,run:pending.run}:null,scope:'Local GM ping/pong, editor/stop observations and explicit Ask transaction events. No prompt or answer text in this report.'},null,2));}
+  async function copyConnectionReport(){await copyText(JSON.stringify({version:VERSION,instance,target:linkTarget,state:linkState,challenge,lastProof,lastHeart,ageMs:lastHeart?Date.now()-lastHeart.at:null,error:linkError,visibility:document.visibilityState,intervalMs:LINK_INTERVAL,expiryMs:LINK_TTL,mailbox:'metadata index; direct request keys',autoStartExpiryMs:AUTO_START_TTL,events:linkEvents,selfTest:lastSelfTest,request:pending?{id:pending.id,created:pending.created,worker:pending.autoWorker||null,seen:pending.seen,copied:pending.copied,returned:!!pending.reply,manualReason:pending.manualReason||null,run:pending.run}:null,scope:'Local GM ping/pong, editor/stop observations and explicit Ask transaction events. No prompt or answer text in this report.'},null,2));}
   action('link-report',copyConnectionReport);
   function extractPocketAnswer(last) {
     if(!last)return '';
@@ -950,7 +952,55 @@
   // handoffs and image questions are never submitted by this worker.
   // A fresh heartbeat binds each job to one live tab, not merely a URL.
   const AUTO_START_TTL=120000,AUTO_TIMEOUT=20*60*1000;
-  let autoBusy=false,activeAsk=null;
+  let autoBusy=false,activeAsk=null,lastSelfTest=null;
+  const terminalTest=phase=>['done','failed','uncertain'].includes(phase);
+  function testStage(r,phase,detail,extra={}){
+    if(!r?.selfTest||lastSelfTest?.id!==r.id)return;
+    const now=Date.now();
+    lastSelfTest.phase=phase;
+    lastSelfTest.detail=detail;
+    lastSelfTest.stages.push({phase,detail,elapsedMs:now-lastSelfTest.started,...extra});
+    Object.assign(lastSelfTest,extra);
+    const terminal=terminalTest(phase);
+    $('self-test-run').disabled=!terminal;
+    $('self-test-status').dataset.result=phase==='done'?(lastSelfTest.markerMatched===false?'fail':'pass'):terminal?'fail':'';
+    $('self-test-status').textContent=phase==='done'?(lastSelfTest.markerMatched===false?'Control passed · response marker did not match':'Passed · message sent and answer captured')+' ('+Math.round((now-lastSelfTest.started)/1000)+'s)':detail;
+  }
+  async function runSelfTest(){
+    if(!store){$('self-test-status').textContent='Shared GM storage unavailable.';return;}
+    const here=chatURL(location.href);
+    if(document.hidden||!here?.startsWith('https://chatgpt.com/')||here==='https://chatgpt.com/'){$('self-test-status').textContent='Open an existing ChatGPT conversation first.';return;}
+    if(autoBusy||activeAsk||handoffBusy){$('self-test-status').textContent='An Ask is already running. Wait until it finishes.';return;}
+    const editor=chatEditor();
+    if(!editor||editorText(editor)||composerAttachments(editor)||streamActive()){$('self-test-status').textContent='Finish the current response or draft first. Nothing sent.';return;}
+    const id=uid(),marker='POCKET_'+id.replace(/[^a-z0-9]/gi,'').slice(-10).toUpperCase();
+    const custom=$('self-test-prompt').value.trim();
+    const text=custom||'Pocket self-test. Reply with exactly this token and nothing else: '+marker;
+    if(text.length>LIMIT){$('self-test-status').textContent='Test message is too large.';return;}
+    const r={id,created:new Date().toISOString(),sourcePage:here,target:here,text,autoWorker:instance,selfTest:true};
+    lastSelfTest={id,started:Date.now(),target:here,surface:chatSurface(),custom:!!custom,expectedMarker:custom?null:marker,phase:'starting',stages:[]};
+    autoBusy=true;
+    testStage(r,'starting','Starting same-tab self-test…');
+    try{
+      // Use the same real executor and storage receipts, but do not publish a
+      // local probe to the cross-tab mailbox or change the pinned conversation.
+      await store.set(HANDOFF+id,r);
+      if(!await ownsRequest(r))throw Error('Local request readback failed');
+      await startAsk(r);
+      if(!activeAsk&&!terminalTest(lastSelfTest.phase))testStage(r,'failed','No submission confirmed. Check the native composer.');
+    }catch(e){testStage(r,'failed',String(e?.message||e).slice(0,220)+' · Check chat before retrying.');}
+    finally{autoBusy=false;wakeTransport();}
+  }
+  async function cleanupSelfTest(r){
+    if(!r?.selfTest)return;
+    // Retain the compact result in this tab/report, not the actual test prompt
+    // and response in Pocket's persistent collection.
+    try{for(const key of [HANDOFF,RUN,REPLY,ACK,SEEN])await store.del(key+r.id);}
+    catch(e){linkLog('error',{message:'Self-test cleanup: '+String(e?.message||e).slice(0,160)});}
+  }
+  async function allowedDestination(r){
+    return chatURL(location.href)===r.target&&(r.selfTest?r.autoWorker===instance:await store.get(TARGET)===r.target);
+  }
   const normalizeChat=v=>String(v||'').replace(/\s+/g,' ').trim();
   // Two observed DOM families: SwarmX legacy and the live 2026-11-26
   // ChatGPT snapshot. Scope the new composer and messages to their containers.
@@ -977,6 +1027,8 @@
     const check=await store.get(RUN+r.id);
     if(check?.worker!==instance||check.phase!==phase||check.at!==state.at)throw Error('Run receipt readback failed');
     linkLog('ask',{id:r.id,phase,detail});
+    testStage(r,phase,detail);
+    if(r.selfTest&&terminalTest(phase))await cleanupSelfTest(r);
     return true;
   }
   async function finishAsk(a,phase,detail){
@@ -984,12 +1036,12 @@
   }
   async function ownsRequest(r){
     const current=await store.get(HANDOFF+r.id);
-    return current?.id===r.id&&current.autoWorker===instance&&current.target===r.target&&current.created===r.created;
+    return current?.id===r.id&&current.autoWorker===instance&&current.target===r.target&&current.created===r.created&&!!current.selfTest===!!r.selfTest;
   }
   async function startAsk(r){
     let attempted=false;
     try{
-      if(Date.now()-Date.parse(r.created)>AUTO_START_TTL||chatURL(location.href)!==r.target||await store.get(TARGET)!==r.target||await store.get(ACK+r.id)||await store.get(RUN+r.id)||await store.get(REPLY+r.id))return;
+      if(Date.now()-Date.parse(r.created)>AUTO_START_TTL||!await allowedDestination(r)||await store.get(ACK+r.id)||await store.get(RUN+r.id)||await store.get(REPLY+r.id))return;
       if(!await ownsRequest(r))return;
       if(!await markRun(r,'claimed','Bound chat tab received request'))return;
       if(!await ownsRequest(r))return;
@@ -1004,28 +1056,31 @@
       // Do not fabricate a paste event or overwrite a pre-existing draft.
       document.execCommand('insertText',false,r.text);
       if(editorText(chatEditor())!==expected){await markRun(r,'failed','Composer insertion not verified. Check draft before manual paste.');return;}
+      testStage(r,'inserted','Composer insertion verified');
       const deadline=Date.now()+8000;
       while(Date.now()<deadline&&!canSend(sendControl()))await new Promise(resolve=>setTimeout(resolve,150));
       if(!canSend(sendControl())||editorText(chatEditor())!==expected||!sameTurn(baseline,fingerprint())){await markRun(r,'failed','Send control or unchanged composer not verified. No send attempted.');return;}
+      testStage(r,'send-ready','Send button enabled; composer verified');
       if(!await markRun(r,'armed','Send attempt recorded; never automatically resend'))return;
       if(!await ownsRequest(r))return;
-      if(await store.get(TARGET)!==r.target||await store.get(ACK+r.id)||await store.get(REPLY+r.id)||chatURL(location.href)!==r.target||!canSend(sendControl())||editorText(chatEditor())!==expected||!sameTurn(baseline,fingerprint())){
+      if(!await allowedDestination(r)||(r.selfTest&&document.hidden)||await store.get(ACK+r.id)||await store.get(REPLY+r.id)||chatURL(location.href)!==r.target||!canSend(sendControl())||editorText(chatEditor())!==expected||!sameTurn(baseline,fingerprint())){
         await markRun(r,'failed','Chat changed before send. No send attempted.');return;
       }
       activeAsk={r,baseline,expected,started:Date.now(),user:null,seenBusy:false,answer:'',stableAt:0,assistantID:null,assistantNode:null};
       attempted=true;
       sendControl().click();
       activeAsk.seenBusy=streamActive();
-      linkLog('ask-click',{id:r.id});
+      linkLog('ask-click',{id:r.id});testStage(r,'clicked','Send clicked · waiting for matching user turn');
     }catch(e){
       activeAsk=null;await markRun(r,attempted?'uncertain':'failed',String(e?.message||e).slice(0,220)+(attempted?' · Check chat; do not resend.':' · No send attempted.'));
     }
   }
   async function observeAsk(a){
     const r=a.r;
-    if(!(await store.get(HANDOFF+r.id))||validReply(await store.get(REPLY+r.id),r)){activeAsk=null;return;}
+    if(!(await store.get(HANDOFF+r.id))||validReply(await store.get(REPLY+r.id),r)){activeAsk=null;testStage(r,'uncertain','Request receipt changed before observation completed. Check chat.');return;}
     if(chatURL(location.href)!==r.target){await finishAsk(a,'uncertain','Conversation changed during request');return;}
     const now=Date.now(),busyNow=streamActive(),current=fingerprint();
+    if(busyNow&&!a.seenBusy)testStage(r,'generating','Response generation observed');
     a.seenBusy=a.seenBusy||busyNow;
     if(now-a.started>AUTO_TIMEOUT){await finishAsk(a,'uncertain','Response not confirmed within 20 minutes');return;}
     if(!a.user){
@@ -1059,6 +1114,7 @@
     await store.set(REPLY+r.id,reply);
     const check=await store.get(REPLY+r.id);
     if(!validReply(check,r)||check.text!==text)throw Error('Answer readback failed');
+    if(r.selfTest)testStage(r,'extracted','Completed answer extracted and stored', {answerCharacters:text.length,markerMatched:lastSelfTest?.expectedMarker?normalizeChat(text)===lastSelfTest.expectedMarker:null});
     await finishAsk(a,'done','Matching assistant answer returned');
   }
   async function autoTick(){
@@ -1082,7 +1138,7 @@
     }catch(e){
       const a=activeAsk;activeAsk=null;
       linkLog('error',{message:String(e?.message||e).slice(0,220)});
-      if(a)try{await markRun(a.r,'uncertain','Observation failed; check chat: '+String(e?.message||e).slice(0,160));}catch(err){linkLog('error',{message:String(err?.message||err).slice(0,220)});}
+      if(a)try{await markRun(a.r,'uncertain','Observation failed; check chat: '+String(e?.message||e).slice(0,160));}catch(err){testStage(a.r,'uncertain','Observation failed; check chat: '+String(err?.message||err).slice(0,160));linkLog('error',{message:String(err?.message||err).slice(0,220)});}
     }finally{autoBusy=false;}
   }
 
