@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         AI Pill OS - Pocket
 // @namespace    https://github.com/JadanPoll/AI_Pill_OS
-// @version      0.7.21
+// @version      0.7.22
 // @updateURL    https://raw.githubusercontent.com/JadanPoll/AI_Pill_OS/main/Pocket.user.js
 // @downloadURL  https://raw.githubusercontent.com/JadanPoll/AI_Pill_OS/main/Pocket.user.js
 // @description  Universal Safari pill: collect evidence, keep discoveries, and hand a question to a chosen chat.
@@ -26,7 +26,7 @@
 (() => {
   'use strict';
   if (window.top !== window) return;
-  const VERSION='0.7.21';
+  const VERSION='0.7.22';
   // Report initialization failures without depending on the main UI, storage or a CDN.
   function bootFailure(error,phase){
     const message=String(error?.message||error).slice(0,500);
@@ -52,7 +52,7 @@
     if(document.getElementById('ai-pill-pocket'))return;
     let phase='storage setup';
     try{
-  const PREFIX='pocket.v1.', TRAY='tray.v1.', HANDOFF='handoff.v1.', ACK='ack.v1.', SEEN='seen.v1.', REPLY='reply.v1.', RUN='run.v1.', TRACE='trace.v1.', REQUEST_TRACE='request.trace.v1.', VISUAL='request.visual.v1.', HISTORY='telemetry.history.v1', JOURNAL='telemetry.journal.v1.', MAILBOX='mailbox.v1', TARGET='target.v1', WORKER='target.worker.v1', FOCUS_REQUEST='focus.request.v1', FOCUS_RECEIPT='focus.receipt.v1', TITLE='chat.title.v1.', LIMIT=100000, MAX_ITEMS=250;
+  const PREFIX='pocket.v1.', TRAY='tray.v1.', HANDOFF='handoff.v1.', ACK='ack.v1.', SEEN='seen.v1.', REPLY='reply.v1.', RUN='run.v1.', TRACE='trace.v1.', REQUEST_TRACE='request.trace.v1.', VISUAL='request.visual.v1.', HISTORY='telemetry.history.v1', JOURNAL='telemetry.journal.v1.', MAILBOX='mailbox.v1', TARGET='target.v1', WORKER='target.worker.v1', TITLE='chat.title.v1.', LIMIT=100000, MAX_ITEMS=250;
   const uid=()=>globalThis.crypto?.randomUUID?.()||Date.now().toString(36)+'-'+Math.random().toString(36).slice(2);
   // Deliberately no localStorage fallback: that would appear to work but silently
   // partition the data by site. Only this installed script owns these GM keys.
@@ -704,74 +704,21 @@
   // Userscripts' GM.openInTab delegates to browser.tabs.create in the
   // extension background. Do not use location.assign or a synthetic anchor:
   // iPadOS can route those navigations into the installed ChatGPT app.
-  let openingChat=false,lastNavigation=null,focusFallback=null,focusBusy=false,lastFocusHandled=null,lastFocusReceipt=null;
-  const FOCUS_TTL=12000;
-  const focusState=()=>({visibility:document.visibilityState,hasFocus:document.hasFocus()});
-  function navEvent(detail){lastNavigation=detail;linkLog('navigation',detail);}
-  function focusWait(promise,ms=2500){let timer;return Promise.race([promise,new Promise((_,reject)=>{timer=setTimeout(()=>reject(Error('Focus storage timed out')),ms);})]).finally(()=>clearTimeout(timer));}
-  async function focusTick(){
-    if(!store||focusBusy||!chatURL(location.href)||selectedWorker!==instance)return;
-    focusBusy=true;
-    try{
-      const req=await store.get(FOCUS_REQUEST);
-      if(!req||req.id===lastFocusHandled||req.worker!==instance||req.target!==chatURL(location.href)||Date.now()>req.expires||req.sender===instance)return;
-      const b=await store.get(WORKER);
-      if(b?.worker!==instance||b.target!==req.target||Date.now()>req.expires)return;
-      lastFocusHandled=req.id;
-      const before=focusState(),attemptedAt=Date.now();let error=null;
-      // No user activation is transferred through GM storage. Safari is free
-      // to ignore this call. Do not infer a switch from its return value.
-      try{window.focus();}catch(e){error=String(e?.message||e).slice(0,180);}
-      const receipt={id:req.id,worker:instance,sender:req.sender,target:req.target,attemptedAt,before,after:focusState(),error,phase:'attempted'};
-      lastFocusReceipt=receipt;linkLog('focus-attempt',receipt);await store.set(FOCUS_RECEIPT,receipt);
-      await new Promise(resolve=>setTimeout(resolve,700));
-      const after=focusState();
-      lastFocusReceipt={...receipt,after,observedAt:Date.now(),phase:after.visibility==='visible'&&after.hasFocus?'foreground-observed':'not-foreground'};
-      linkLog('focus-result',lastFocusReceipt);await store.set(FOCUS_RECEIPT,lastFocusReceipt);
-    }catch(e){linkLog('focus-error',{message:String(e?.message||e).slice(0,180)});}
-    finally{focusBusy=false;}
-  }
-  async function requestExistingFocus(url,binding){
-    const req={id:uid(),sender:instance,worker:binding.worker,target:url,at:Date.now(),expires:Date.now()+FOCUS_TTL};
-    navEvent({at:req.at,target:url,method:'window.focus via GM',phase:'requested',id:req.id,worker:req.worker,source:focusState()});
-    status('Trying to switch to selected chat…');
-    let receipt=null;
-    try{
-      await focusWait(store.set(FOCUS_REQUEST,req));
-      while(Date.now()<req.expires){
-        const a=await focusWait(store.get(FOCUS_RECEIPT));
-        if(a?.id===req.id&&a.worker===req.worker&&a.sender===instance&&a.target===url){receipt=a;if(a.phase==='foreground-observed'||a.phase==='not-foreground')break;}
-        const current=await focusWait(store.get(FOCUS_REQUEST));if(current?.id!==req.id)break;
-        await new Promise(resolve=>setTimeout(resolve,400));
-      }
-    }catch(e){navEvent({...lastNavigation,phase:'focus-error',error:String(e?.message||e).slice(0,180)});}
-    const foreground=receipt?.phase==='foreground-observed',source=focusState();
-    const switched=foreground&&(source.visibility==='hidden'||!source.hasFocus);
-    navEvent({...lastNavigation,phase:switched?'switch-observed':foreground?'receiver-foreground-source-not-switched':receipt?'focus-not-confirmed':'no-receipt',receipt,source});
-    if(switched){focusFallback=null;status('Selected chat in foreground.');}
-    else{focusFallback=url;status(receipt?'Safari did not confirm switching · tap chat again to open a new tab.':'Selected tab did not acknowledge · tap chat again to open a new tab.');}
-  }
+  let openingChat=false,lastNavigation=null;
   async function openChat(dest){
     const url=chatURL(dest);if(!url||openingChat)return;
     if(chatURL(location.href)===url){status('Already in this conversation.');return;}
+    if(lastNavigation?.target===url&&lastNavigation.phase==='opened'&&Date.now()-lastNavigation.completedAt<1800)return;
     openingChat=true;
-    try{
-      if(focusFallback!==url&&store){
-        const binding=await focusWait(store.get(WORKER));
-        if(binding?.target===url&&typeof binding.worker==='string'){await requestExistingFocus(url,binding);return;}
-      }
-      focusFallback=null;
-      await openBrowserTab(url);
-    }catch(e){focusFallback=url;navEvent({at:Date.now(),target:url,method:'window.focus via GM',phase:'focus-error',error:String(e?.message||e).slice(0,180)});status('Could not request focus · tap chat again to open a new tab.');}
-    finally{openingChat=false;}
+    try{await openBrowserTab(url);}finally{openingChat=false;}
   }
   async function openBrowserTab(url){
     const open=typeof GM!=='undefined'&&typeof GM.openInTab==='function'?(u)=>GM.openInTab(u,false):typeof GM_openInTab==='function'?(u)=>GM_openInTab(u,false):null;
     lastNavigation={at:Date.now(),target:url,method:open?'GM.openInTab':'copy-link',phase:'starting'};
     try{
       if(!open)throw Error('Browser tab API unavailable');
-      const tab=await open(url);lastNavigation={...lastNavigation,phase:'opened',tabId:tab?.id??null,active:tab?.active??null};linkLog('navigation',lastNavigation);
-      status('Opened in Safari · existing receiver remains selected.');
+      const tab=await open(url);lastNavigation={...lastNavigation,phase:'opened',completedAt:Date.now(),tabId:tab?.id??null,active:tab?.active??null};linkLog('navigation',lastNavigation);
+      status('Opened in Safari · look for ▶ POCKET on the selected receiver tab.');
     }catch(e){
       lastNavigation={...lastNavigation,phase:'fallback',error:String(e?.message||e).slice(0,180)};linkLog('navigation',lastNavigation);
       // Never fall back to universal-link navigation. The URL remains
@@ -779,7 +726,14 @@
       $('fallback').value=url;$('fallback').hidden=false;$('fallback-copy').hidden=false;status('Could not open browser tab. Copy link into Safari or switch to the existing chat tab.');
     }
   }
-  const cleanChatTitle=v=>String(v||'').replace(/\s+/g,' ').trim().slice(0,160);
+  const TAB_MARK='▶ POCKET — ';
+  const stripTabMark=v=>String(v||'').startsWith(TAB_MARK)?String(v).slice(TAB_MARK.length):String(v||'');
+  const cleanChatTitle=v=>stripTabMark(v).replace(/\s+/g,' ').trim().slice(0,160);
+  function syncTabTitle(selected){
+    if(!chatURL(location.href)&&!document.title.startsWith(TAB_MARK))return;
+    const base=stripTabMark(document.title),next=selected?TAB_MARK+(base||'ChatGPT'):base;
+    if(document.title!==next)document.title=next;
+  }
   function localChatTitle(){return cleanChatTitle(document.title).replace(/\s*[|–—-]\s*(ChatGPT|Google Gemini|Gemini)\s*$/i,'').trim();}
   const chatTitles=new Map();
   function conversationName(dest,title){const name=[title,chatTitles.get(dest)].map(cleanChatTitle).find(v=>v&&!/^(ChatGPT|Gemini|Google Gemini|New chat|(?:ChatGPT|Gemini) · [a-z0-9-]+)$/i.test(v));if(name)return name;if(!dest)return 'Choose a chat';const id=dest.split('/').filter(Boolean).at(-1);return dest==='https://chatgpt.com/'?'New chat':(dest.includes('chatgpt.com')?'ChatGPT':'Gemini')+' · '+id.slice(-8);}
@@ -1028,6 +982,7 @@
   }
   action('open',async()=>{
     raisePocket();$('open').hidden=true;$('panel').hidden=false;
+    if(selectedHere()&&awakeEnabled&&awakeGesturePending&&!awakeRequested){awakeGesturePending=false;startAwake('user gesture');}
     const chosen=picked||selection();if(chosen){setQuote(chosen);$('source').value=sourceURL();}else if(!$('draft').value&&!quoted){$('source').value=sourceURL();}
     picked='';await refreshTarget();
     if(chatURL(location.href)){setMode('worker');await refreshHandoff(loadEpoch);void linkTick();}
@@ -1070,22 +1025,30 @@
   // Real, near-silent nonzero PCM in an HTML media element, not an oscillator
   // graph or an autoplay loop. Playback is explicitly user controlled.
   let awakeAudio=null,awakeURL=null,awakeRequested=false,awakeError=null,awakeEvents=[],awakeStarted=0;
+  let awakeEnabled=true,awakeAutoTried=false,awakeGesturePending=false,awakeWasSelected=false;
+  try{awakeEnabled=sessionStorage.getItem('ai-pill-pocket-awake.v1')!=='off';}catch{}
+  function saveAwakePreference(){try{sessionStorage.setItem('ai-pill-pocket-awake.v1',awakeEnabled?'on':'off');}catch{}}
   let audioPrev=null,audioProgressAt=null,pulseAt=Date.now(),pulseCount=0,pulseMaxGap=0,pulseGaps=[];
   function awakeSnapshot(){
     const a=awakeAudio;
-    return {requested:awakeRequested,started:awakeStarted||null,playing:!!a&&!a.paused&&!a.ended,paused:a?.paused??null,readyState:a?.readyState??null,currentTime:a?.currentTime??null,duration:Number.isFinite(a?.duration)?a.duration:null,lastProgressAt:audioProgressAt,progressAgeMs:audioProgressAt?Date.now()-audioProgressAt:null,volume:a?.volume??null,muted:a?.muted??null,error:awakeError,events:awakeEvents.slice(-12)};
+    return {enabled:awakeEnabled,autoTried:awakeAutoTried,gesturePending:awakeGesturePending,requested:awakeRequested,started:awakeStarted||null,playing:!!a&&!a.paused&&!a.ended,paused:a?.paused??null,readyState:a?.readyState??null,currentTime:a?.currentTime??null,duration:Number.isFinite(a?.duration)?a.duration:null,lastProgressAt:audioProgressAt,progressAgeMs:audioProgressAt?Date.now()-audioProgressAt:null,volume:a?.volume??null,muted:a?.muted??null,error:awakeError,events:awakeEvents.slice(-12)};
   }
   function awakeEvent(event,detail={}){awakeEvents.push({event,at:Date.now(),...detail});if(awakeEvents.length>24)awakeEvents.shift();linkLog('audio',{audioEvent:event,...detail});}
-  function paintAwake(){const b=$('keep-awake');b.setAttribute('aria-pressed',String(awakeRequested));b.textContent=awakeRequested?(awakeAudio&&!awakeAudio.paused?'Awake audio on':'Stop awake audio'):'Keep awake';b.title=awakeError||'Experimental near-silent audio; tap to start or stop';}
+  function paintAwake(){const b=$('keep-awake'),playing=!!awakeAudio&&!awakeAudio.paused&&!awakeAudio.ended;b.setAttribute('aria-pressed',String(playing));b.textContent=playing?'Awake audio on':awakeRequested?'Starting audio…':awakeEnabled?'Enable audio':'Keep awake off';b.title=awakeError||'Near-silent audio; on by default for the selected tab, tap to change';}
   function stopAwake(reason='user'){
     const a=awakeAudio;awakeRequested=false;awakeAudio=null;audioPrev=null;audioProgressAt=null;
     if(a){a.pause();a.removeAttribute('src');a.load();a.remove();}
     if(awakeURL){URL.revokeObjectURL(awakeURL);awakeURL=null;}
     awakeEvent('stopped',{reason});paintAwake();
   }
+  function selectedHere(){return !!target&&chatURL(location.href)===target&&selectedWorker===instance;}
   function toggleAwake(){
-    if(awakeRequested){stopAwake();return;}
-    if(chatURL(location.href)!==target){status('Select this chat before enabling keep awake.');return;}
+    if(!selectedHere()){status('Select this tab before enabling keep awake.');return;}
+    if(awakeRequested){awakeEnabled=false;awakeGesturePending=false;saveAwakePreference();stopAwake();return;}
+    awakeEnabled=true;saveAwakePreference();awakeAutoTried=true;awakeGesturePending=false;startAwake('manual');
+  }
+  function startAwake(reason){
+    if(!awakeEnabled||awakeRequested||!selectedHere())return;
     try{
       // 17-second mono PCM WAV. A tiny nonzero tone avoids a zero/muted
       // stream; the browser may still treat it as inaudible. No network.
@@ -1096,17 +1059,34 @@
       const a=document.createElement('audio');a.loop=true;a.preload='auto';a.hidden=true;a.muted=false;a.volume=1;
       awakeURL=URL.createObjectURL(new Blob([bytes],{type:'audio/wav'}));a.src=awakeURL;awakeAudio=a;awakeRequested=true;awakeError=null;awakeStarted=Date.now();audioProgressAt=null;audioPrev=null;
       for(const e of ['playing','pause','waiting','stalled','suspend','ended','error'])a.addEventListener(e,()=>{if(awakeAudio!==a)return;if(e==='error')awakeError=a.error?.message||'Media error';awakeEvent(e,{time:a.currentTime,readyState:a.readyState});paintAwake();});
-      document.documentElement.append(a);paintAwake();awakeEvent('requested');
+      document.documentElement.append(a);paintAwake();awakeEvent('requested',{reason});
       // Must initiate play inside the original tap, before any await.
-      Promise.resolve(a.play()).then(()=>{if(awakeAudio===a){awakeEvent('play-resolved');paintAwake();}}).catch(e=>{if(awakeAudio===a){awakeError=String(e?.message||e);stopAwake('play rejected');status('Keep awake unavailable: '+awakeError);}});
-    }catch(e){awakeError=String(e?.message||e);stopAwake('setup failed');status('Keep awake unavailable: '+awakeError);}
+      Promise.resolve(a.play()).then(()=>{if(awakeAudio===a){awakeEvent('play-resolved');paintAwake();}}).catch(e=>{if(awakeAudio===a){awakeError=String(e?.message||e);awakeGesturePending=reason==='default'&&e?.name==='NotAllowedError';stopAwake('play rejected');if(reason==='manual')status('Keep awake unavailable: '+awakeError);}});
+    }catch(e){awakeError=String(e?.message||e);stopAwake('setup failed');if(reason==='manual')status('Keep awake unavailable: '+awakeError);}
   }
+  function syncReceiverPresentation(){
+    const selected=selectedHere();
+    syncTabTitle(selected);
+    if(!selected){if(awakeRequested)stopAwake('receiver changed');awakeWasSelected=false;awakeAutoTried=false;awakeGesturePending=false;return;}
+    if(!awakeWasSelected){awakeWasSelected=true;awakeAutoTried=false;awakeGesturePending=false;}
+    if(awakeEnabled&&!awakeAutoTried&&!document.hidden){awakeAutoTried=true;startAwake('default');}
+    paintAwake();
+  }
+  function resumeAwakeOnGesture(e){
+    if(!e.isTrusted||!selectedHere()||!awakeEnabled||!awakeGesturePending||awakeRequested)return;
+    // Do not intercept the explicit toggle's own gesture.
+    if(e.composedPath().includes(host))return;
+    awakeGesturePending=false;startAwake('user gesture');
+  }
+  document.addEventListener('click',resumeAwakeOnGesture,true);
+  document.addEventListener('keydown',resumeAwakeOnGesture,true);
   action('keep-awake',toggleAwake);
   function pulseSnapshot(){return {seq:pulseCount,at:pulseAt,maxGapMs:pulseMaxGap,gaps:pulseGaps.slice(-8),audio:awakeSnapshot(),storage:storageSnapshot()};}
   function localPulse(){
     const now=Date.now(),gap=now-pulseAt;pulseAt=now;pulseCount++;pulseMaxGap=Math.max(pulseMaxGap,gap);
     if(gap>5000){pulseGaps.push({at:now,gapMs:gap,visibility:document.visibilityState});if(pulseGaps.length>20)pulseGaps.shift();linkLog('scheduler-gap',{gapMs:gap});}
-    if(awakeAudio){const t=awakeAudio.currentTime;if(audioPrev!==null&&Math.abs(t-audioPrev)>.03)audioProgressAt=now;audioPrev=t;if(chatURL(location.href)!==target||(selectedWorker&&selectedWorker!==instance))stopAwake('destination changed');}
+    syncReceiverPresentation();
+    if(awakeAudio){const t=awakeAudio.currentTime;if(audioPrev!==null&&Math.abs(t-audioPrev)>.03)audioProgressAt=now;audioPrev=t;}
     // Durable lightweight samples even if GM storage stops responding.
     try{sessionStorage.setItem('ai-pill-pocket-watchdog.v1',JSON.stringify(pulseSnapshot()));}catch{}
   }
@@ -1137,6 +1117,7 @@
   // renderer owns their presentation; routine mailbox refresh cannot reset it.
   function renderConnection(){
     const here=chatURL(location.href),sameChat=!!here&&here===target,selected=sameChat&&selectedWorker===instance,chat=!!here;
+    syncReceiverPresentation();
     const relevant=linkTarget===target;
     const state=pinBusy?'checking':chat&&!selected?'off':relevant?linkState:'checking';
     const health=state==='ready'?'Ready':state==='responding'?'Responding':state==='uncertain'?'Needs attention':state==='stale'?'Unavailable':'Checking…';
@@ -1240,7 +1221,7 @@
       }
     }catch(e){traceReadError=String(e?.message||e).slice(0,200);}
     const exactExecution=request?(executionTrace?.id===request.id?executionTrace:[history?.recent?.find(e=>e.id===request.id),history?.historical?.find(e=>e.id===request.id),requestTrace?.execution,savedTrace?.execution].filter(e=>e?.id===request.id).sort((a,b)=>(b.updated||b.started)-(a.updated||a.started))[0]||null):null;
-    return JSON.stringify({version:VERSION,exportedAt:new Date().toISOString(),reportId:uid(),instance,selectedWorker,target:linkTarget,state:linkState,challenge,lastProof,lastHeart,ageMs:lastHeart?Date.now()-lastHeart.at:null,error:linkError,visibility:document.visibilityState,intervalMs:LINK_INTERVAL,expiryMs:LINK_TTL,mailbox:'metadata index; direct request keys',autoStartExpiryMs:AUTO_START_TTL,events:linkEvents,uiEvents,watchdog:pulseSnapshot(),priorPulse,history,retention:{full:HISTORY_FULL,compact:HISTORY_COMPACT,failureExamples:HISTORY_EXAMPLES,distinctFailureSignatures:HISTORY_SIGNATURES,journal:'per tab, survives ordinary reload; sessionStorage'},live,environment:{surface:here?chatSurface():null,storage:modern?'GM async':legacy?'GM legacy':'unavailable',viewport:[innerWidth,innerHeight],visualViewport:window.visualViewport?[window.visualViewport.width,window.visualViewport.height]:null,hasFocus:document.hasFocus(),clipboard:!!navigator.clipboard,position:dock,navigation:lastNavigation,focusReceipt:lastFocusReceipt,overlay:{mode:layerMode,error:layerError,zIndex:getComputedStyle(host).zIndex}},selfTest:lastSelfTest||savedTrace?.selfTest||null,execution:exactExecution||(!request?(executionTrace||savedTrace?.execution||null):null),latestConversationExecution:request&&!exactExecution?(savedTrace?.execution||null):null,traceReadError,traceError,clipboard:lastCopy,request:request?{id:request.id,target:request.target,chatTitle:request.chatTitle||null,created:request.created,worker:request.autoWorker||null,promptCharacters:request.text?.length||0,marker:request.marker||null,visuals:request.visuals||[],seen:request.seen,copied:request.copied,returned:!!request.reply,manualReason:request.manualReason||null,run:request.run,receipts}:null,scope:'Exact request trace when available, recent UI and connection events, live worker DOM and receipt metadata. No custom prompt or answer body. Archive retains recent full executions, compact history, aggregate outcomes and bounded rare failure examples; journal survives ordinary refresh. Latest conversation execution is separate when it belongs to another request.'},null,2);}
+    return JSON.stringify({version:VERSION,exportedAt:new Date().toISOString(),reportId:uid(),instance,selectedWorker,target:linkTarget,state:linkState,challenge,lastProof,lastHeart,ageMs:lastHeart?Date.now()-lastHeart.at:null,error:linkError,visibility:document.visibilityState,intervalMs:LINK_INTERVAL,expiryMs:LINK_TTL,mailbox:'metadata index; direct request keys',autoStartExpiryMs:AUTO_START_TTL,events:linkEvents,uiEvents,watchdog:pulseSnapshot(),priorPulse,history,retention:{full:HISTORY_FULL,compact:HISTORY_COMPACT,failureExamples:HISTORY_EXAMPLES,distinctFailureSignatures:HISTORY_SIGNATURES,journal:'per tab, survives ordinary reload; sessionStorage'},live,environment:{surface:here?chatSurface():null,storage:modern?'GM async':legacy?'GM legacy':'unavailable',viewport:[innerWidth,innerHeight],visualViewport:window.visualViewport?[window.visualViewport.width,window.visualViewport.height]:null,hasFocus:document.hasFocus(),clipboard:!!navigator.clipboard,position:dock,navigation:lastNavigation,tabTitle:document.title,overlay:{mode:layerMode,error:layerError,zIndex:getComputedStyle(host).zIndex}},selfTest:lastSelfTest||savedTrace?.selfTest||null,execution:exactExecution||(!request?(executionTrace||savedTrace?.execution||null):null),latestConversationExecution:request&&!exactExecution?(savedTrace?.execution||null):null,traceReadError,traceError,clipboard:lastCopy,request:request?{id:request.id,target:request.target,chatTitle:request.chatTitle||null,created:request.created,worker:request.autoWorker||null,promptCharacters:request.text?.length||0,marker:request.marker||null,visuals:request.visuals||[],seen:request.seen,copied:request.copied,returned:!!request.reply,manualReason:request.manualReason||null,run:request.run,receipts}:null,scope:'Exact request trace when available, recent UI and connection events, live worker DOM and receipt metadata. No custom prompt or answer body. Archive retains recent full executions, compact history, aggregate outcomes and bounded rare failure examples; journal survives ordinary refresh. Latest conversation execution is separate when it belongs to another request.'},null,2);}
   action('link-report',copyConnectionReport);
   function extractPocketAnswer(last) {
     if(!last)return '';
@@ -1705,10 +1686,10 @@
     if(document.hidden&&(!target||chatURL(location.href)!==target))return;
     pollBusy=true;try{await refreshHandoff(loadEpoch);}catch(e){linkLog('error',{message:'Mailbox: '+String(e?.message||e).slice(0,180)});}finally{pollBusy=false;}
   }
-  let transportTimer=null,transportBusy=false,transportWake=false,nextLink=0,nextPoll=0,nextAuto=0,nextFocus=0;
+  let transportTimer=null,transportBusy=false,transportWake=false,nextLink=0,nextPoll=0,nextAuto=0;
   function wakeTransport(){
     if(!store)return;
-    nextLink=nextPoll=nextAuto=nextFocus=0;
+    nextLink=nextPoll=nextAuto=0;
     if(transportBusy){transportWake=true;return;}
     clearTimeout(transportTimer);transportTimer=setTimeout(transportTick,0);
   }
@@ -1722,7 +1703,6 @@
       // Each lane has its own in-flight guard. A blocked autoTick must
       // not prevent the heartbeat or mailbox from making progress.
       if(now>=nextLink){nextLink=now+(active?2000:LINK_INTERVAL);void linkTick();}
-      if(worker&&now>=nextFocus){nextFocus=now+1500;void focusTick();}
       if((worker||activeAsk)&&now>=nextAuto){nextAuto=now+(activeAsk?1000:2000);void autoTick();}
       if((!document.hidden||worker)&&now>=nextPoll){nextPoll=now+(active?1000:8000);void pollHandoff();}
     }finally{
