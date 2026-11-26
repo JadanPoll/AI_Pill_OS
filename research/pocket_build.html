@@ -1,0 +1,26 @@
+<!doctype html><html lang="en"><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Build Pocket v0.5.6</title><style>body{font:16px system-ui;max-width:620px;margin:32px auto;padding:0 18px;color:#172033}button,a.download{font:inherit;display:inline-block;background:#172033;color:white;padding:14px;border:0;border-radius:10px;margin:8px 0;text-decoration:none}button:disabled{opacity:.5}pre{white-space:pre-wrap;overflow-wrap:anywhere;background:#f1f5f9;padding:12px}small{color:#475569}</style><h2>Pocket v0.5.6 · bundled build</h2><p>Packages the exact SnapDOM 3.8.3 classic bundle verified in your Safari lab. No runtime CDN dependency or dynamic import.</p><button id="build">Build Pocket</button><a id="download" class="download" hidden download="Pocket.user.js">Download Pocket.user.js</a><pre id="log" role="status">Ready.</pre><p><small>Replace the existing Pocket script with the downloaded file using your userscript manager. Do not uninstall or clear its storage. This page only builds the file; it does not execute the downloaded library or install anything.</small></p><script>
+const source="https://raw.githubusercontent.com/JadanPoll/AI_Pill_OS/5b0d57c7297a4698832b32dedd6ac8cff7365522/Pocket.user.js";
+const urls=["https://cdn.jsdelivr.net/npm/@zumer/snapdom@3.8.3/dist/snapdom.js","https://unpkg.com/@zumer/snapdom@3.8.3/dist/snapdom.js"];
+const expected="08c3e343d3a139baaee19d88901b8b6da525187c226e19eb4cec1407207033e5";
+const license="MIT License\n\nCopyright (c) 2025 ZumerLab\n\nPermission is hereby granted, free of charge, to any person obtaining a copy\nof this software and associated documentation files (the \"Software\"), to deal\nin the Software without restriction, including without limitation the rights\nto use, copy, modify, merge, publish, distribute, sublicense, and/or sell\ncopies of the Software, and to permit persons to whom the Software is\nfurnished to do so, subject to the following conditions:\n\nThe above copyright notice and this permission notice shall be included in all\ncopies or substantial portions of the Software.\n\nTHE SOFTWARE IS PROVIDED \"AS IS\", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR\nIMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,\nFITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE\nAUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER\nLIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,\nOUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE\nSOFTWARE.\n";
+const $=id=>document.getElementById(id);let objectURL=null;
+const log=x=>$("log").textContent+="\n"+x;
+async function bytes(url){const ctrl=new AbortController();const t=setTimeout(()=>ctrl.abort(),15000);try{const r=await fetch(url,{credentials:"omit",signal:ctrl.signal});if(!r.ok)throw Error("HTTP "+r.status);return await r.arrayBuffer()}finally{clearTimeout(t)}}
+function replaceOnce(s,a,b){if(s.indexOf(a)<0||s.indexOf(a)!==s.lastIndexOf(a))throw Error("Unexpected build marker: "+a);return s.replace(a,()=>b)}
+$("build").onclick=async()=>{ $("build").disabled=true;$("download").hidden=true;$("log").textContent="Building…";if(objectURL){URL.revokeObjectURL(objectURL);objectURL=null}
+try{
+ const template=new TextDecoder().decode(await bytes(source));log("Pinned Pocket template retrieved.");
+ let bundle=null;
+ for(const url of urls){try{const data=await bytes(url);const hash=Array.from(new Uint8Array(await crypto.subtle.digest("SHA-256",data)),x=>x.toString(16).padStart(2,"0")).join("");log(url+"\n"+data.byteLength+" bytes · "+hash);if(data.byteLength!==338945||hash!==expected)throw Error("Bundle integrity mismatch");bundle=new TextDecoder().decode(data);break}catch(e){log(String(e.message||e))}}
+ if(!bundle)throw Error("Neither CDN provided the verified bundle.");
+ // Adapt the pinned IIFE to return its API privately rather than assign window.snapdom.
+ bundle=replaceOnce(bundle,'"use strict";(()=>{','"use strict";return (()=>{');
+ bundle=replaceOnce(bundle,'typeof window<"u"&&(window.snapdom=at);})();','return at;})();');
+ let out=replaceOnce(template,"// @version      0.5.5","// @version      0.5.6");
+ out=replaceOnce(out,"const VERSION='0.5.5'","const VERSION='0.5.6'");
+ out=replaceOnce(out,"const BUNDLE_PRESENT=false; // BUILD_FLAG","const BUNDLE_PRESENT=true; // BUILD_FLAG");
+ out=replaceOnce(out,"/* SNAPDOM_BUILD_SLOT */\n    return null;","/* SnapDOM 3.8.3, pinned upstream distribution.\n"+license+"\n*/\n"+bundle);
+ if(/^\s*\/\/\s*@require\b/m.test(out))throw Error("Unexpected runtime dependency");
+ objectURL=URL.createObjectURL(new Blob([out],{type:"text/javascript"}));$("download").href=objectURL;$("download").hidden=false;log("Built v0.5.6 · "+new Blob([out]).size+" bytes. Download and replace your existing script.");
+}catch(e){log("Build failed: "+String(e.message||e))}finally{$("build").disabled=false}};
+</script></html>
