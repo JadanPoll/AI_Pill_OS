@@ -1,6 +1,6 @@
 {
   "schema": "ai_pill_os.capability_atlas",
-  "version": 14,
+  "version": 15,
   "updated": "2026-11-25",
   "purpose": "Can I operate at the speed of thought? Living design inventory, not a promise of implementation.",
   "design_rules": {
@@ -107,7 +107,13 @@
     "drive_actions": "https://help.openai.com/en/articles/10929079-google-drive-app-and-setup-in-chatgpt",
     "github_access": "https://help.openai.com/en/articles/11145903-connecting-github-to-chatgpt",
     "clipboard_api": "https://developer.mozilla.org/en-US/docs/Web/API/Clipboard_API",
-    "capture_renderer": "https://github.com/yorickshan/html2canvas-pro"
+    "capture_renderer": "https://github.com/yorickshan/html2canvas-pro",
+    "snapdom": "https://github.com/zumerlab/snapdom",
+    "snapdom_clip": "https://github.com/zumerlab/snapdom/blob/main/__tests__/core.clip.test.js",
+    "screenshot_apple": "https://support.apple.com/guide/ipad/take-a-screenshot-ipad08a40f3b/ipados",
+    "safari_capture_apple": "https://developer.apple.com/documentation/safariservices/assessing-your-safari-web-extension-s-browser-compatibility",
+    "safari_capture_mdn": "https://github.com/mdn/browser-compat-data/blob/main/webextensions/api/tabs.json",
+    "webkit_clipboard": "https://webkit.org/blog/10855/async-clipboard-api/"
   },
   "capabilities": [
     {
@@ -915,6 +921,7 @@
       ],
       "why": "Do not interrupt an investigation to transfer each observation.",
       "mechanisms": [
+        "Pocket v0.3.2 replaces html2canvas-pro with one bounded SnapDOM 3.8.3 clipped SVG reconstruction experiment; offscreen culling, elapsed time, 12s async deadline and no concurrent retry. Native screenshot file import or explicit image paste provides an independent path to local tray and composite export.",
         "Pocket v0.3.1 region snipping with html2canvas-pro@2.6.4, modern CSS colors, local image previews and composite PNG clipboard export. DOM reconstruction, not framebuffer capture.",
         "v0.2.1 implements ordered text/JSON working tray with clear and copy-all; handoffs snapshot tray content. Image capture remains unimplemented.",
         "Rectangular crop of supported capture; native screenshot import for real pixels; explicitly distinguish DOM reconstruction",
@@ -930,9 +937,15 @@
       "sources": [
         "clipboard_api",
         "pocket",
-        "capture_renderer"
+        "capture_renderer",
+        "snapdom",
+        "snapdom_clip",
+        "screenshot_apple",
+        "safari_capture_apple",
+        "safari_capture_mdn",
+        "webkit_clipboard"
       ],
-      "boundary": "No privileged tab capture claim, GM binary quota and image paste untested; no automatic uploads. Text/JSON slice executed against mocked DOM and GM; no real Safari storage or image capture established."
+      "boundary": "No privileged tab capture claim, GM binary quota and image paste untested; no automatic uploads. Text/JSON slice executed against mocked DOM and GM; no real Safari storage or image capture established. Stop DOM renderer substitution after one representative SnapDOM attempt on each failed page; use native screenshot input if either fails or hangs. A timeout cannot interrupt synchronous main-thread blocking. Apple and MDN disagree about iOS extension captureVisibleTab support; no exposed GM capture method established. Native import and target clipboard not yet verified."
     },
     {
       "id": "control.handoff",
@@ -1050,6 +1063,7 @@
     }
   ],
   "next_experiments": [
+    "Pocket v0.3.2: try one bounded region capture each on actual Grokipedia and ChatGPT; inspect thumbnail fidelity/elapsed status. If failure, stop renderer experiments and import two native screenshots (More → Import screenshots or explicit image paste), copy composite and paste. Do not use synthetic CSS canary as substitute.",
     "Update Pocket v0.3.1 and AI Pill v0.4.0; repeat same Grokipedia/ChatGPT crop, paste two images, select current chat and verify gold then route from source; test precision inspector on small real controls. No further capture/pointer complexity until results.",
     "Pocket v0.2.1: install as update (same script identity), open existing AI conversation and Use this chat; collect a passage on Wikipedia and another on GitHub, dictate question at source, Ask with tray, Open chat, open Pocket, copy/paste/send explicitly; return to source and refresh, verify copied not sent status. Reload and verify prior saved records.",
     "On an explicit request to preserve a useful answer, update the matching existing Kami_Uploads_RSM_Tree domain investigation or FKEN canonical record using authorized connector, inspect schema and read back exact commit/path.",
@@ -1110,6 +1124,18 @@
       "capability": "control.handoff",
       "evidence": "Five extracted actual routing-function checks passed with mocked URL/DOM: unconfigured external, unconfigured home, configured external, selected current, other conversation.",
       "scope": "Not actual Safari navigation, provider inference or GM storage test."
+    },
+    {
+      "date": "2026-11-25",
+      "capability": "persist.tray",
+      "evidence": "User screenshots show Pocket 0.3.1 html2canvas-pro error on ChatGPT: Error parsing CSS component value, multiple values found when expecting only one; Grokipedia remains on Capturing webpage region. Prior unsupported color()/oklab() failures were not sufficient root cause.",
+      "scope": "Actual Safari failure; freeze stage and specific CSS property unknown."
+    },
+    {
+      "date": "2026-11-25",
+      "capability": "control.handoff",
+      "evidence": "User screenshots show source Ready · open chat on Grokipedia and matching prepared Q-learning evidence, Ready to copy, gold Selected ChatGPT · new chat on ChatGPT.",
+      "scope": "Actual source-to-destination handoff and routing observed; clipboard copy, submission and response not certified."
     }
   ],
   "thoughts": [
