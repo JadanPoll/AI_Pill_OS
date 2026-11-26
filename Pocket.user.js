@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         AI Pill OS - Pocket
 // @namespace    https://github.com/JadanPoll/AI_Pill_OS
-// @version      0.7.1
+// @version      0.7.2
 // @updateURL    https://raw.githubusercontent.com/JadanPoll/AI_Pill_OS/main/Pocket.user.js
 // @downloadURL  https://raw.githubusercontent.com/JadanPoll/AI_Pill_OS/main/Pocket.user.js
 // @description  Universal Safari pill: collect evidence, keep discoveries, and hand a question to a chosen chat.
@@ -24,7 +24,7 @@
 (() => {
   'use strict';
   if (window.top !== window) return;
-  const VERSION='0.7.1';
+  const VERSION='0.7.2';
   // Report initialization failures without depending on the main UI, storage or a CDN.
   function bootFailure(error,phase){
     const message=String(error?.message||error).slice(0,500);
@@ -709,8 +709,8 @@
     const gemini=here.includes('gemini.google.com');
     const composer=gemini?'rich-textarea [contenteditable="true"], .ql-editor[contenteditable="true"]':'#prompt-textarea';
     const stop=gemini?'button[aria-label*="Stop"],button[aria-label*="Cancel response"]':'button[data-testid="stop-button"],button[aria-label*="Stop generating"]';
-    const editor=document.querySelector(composer),stopping=document.querySelector(stop)||(!gemini&&document.querySelector('[data-scroll-root][data-stream-active]'));
-    return {editor:!!editor,disabled:!!editor&&(editor.disabled===true||editor.getAttribute('aria-disabled')==='true'||editor.getAttribute('contenteditable')==='false'),stop:!!stopping,draft:!!editor&&!!normalizeChat(editor.innerText??editor.value??editor.textContent),hidden:document.hidden,visibility:document.visibilityState};
+    const editor=gemini?document.querySelector(composer):chatEditor(),stopping=gemini?!!document.querySelector(stop):streamActive();
+    return {editor:!!editor,disabled:!!editor&&(editor.disabled===true||editor.getAttribute('aria-disabled')==='true'||editor.getAttribute('contenteditable')==='false'||!!editor.closest('fieldset[disabled]')),stop:stopping,draft:!!editor&&(!!editorText(editor)||(!gemini&&composerAttachments(editor))),surface:gemini?'gemini':chatSurface(),userTurns:gemini?null:turns('user').length,assistantTurns:gemini?null:turns('assistant').length,sendControl:gemini?null:!!sendControl(),latestTurnState:gemini?null:latestTurnState(),hidden:document.hidden,visibility:document.visibilityState};
   }
   function fresh(t,now){return typeof t==='number'&&Number.isFinite(t)&&now-t>=0&&now-t<=LINK_TTL;}
   function classifyLink(now,dest,heart,proof){
@@ -789,6 +789,7 @@
             else pre.replaceWith(document.createTextNode('\n' + sentinel + '\n'));
         });
 
+        clone.querySelectorAll('button,svg,iframe,[role="button"],script,style,.sr-only').forEach(n=>n.remove());
         const markdownEl = clone.querySelector('.markdown') || clone;
         const lines = [];
 
@@ -853,13 +854,20 @@
   const AUTO_START_TTL=45000,AUTO_TIMEOUT=20*60*1000;
   let autoBusy=false,activeAsk=null;
   const normalizeChat=v=>String(v||'').replace(/\s+/g,' ').trim();
-  const chatEditor=()=>document.querySelector('#prompt-textarea[contenteditable="true"]');
+  // Two observed DOM families: SwarmX legacy and the live 2026-11-26
+  // ChatGPT snapshot. Scope the new composer and messages to their containers.
+  const modernEditorSelector='[data-chatgpt-composer] [data-composer-markdown][contenteditable="true"]';
+  const legacyEditorSelector='#prompt-textarea[contenteditable="true"]';
+  const chatSurface=()=>document.querySelector(modernEditorSelector)?'modern':document.querySelector(legacyEditorSelector)?'legacy':document.querySelector('[data-turn-key] [data-talvt-turn-state]')?'modern':'unknown';
+  const chatEditor=()=>{const matches=[...document.querySelectorAll(chatSurface()==='modern'?modernEditorSelector:legacyEditorSelector)];return matches.length===1?matches[0]:null;};
   const editorText=e=>normalizeChat(e?.innerText??e?.textContent);
-  const streamActive=()=>!!document.querySelector('[data-scroll-root][data-stream-active],button[data-testid="stop-button"],button[aria-label*="Stop generating"]');
-  const sendControl=()=>document.querySelector('button[data-testid="send-button"],button[data-testid="composer-submit-button"],button.composer-submit-button:not([data-testid="stop-button"])');
-  const canSend=b=>!!b&&!b.disabled&&b.getAttribute('aria-disabled')!=='true'&&b.isConnected&&!streamActive();
-  const turns=role=>[...document.querySelectorAll('[data-message-author-role="'+role+'"]')];
-  const turnID=n=>n?.getAttribute('data-message-id')||n?.closest('[data-message-id]')?.getAttribute('data-message-id')||null;
+  const composerAttachments=e=>!!e?.closest('[data-chatgpt-composer]')?.querySelector('[data-composer-attachments] > *');
+  const latestTurnState=()=>[...document.querySelectorAll('[data-turn-key] [data-talvt-turn-state]')].at(-1)?.getAttribute('data-talvt-turn-state')||null;
+  const streamActive=()=>{const state=latestTurnState();return !!document.querySelector('[data-scroll-root][data-stream-active],button[data-testid="stop-button"],button[aria-label*="Stop generating"],[data-chatgpt-composer] button[aria-label="Stop"]')||(chatSurface()==='modern'&&!!state&&state!=='complete');};
+  const sendControl=()=>{const e=chatEditor();if(!e)return null;const scope=chatSurface()==='modern'?e.closest('[data-chatgpt-composer]'):document;const selector=chatSurface()==='modern'?'button[type="submit"][aria-label="Send"]':'button[data-testid="send-button"],button[data-testid="composer-submit-button"],button.composer-submit-button:not([data-testid="stop-button"])';const matches=[...scope.querySelectorAll(selector)];return matches.length===1?matches[0]:null;};
+  const canSend=b=>!!b&&!b.disabled&&b.getAttribute('aria-disabled')!=='true'&&b.isConnected&&!streamActive()&&!composerAttachments(chatEditor());
+  const turns=role=>[...document.querySelectorAll(chatSurface()==='modern'?(role==='user'?'[data-turn-key] [data-user-message-bubble]':'[data-turn-key] [data-response-body]'):'[data-message-author-role="'+role+'"]')];
+  const turnID=n=>n?.getAttribute('data-response-body')||n?.closest('[data-chatgpt-search-message-ids]')?.getAttribute('data-chatgpt-search-message-ids')||n?.getAttribute('data-message-id')||n?.closest('[data-message-id]')?.getAttribute('data-message-id')||n?.closest('[data-turn-key]')?.getAttribute('data-turn-key')||null;
   const lastTurn=role=>turns(role).at(-1);
   const turnText=n=>normalizeChat((n?.querySelector('.whitespace-pre-wrap')||n)?.innerText??n?.textContent);
   const fingerprint=()=>{const a=turns('user'),last=a.at(-1);return {count:a.length,id:turnID(last),text:turnText(last)};};
@@ -882,11 +890,12 @@
       if(Date.now()-Date.parse(r.created)>AUTO_START_TTL||chatURL(location.href)!==r.target||await store.get(TARGET)!==r.target||await store.get(ACK+r.id)||await store.get(RUN+r.id)||await store.get(REPLY+r.id))return;
       if(!await markRun(r,'claimed','Bound chat tab received request'))return;
       const editor=chatEditor();
-      if(!editor||editorText(editor)||streamActive()){
+      if(!editor||editorText(editor)||composerAttachments(editor)||streamActive()){
         await markRun(r,'failed','Chat is busy or contains a draft. No send attempted.');return;
       }
       const baseline=fingerprint(),expected=normalizeChat(r.text);
       editor.focus({preventScroll:true});
+      if(document.activeElement!==editor||editorText(editor)||composerAttachments(editor)){await markRun(r,'failed','Composer focus or empty draft not verified. No send attempted.');return;}
       // SwarmX/client.py uses execCommand insertText in the real document.
       // Do not fabricate a paste event or overwrite a pre-existing draft.
       document.execCommand('insertText',false,r.text);
@@ -925,18 +934,18 @@
       }
     }
     if(!sameTurn(a.user,current)){await finishAsk(a,'uncertain','A later user turn appeared before answer return');return;}
-    const user=lastTurn('user');
-    const candidate=turns('assistant').filter(n=>user&&!!(user.compareDocumentPosition(n)&Node.DOCUMENT_POSITION_FOLLOWING)).at(-1);
+    const user=lastTurn('user'),modern=chatSurface()==='modern',container=user?.closest('[data-turn-key]');
+    const candidate=turns('assistant').filter(n=>user&&!!(user.compareDocumentPosition(n)&Node.DOCUMENT_POSITION_FOLLOWING)&&(!modern||(container&&n.closest('[data-turn-key]')===container))).at(-1);
     if(!candidate||busyNow){a.stableAt=0;return;}
     const text=extractPocketAnswer(candidate);
     if(!text)return;
     const id=turnID(candidate),sameCandidate=id? id===a.assistantID:candidate===a.assistantNode;
     if(!sameCandidate||text!==a.answer||!a.stableAt){a.answer=text;a.stableAt=now;a.assistantID=id;a.assistantNode=candidate;return;}
     const article=candidate.closest('article,[data-testid^="conversation-turn-"]');
-    const completed=!!article?.querySelector('button[data-testid="copy-turn-action-button"],button[data-testid="good-response-turn-action-button"],button[data-testid="bad-response-turn-action-button"]');
+    const completed=modern?candidate.closest('[data-talvt-turn-state]')?.getAttribute('data-talvt-turn-state')==='complete':!!article?.querySelector('button[data-testid="copy-turn-action-button"],button[data-testid="good-response-turn-action-button"],button[data-testid="bad-response-turn-action-button"]');
     // Stable text alone is not proof of completion. Require either observed
     // streaming followed by idle or an explicit completed-turn control.
-    if(now-a.stableAt<6000||(!a.seenBusy&&!completed))return;
+    if(now-a.stableAt<6000||(modern?!completed:(!a.seenBusy&&!completed)))return;
     if(text.length>LIMIT){await finishAsk(a,'uncertain','Answer exceeds Pocket text limit; copy from chat');return;}
     if(streamActive()||!sameTurn(a.user,fingerprint())||chatURL(location.href)!==r.target)return;
     if(validReply(await store.get(REPLY+r.id),r)){activeAsk=null;return;}
