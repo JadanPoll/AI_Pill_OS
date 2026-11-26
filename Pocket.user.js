@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         AI Pill OS - Pocket
 // @namespace    https://github.com/JadanPoll/AI_Pill_OS
-// @version      0.7.24
+// @version      0.7.25
 // @updateURL    https://raw.githubusercontent.com/JadanPoll/AI_Pill_OS/main/Pocket.user.js
 // @downloadURL  https://raw.githubusercontent.com/JadanPoll/AI_Pill_OS/main/Pocket.user.js
 // @description  Universal Safari pill: collect evidence, keep discoveries, and hand a question to a chosen chat.
@@ -26,7 +26,7 @@
 (() => {
   'use strict';
   if (window.top !== window) return;
-  const VERSION='0.7.24';
+  const VERSION='0.7.25';
   // Report initialization failures without depending on the main UI, storage or a CDN.
   function bootFailure(error,phase){
     const message=String(error?.message||error).slice(0,500);
@@ -82,7 +82,7 @@
   const btn=(id,k,title,words='')=>'<button id="'+id+'" type="button" aria-label="'+title+'" title="'+title+'">'+icon(k)+(words?' '+words:'')+'</button>';
   root.innerHTML='<style>:host{all:initial;position:fixed;left:12px;bottom:18px;z-index:2147483647;margin:0;padding:0;border:0;background:transparent;right:auto;top:auto;width:max-content;height:max-content;max-width:none;max-height:none;overflow:visible;color:#172033;font:14px system-ui}*{box-sizing:border-box}[hidden]{display:none!important}button,input,textarea,select{font:inherit;color:inherit}#target-label{min-height:44px;min-width:0;max-width:100%;border:1px solid #cbd5e1;border-radius:8px;background:#fff;padding:5px;font-size:16px}button{min-height:44px;min-width:44px;border:0;border-radius:8px;background:transparent;display:inline-flex;align-items:center;justify-content:center;gap:5px;padding:8px;cursor:pointer}button:disabled{opacity:.35}button:focus-visible,a:focus-visible,summary:focus-visible{outline:2px solid #2563eb}#open[data-storage-error=true]{outline:2px solid #dc2626}#open{font-size:11px;border-radius:22px;background:#172033;color:#fff;box-shadow:0 2px 10px #0004}#panel{width:min(380px,calc(100vw - 24px));max-height:78vh;overflow:auto;background:rgba(255,255,255,.66);backdrop-filter:blur(1px);-webkit-backdrop-filter:blur(1px);border:1px solid #cbd5e1;border-radius:14px;padding:10px;box-shadow:0 4px 20px #0004}.row{display:flex;gap:4px;align-items:center;margin:4px 0}.grow{flex:1;min-width:0}textarea,input{width:100%;border:1px solid #cbd5e1;border-radius:8px;padding:9px;background:#fff;font-size:16px}input{min-height:44px}textarea{resize:vertical}small,#status{font-size:12px;color:#475569;overflow-wrap:anywhere}h3{font-size:16px;margin:0}#list{max-height:30vh;overflow:auto}.entry{display:block;text-align:left;width:100%;border-bottom:1px solid #e2e8f0;border-radius:0;overflow-wrap:anywhere}.entry b,.entry small{display:block}#detail{border-top:1px solid #e2e8f0;margin-top:6px;padding-top:6px}#body,#handoff-preview{white-space:pre-wrap;overflow-wrap:anywhere;max-height:25vh;overflow:auto;background:#f8fafc;padding:8px;font:13px/1.45 ui-monospace,monospace;user-select:text}#ask{background:#172033;color:white}button[aria-pressed=true]{background:#e2e8f0;font-weight:600}#handoff{border:1px solid #cbd5e1;border-radius:8px;padding:5px;margin:6px 0}#handoff-reply{max-height:26vh;overflow:auto;white-space:pre-wrap;overflow-wrap:anywhere;font:14px/1.5 system-ui;background:#f8fafc;padding:8px;border-radius:6px}#reply-draft{margin:6px 0}#handoff-open{color:#1d4ed8;min-height:44px;min-width:44px;display:inline-flex;align-items:center;justify-content:center}#status:empty,#count:empty{display:none}details{border-top:1px solid #e2e8f0;padding:4px 0}summary{cursor:pointer;min-height:44px;display:flex;align-items:center;gap:6px;list-style:none}summary::-webkit-details-marker{display:none}#settings summary{justify-content:flex-end}#settings .settings-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:5px;margin:8px 0}#settings .settings-grid>button,#settings .settings-grid>span{min-width:0;width:100%;font-size:12px}#settings .settings-grid button{border:1px solid #cbd5e1;white-space:normal;overflow-wrap:anywhere;line-height:1.25;text-align:center}#settings .settings-grid>span>button{width:100%}#chat-target{min-height:44px;min-width:44px;border-radius:8px;display:inline-flex;align-items:center;justify-content:center;padding:8px;color:inherit;text-decoration:none;flex:none;-webkit-touch-callout:default}#source-label{font-size:11px}#pin{border:1px solid #cbd5e1}#remove,#clear-tray{color:#991b1b}#chat-target{border:1px solid #cbd5e1}#target-label{display:block;line-height:1.3;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;min-width:0}#handoff-status{line-height:1.4}#handoff[data-answer=true] #handoff-status{font-weight:600;color:#172033;font-size:13px}#handoff .row{margin:0}#target-label:empty{display:none}#destination-row{margin:0}#ask-report{font-size:11px;min-height:32px;padding:4px 6px;color:#475569}#ask-report svg{width:15px;height:15px}#ask{background:rgba(23,32,51,.94)}#draft{background:rgba(255,255,255,.75)}#quote{border-left:3px solid #64748b;padding:4px 8px;margin:4px 0;background:#f1f5f9;border-radius:4px}#quote-text{font-size:12px;white-space:pre-wrap;overflow-wrap:anywhere;max-height:74px;overflow:auto}#quote .row{margin:0}#quote-clear{min-height:44px}#include-row{display:flex;align-items:center;gap:8px;font-size:12px;color:#475569;min-height:34px}#include-tray{width:18px;min-height:18px;height:18px;flex:none}#collection-head{margin-top:6px}#crop-editor{position:fixed;inset:8px;z-index:2147483647;display:flex;flex-direction:column;background:#f8fafc;border:1px solid #94a3b8;border-radius:12px;padding:10px;box-shadow:0 4px 20px #0005}#crop-stage{flex:1;min-height:0;display:flex;align-items:center;justify-content:center;overflow:hidden;background:#e2e8f0;border-radius:8px;position:relative}#crop-image-wrap{position:relative;max-width:100%;max-height:100%;display:flex;align-items:center;justify-content:center;touch-action:none;user-select:none}#crop-image{display:block;max-width:100%;max-height:100%;object-fit:contain;pointer-events:none}#crop-selection{position:absolute;outline:2px solid #2563eb;background:rgba(37,99,235,.12);pointer-events:none;box-shadow:0 0 0 200vmax #0004}#crop-stage:has(#crop-image-wrap:not([hidden])) #crop-empty{display:none}#crop-help{padding:5px 2px}#crop-editor .row{flex-wrap:wrap}#crop-add{background:#172033;color:white}#crop-empty{padding:16px;text-align:center;color:#475569}#primary{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:6px;margin:6px 0}#primary button{flex-direction:column;gap:3px;min-height:66px;border:1px solid #cbd5e1;font-size:13px}#primary svg{width:25px;height:25px}#panel[data-mode=home] #workspace,#panel:not([data-mode=notes]) #note-tools,#panel:not([data-mode=notes]) #note-context,#panel:not([data-mode=ask]) #ask-tools,#panel:not([data-mode=ask]) #handoff,#panel:not([data-mode=notes]) #notes-list,#panel:not([data-mode=ask]) #ask-context{display:none}#note-context,#ask-context{display:flex;flex-wrap:wrap;gap:5px;margin:6px 0}#note-context button,#ask-context button,#note-tools button{border:1px solid #cbd5e1}#attachments{font-size:12px;overflow-wrap:anywhere}#attachments .row{margin:2px 0}#notes-list{margin-top:8px}.note-entry{display:flex;align-items:center;border-bottom:1px solid #e2e8f0;gap:4px}.note-entry .entry{flex:1;min-width:0;border-bottom:0}.note-entry .ask-note{border:1px solid #cbd5e1;flex:none}.note-entry .ask-note svg{width:19px;height:19px}#settings summary{min-height:36px}/* One accent on the visible destination affordance, never layered rings. */[data-link=ready]{box-shadow:inset 0 0 0 2px #16a34a}[data-link=responding]{box-shadow:inset 0 0 0 2px #2563eb}[data-link=checking],[data-link=uncertain]{box-shadow:inset 0 0 0 2px #d97706}[data-link=stale]{box-shadow:inset 0 0 0 2px #94a3b8}[data-link=answer]{box-shadow:inset 0 0 0 2px #16a34a}#worker-status[data-link]{box-shadow:none}#worker-status[data-link=ready]{color:#15803d}#worker-status[data-link=responding]{color:#1d4ed8}#worker-status[data-link=uncertain],#worker-status[data-link=checking]{color:#a16207}#link-health{display:block;margin:4px 0;font-size:12px}#link-health:empty{display:none}#panel[data-chat=true]{width:min(310px,calc(100vw - 24px))}#panel[data-chat=true] #primary,#panel[data-chat=true] #settings,#panel[data-chat=true] #workspace,#panel[data-chat=true] #handoff{display:none}#panel[data-chat=true][data-mode=notes] #workspace,#panel[data-chat=true][data-mode=notes] #settings{display:block}#panel[data-chat=true][data-mode=worker] #handoff{display:block}#panel:not([data-chat=true]) #worker,#panel[data-chat=true][data-mode=notes] #worker{display:none}#panel[data-chat=true] #handoff{border:0;padding:0}#worker-status{font-size:13px}#self-test{border-top:1px solid #e2e8f0;margin-top:8px;padding-top:4px}#self-test input{min-width:0;width:100%}#self-test-status{display:block;font-size:12px;overflow-wrap:anywhere}#self-test-status[data-result=pass]{color:#15803d}#self-test-status[data-result=fail]{color:#b91c1c}#self-test-status:empty{display:none}#self-test-run{border:1px solid #cbd5e1}#worker-pin{background:#172033;color:white}#worker-recovery summary{min-height:36px;font-size:12px}#worker-recovery button{border:1px solid #cbd5e1}#open[data-chat=true]{padding:7px 10px}#panel[data-chat=true] #handoff-reply{display:none}#worker-status{min-height:20px}#worker-report,#keep-awake{border:1px solid #cbd5e1}#keep-awake{font-size:12px}#keep-awake[aria-pressed=true]{color:#15803d;background:#dcfce7}#worker-refresh{margin-left:auto}#worker .row{min-height:44px}#panel-title,#open{touch-action:none;cursor:grab;user-select:none;-webkit-user-select:none}#open{background:rgba(23,32,51,.77)}#panel #draft{background:rgba(255,255,255,.65)}#panel #handoff-reply{background:rgba(248,250,252,.65)}</style>'+
     btn('open','pocket','Open AI Pocket','v'+VERSION)+
-    '<section id="panel" data-mode="home" hidden><div class="row"><h3 class="grow" id="panel-title">Pocket <small>v'+VERSION+'</small></h3>'+btn('worker-notes','notes','Open Notes', '')+btn('close','close','Close Pocket')+'</div><div id="worker" hidden><div class="row"><span class="grow" id="worker-status" role="status">Checking…</span><button id="worker-pin" hidden>Use this chat</button><button id="rename-worker" hidden type="button" title="Edit receiver name" aria-label="Edit receiver name">✎</button></div><section id="self-test" hidden><div class="row"><input id="self-test-prompt" class="grow" placeholder="Optional test message" aria-label="Optional self-test message"><button id="self-test-run" title="Send a real message in this chat and verify its response">Self-test</button></div><small id="self-test-status" role="status"></small></section><div class="row">'+btn('worker-report','copy','Copy diagnostic report','Report')+btn('worker-refresh','refresh','Refresh connection','')+'<button id="keep-awake" type="button" aria-pressed="false" title="Experimental audio keep-awake; may use battery or interrupt other audio">Keep awake</button></div></div><nav id="primary" aria-label="Pocket actions">'+btn('mode-notes','notes','Open notes','Notes')+btn('mode-ask','chat','Ask or read answer','Ask')+'</nav><div id="workspace">'+
+    '<section id="panel" data-mode="home" hidden><div class="row"><h3 class="grow" id="panel-title">Pocket <small>v'+VERSION+'</small></h3>'+btn('worker-notes','notes','Open Notes', '')+btn('close','close','Close Pocket')+'</div><div id="worker" hidden><div class="row"><span class="grow" id="worker-status" role="status">Checking…</span><button id="worker-pin" hidden>Use this chat</button><button id="rename-worker" hidden type="button" title="Edit receiver name" aria-label="Edit receiver name">✎</button></div><section id="self-test" hidden><div class="row"><input id="self-test-prompt" class="grow" placeholder="Optional test message" aria-label="Optional self-test message"><button id="self-test-run" title="Send a real message in this chat and verify its response">Self-test</button></div><small id="self-test-status" role="status"></small></section><div class="row">'+btn('worker-report','copy','Copy diagnostic report','Report')+btn('worker-refresh','refresh','Refresh connection','')+'<button id="keep-awake" type="button" aria-pressed="false" title="Experimental audio keep-awake; may use battery or interrupt other audio">Keep awake</button></div><div class="row" id="audio-mode-row" hidden><small class="grow">Audio session</small><select id="audio-mode" aria-label="Keep-awake audio session"><option value="ambient">Mix (ambient)</option><option value="original">Original</option></select></div></div><nav id="primary" aria-label="Pocket actions">'+btn('mode-notes','notes','Open notes','Notes')+btn('mode-ask','chat','Ask or read answer','Ask')+'</nav><div id="workspace">'+
     '<section id="quote" hidden><div class="row"><small class="grow">Selected passage</small>'+btn('quote-clear','close','Remove selected passage')+'</div><div id="quote-text"></div></section><textarea id="draft" rows="2" placeholder="What do you want to know or do?" aria-label="Question or draft"></textarea>'+
     '<div id="note-context">'+btn('snip','crop','Drag to capture webpage region','Region')+'<button id="whole-page">Page text</button></div><div class="row" id="note-tools"><button id="save-note" class="grow">Save note</button>'+btn('collect','plus','Collect temporary evidence')+btn('saved-tab','bookmark','Open saved notes')+'</div><div id="ask-context">'+btn('ask-snip','crop','Capture region for this question','Region')+'<button id="ask-page">Page text</button><button id="copy-context">Copy text</button><button id="copy-ask-images" hidden>Copy images</button></div><div id="attachments" hidden></div><div id="ask-tools"><div class="row"><button id="ask" class="grow">Ask</button>'+'<a id="chat-target" href="https://chatgpt.com/" target="_self" aria-label="Open or set ChatGPT" title="Open or set ChatGPT">'+icon('chat')+'</a>'+'</div><div class="row" id="destination-row"><select id="target-label" class="grow" aria-label="Ask destination"></select><button id="rename-target" type="button" title="Edit receiver name" aria-label="Edit receiver name">✎</button>'+btn('ask-report','copy','Copy diagnostic report','Report')+'</div><small id="link-health" role="status"></small><label id="include-row" hidden><input id="include-tray" type="checkbox"><span id="include-label">Include collected evidence</span></label></div>'+
     '<section id="handoff" hidden><div class="row"><small class="grow" id="handoff-status"></small><a id="handoff-open" target="_self" aria-label="Open conversation in Safari" title="Open conversation in Safari" hidden>'+icon('arrow')+'</a>'+btn('reply-copy','copy','Copy returned answer')+btn('handoff-clear','close','Dismiss question or answer')+'</div><button id="worker-send" hidden>Send question</button><details id="worker-recovery" hidden><summary>Manual recovery</summary><pre id="handoff-preview" hidden></pre>'+btn('handoff-copy','copy','Copy prepared question','Copy question')+'<details id="reply-compose" hidden><summary>Return answer manually</summary><textarea id="reply-draft" rows="3" placeholder="Paste the answer from this chat…" aria-label="Answer to return"></textarea><button id="reply-return">Return answer</button></details></details><section id="reply-result" hidden><div id="handoff-reply"></div></section></section>'+
@@ -1075,17 +1075,77 @@
   try{awakeEnabled=sessionStorage.getItem('ai-pill-pocket-awake.v1')!=='off';}catch{}
   function saveAwakePreference(){try{sessionStorage.setItem('ai-pill-pocket-awake.v1',awakeEnabled?'on':'off');}catch{}}
   let audioPrev=null,audioProgressAt=null,pulseAt=Date.now(),pulseCount=0,pulseMaxGap=0,pulseGaps=[];
+  const AUDIO_MODE_KEY='ai-pill-pocket-audio-mode.v1';
+  let audioMode='ambient',sessionBefore=null,sessionOverride=false,sessionError=null,sessionObserved=null,sessionListener=null;
+  try{if(sessionStorage.getItem(AUDIO_MODE_KEY)==='original')audioMode='original';}catch{}
+  function audioSessionInfo(){
+    try{const a=navigator.audioSession;return {supported:!!a,mode:audioMode,type:a?.type??null,state:a?.state??null,previousType:sessionBefore,override:sessionOverride,error:sessionError};}
+    catch(e){return {supported:false,mode:audioMode,error:String(e?.message||e).slice(0,160)};}
+  }
+  function audioEvidence(){const a=awakeAudio;return {target:chatURL(location.href),worker:instance,pulseSeq:pulseCount,heartbeatSeq:linkSeq,visibility:document.visibilityState,requested:awakeRequested,paused:a?.paused??null,readyState:a?.readyState??null,time:a?.currentTime??null,progressAt:audioProgressAt,session:audioSessionInfo()};}
+  function observeAudioSession(trigger){
+    const next=audioSessionInfo(),prev=sessionObserved;sessionObserved=next;
+    if(!awakeRequested||!prev||!next.supported)return;
+    if(prev.state!==next.state||prev.type!==next.type){
+      const event=next.state==='interrupted'&&prev.state!=='interrupted'?'session-interrupted':prev.state==='interrupted'&&next.state!=='interrupted'?'session-interruption-ended':'session-changed';
+      awakeEvent(event,{trigger,before:prev,after:next,...audioEvidence()});paintAwake();
+    }
+  }
+  function configureAudioSession(){
+    sessionError=null;
+    try{
+      const a=navigator.audioSession;if(!a){awakeEvent('session-unavailable',{mode:audioMode});return;}
+      if(audioMode==='ambient'){
+        if(!sessionOverride){sessionBefore=a.type;a.type='ambient';sessionOverride=a.type==='ambient';}
+        if(!sessionOverride)sessionError='Ambient type not accepted';
+      }else restoreAudioSession();
+      awakeEvent('session-configured',{...audioSessionInfo()});
+      observeAudioSession('configure');
+    }catch(e){sessionError=String(e?.message||e).slice(0,160);awakeEvent('session-config-error',{error:sessionError,mode:audioMode});}
+  }
+  function restoreAudioSession(){
+    try{const a=navigator.audioSession;if(sessionOverride&&a?.type==='ambient'&&sessionBefore!==null)a.type=sessionBefore;}
+    catch(e){sessionError=String(e?.message||e).slice(0,160);awakeEvent('session-restore-error',{error:sessionError});}
+    finally{sessionBefore=null;sessionOverride=false;}
+  }
+  function watchAudioSession(){
+    sessionObserved=audioSessionInfo();
+    try{const a=navigator.audioSession;if(a?.addEventListener){sessionListener=()=>observeAudioSession('statechange');a.addEventListener('statechange',sessionListener);}}catch(e){awakeEvent('session-observer-error',{error:String(e?.message||e).slice(0,160)});}
+  }
+  function unwatchAudioSession(){
+    try{if(sessionListener)navigator.audioSession?.removeEventListener('statechange',sessionListener);}catch{}
+    sessionListener=null;sessionObserved=null;
+  }
+  $('audio-mode').value=audioMode;
+  $('audio-mode').addEventListener('change',e=>{
+    if(!e.isTrusted)return;
+    audioMode=e.target.value==='original'?'original':'ambient';
+    try{sessionStorage.setItem(AUDIO_MODE_KEY,audioMode);}catch{}
+    awakeEvent('mode-selected',{mode:audioMode});if(awakeRequested)configureAudioSession();paintAwake();
+  });
   function awakeSnapshot(){
     const a=awakeAudio;
-    return {enabled:awakeEnabled,autoTried:awakeAutoTried,gesturePending:awakeGesturePending,requested:awakeRequested,started:awakeStarted||null,playing:!!a&&!a.paused&&!a.ended,paused:a?.paused??null,readyState:a?.readyState??null,currentTime:a?.currentTime??null,duration:Number.isFinite(a?.duration)?a.duration:null,lastProgressAt:audioProgressAt,progressAgeMs:audioProgressAt?Date.now()-audioProgressAt:null,volume:a?.volume??null,muted:a?.muted??null,error:awakeError,events:awakeEvents.slice(-12)};
+    return {enabled:awakeEnabled,autoTried:awakeAutoTried,gesturePending:awakeGesturePending,requested:awakeRequested,started:awakeStarted||null,playing:!!a&&!a.paused&&!a.ended,paused:a?.paused??null,readyState:a?.readyState??null,currentTime:a?.currentTime??null,duration:Number.isFinite(a?.duration)?a.duration:null,lastProgressAt:audioProgressAt,progressAgeMs:audioProgressAt?Date.now()-audioProgressAt:null,volume:a?.volume??null,muted:a?.muted??null,error:awakeError,session:audioSessionInfo(),events:awakeEvents.slice(-12)};
   }
-  function awakeEvent(event,detail={}){awakeEvents.push({event,at:Date.now(),...detail});if(awakeEvents.length>24)awakeEvents.shift();linkLog('audio',{audioEvent:event,...detail});}
-  function paintAwake(){const b=$('keep-awake'),playing=!!awakeAudio&&!awakeAudio.paused&&!awakeAudio.ended;b.setAttribute('aria-pressed',String(playing));b.textContent=playing?'Awake audio on':awakeRequested?'Starting audio…':awakeEnabled?'Enable audio':'Keep awake off';b.title=awakeError||'Near-silent audio; on by default for the selected tab, tap to change';}
+  function awakeEvent(event,detail={}){
+    const entry={event,at:Date.now(),...detail};awakeEvents.push(entry);if(awakeEvents.length>24)awakeEvents.shift();linkLog('audio',{audioEvent:event,...detail});
+    // Keep significant audio transitions even when ordinary link traffic rolls off.
+    if(/^(session-|mode-selected|requested|stopped|pause|playing|waiting|stalled|ended|error|play-resolved)/.test(event))lifeEvent('audio-'+event,{...audioEvidence(),detail});
+  }
+  function paintAwake(){
+    const b=$('keep-awake'),session=audioSessionInfo(),interrupted=session.state==='interrupted',playing=!!awakeAudio&&!awakeAudio.paused&&!awakeAudio.ended&&!interrupted;
+    b.setAttribute('aria-pressed',String(playing));
+    b.textContent=interrupted&&awakeRequested?'Audio interrupted':playing?'Awake audio on':awakeRequested?(awakeAudio?.paused?'Audio paused':'Starting audio…'):awakeEnabled?'Enable audio':'Keep awake off';
+    b.title=awakeError||sessionError||'Near-silent audio; tap to turn off or on. Session: '+(session.type||'unavailable');
+    $('audio-mode-row').hidden=!selectedHere();$('audio-mode').title=session.supported?'Requested: '+audioMode+' · effective: '+session.type:'Audio Session API unavailable; original playback';
+  }
   function stopAwake(reason='user'){
-    const a=awakeAudio;awakeRequested=false;awakeAudio=null;audioPrev=null;audioProgressAt=null;
+    const a=awakeAudio,before=audioEvidence();awakeRequested=false;awakeAudio=null;audioPrev=null;audioProgressAt=null;
+    unwatchAudioSession();
     if(a){a.pause();a.removeAttribute('src');a.load();a.remove();}
     if(awakeURL){URL.revokeObjectURL(awakeURL);awakeURL=null;}
-    awakeEvent('stopped',{reason});paintAwake();
+    restoreAudioSession();
+    awakeEvent('stopped',{reason,before});paintAwake();
   }
   function selectedHere(){return !!target&&chatURL(location.href)===target&&selectedWorker===instance;}
   function toggleAwake(){
@@ -1104,7 +1164,8 @@
       for(let i=0;i<n;i++)v.setInt16(44+2*i,Math.round(24*Math.sin(2*Math.PI*220*i/rate)),true);
       const a=document.createElement('audio');a.loop=true;a.preload='auto';a.hidden=true;a.muted=false;a.volume=1;
       awakeURL=URL.createObjectURL(new Blob([bytes],{type:'audio/wav'}));a.src=awakeURL;awakeAudio=a;awakeRequested=true;awakeError=null;awakeStarted=Date.now();audioProgressAt=null;audioPrev=null;
-      for(const e of ['playing','pause','waiting','stalled','suspend','ended','error'])a.addEventListener(e,()=>{if(awakeAudio!==a)return;if(e==='error')awakeError=a.error?.message||'Media error';awakeEvent(e,{time:a.currentTime,readyState:a.readyState});paintAwake();});
+      watchAudioSession();configureAudioSession();
+      for(const e of ['play','playing','pause','waiting','stalled','suspend','ended','error','abort','emptied'])a.addEventListener(e,()=>{if(awakeAudio!==a)return;if(e==='error')awakeError=a.error?.message||'Media error';awakeEvent(e,audioEvidence());observeAudioSession('media:'+e);paintAwake();});
       document.documentElement.append(a);paintAwake();awakeEvent('requested',{reason});
       // Must initiate play inside the original tap, before any await.
       Promise.resolve(a.play()).then(()=>{if(awakeAudio===a){awakeEvent('play-resolved');paintAwake();}}).catch(e=>{if(awakeAudio===a){awakeError=String(e?.message||e);awakeGesturePending=reason==='default'&&e?.name==='NotAllowedError';stopAwake('play rejected');if(reason==='manual')status('Keep awake unavailable: '+awakeError);}});
@@ -1141,13 +1202,13 @@
   function lifeEvent(kind,evidence={},classification='observed'){
     const e={at:Date.now(),instance,kind,classification,visibility:document.visibilityState,focused:document.hasFocus(),...evidence};
     life.counts[kind]=(life.counts[kind]||0)+1;life.events.push(e);if(life.events.length>48)life.events.shift();
-    if(classification!=='observed'||/error|rejection|csp|freeze|resume|discard|stall|runtime|longtask/.test(kind))life.examples[kind]=e;
+    if(classification!=='observed'||/error|rejection|csp|freeze|resume|discard|stall|runtime|longtask|^audio-/.test(kind))life.examples[kind]=e;
     persistLife();return e;
   }
   function lifecycleSample(){
     const a=awakeAudio,now=Date.now();
     const pending=[...storageOps.active.values()].filter(o=>now-o.at>5000).map(o=>({method:o.method,key:o.key,ageMs:now-o.at}));
-    return {at:now,monotonic:performance.now(),instance,visibility:document.visibilityState,focused:document.hasFocus(),online:navigator.onLine,selected:selectedHere(),pulseSeq:pulseCount,heartbeatSeq:linkSeq,heartbeatAt:lastHeart?.worker===instance?lastHeart.at:null,linkBusy,storage:{completed:storageOps.completed,failed:storageOps.failed,pendingCount:storageOps.active.size,slow:pending.slice(0,5)},media:{requested:awakeRequested,paused:a?.paused??null,readyState:a?.readyState??null,time:a?.currentTime??null,duration:Number.isFinite(a?.duration)?a.duration:null,progressAt:audioProgressAt}};
+    return {at:now,monotonic:performance.now(),instance,visibility:document.visibilityState,focused:document.hasFocus(),online:navigator.onLine,selected:selectedHere(),pulseSeq:pulseCount,heartbeatSeq:linkSeq,heartbeatAt:lastHeart?.worker===instance?lastHeart.at:null,linkBusy,storage:{completed:storageOps.completed,failed:storageOps.failed,pendingCount:storageOps.active.size,slow:pending.slice(0,5)},media:{requested:awakeRequested,paused:a?.paused??null,readyState:a?.readyState??null,time:a?.currentTime??null,duration:Number.isFinite(a?.duration)?a.duration:null,progressAt:audioProgressAt,session:audioSessionInfo()}};
   }
   function observeLifecycle(trigger='pulse'){
     const now=Date.now(),mono=performance.now(),prev=lifeSample,next=lifecycleSample(),wallGap=now-lifeWall,monoGap=mono-lifeMono;
@@ -1162,7 +1223,7 @@
     }
     if(next.storage.slow.length&&!stallSince){stallSince=now;lifeEvent('storage-stall',{pending:next.storage.slow,completed:next.storage.completed},'inferred');}
     else if(!next.storage.slow.length&&stallSince){lifeEvent('storage-stall-ended',{observedMs:now-stallSince});stallSince=null;}
-    const mediaDelayed=next.media.requested&&!next.media.paused&&next.media.progressAt&&now-next.media.progressAt>8000;
+    const mediaBaseline=next.media.progressAt||awakeStarted;const mediaDelayed=next.media.requested&&!next.media.paused&&mediaBaseline&&now-mediaBaseline>8000;
     if(mediaDelayed&&!mediaStallSince){mediaStallSince=now;lifeEvent('media-clock-stall',{media:next.media},'inferred');}
     else if(!mediaDelayed&&mediaStallSince){lifeEvent('media-clock-stall-ended',{observedMs:now-mediaStallSince});mediaStallSince=null;}
     // Preserve the newest sample with the existing local watchdog, including
@@ -1184,7 +1245,7 @@
     }
     remoteLatest={at:now,stale,current,ongoingOutage:remoteOutage};
   }
-  function lifeCompact(){return {last:lifeSample,latestEvent:life.events.at(-1)||null,latestGap:life.examples['suspected-suspension']||life.examples['clock-discontinuity']||null,storageStall:stallSince,mediaStall:mediaStallSince};}
+  function lifeCompact(){return {last:lifeSample,latestEvent:life.events.at(-1)||null,latestGap:life.examples['suspected-suspension']||life.examples['clock-discontinuity']||null,storageStall:stallSince,mediaStall:mediaStallSince,audioCounts:Object.fromEntries(Object.entries(life.counts).filter(([k])=>k.startsWith('audio-'))),audioExamples:Object.fromEntries(Object.entries(life.examples).filter(([k])=>k.startsWith('audio-')||k.startsWith('media-clock-stall')))};}
   function lifeReport(){return {support:lifeSupport,previousRuntimeSample:precedingSample,current:lifecycleSample(),counts:life.counts,events:life.events,examples:life.examples,remote:remoteLatest,storageStall:stallSince,mediaStall:mediaStallSince,persistenceError:lifePersistError,retention:'48 recent events, cumulative event counts and latest representative evidence per kind; tab session storage'};}
   function pulseSnapshot(){return {seq:pulseCount,at:pulseAt,maxGapMs:pulseMaxGap,gaps:pulseGaps.slice(-8),audio:awakeSnapshot(),storage:storageSnapshot()};}
   function localPulse(){
@@ -1192,7 +1253,7 @@
     if(gap>5000){pulseGaps.push({at:now,gapMs:gap,visibility:document.visibilityState});if(pulseGaps.length>20)pulseGaps.shift();linkLog('scheduler-gap',{gapMs:gap});}
     syncReceiverPresentation();
     if(awakeAudio){const t=awakeAudio.currentTime;if(audioPrev!==null&&Math.abs(t-audioPrev)>.03)audioProgressAt=now;audioPrev=t;}
-    observeLifecycle();
+    observeAudioSession('watchdog');observeLifecycle();
     // Durable lightweight samples even if GM storage stops responding.
     try{sessionStorage.setItem(PULSE_KEY,JSON.stringify(pulseSnapshot()));}catch{}
   }
@@ -1318,7 +1379,7 @@
   function copyConnectionReport(){return copyText(buildConnectionReport,'Report');}
   async function buildConnectionReport(){
     const here=chatURL(location.href),selected=target,request=pending;
-    let savedTrace=null,requestTrace=null,history=null,traceReadError=null,live=null,receipts=null,receiverHeart=null;
+    let savedTrace=null,requestTrace=null,history=null,traceReadError=null,live=null,receipts=null,receiverHeart=null,receiverAudioReports=[];
     const timeout=(promise)=>{let timer;return Promise.race([promise,new Promise((_,reject)=>{timer=setTimeout(()=>reject(Error('Diagnostic storage read timed out')),2500);})]).finally(()=>clearTimeout(timer));};
     try{if(here)live={...traceSnapshot(),sendCandidates:sendCandidates().map(b=>({label:b.getAttribute('aria-label'),type:b.type,testid:b.dataset.testid||null,disabled:b.disabled||b.getAttribute('aria-disabled')==='true'}))};}catch(e){live={error:String(e?.message||e).slice(0,200)};}
     try{
@@ -1330,8 +1391,9 @@
       }
     }catch(e){traceReadError=String(e?.message||e).slice(0,200);}
     try{if(store&&selected)receiverHeart=await timeout(store.get(LINK_HEART+selected));}catch(e){traceReadError=[traceReadError,'Receiver heartbeat: '+String(e?.message||e)].filter(Boolean).join('; ');}
+    if(store){try{const list=await timeout(readRegistry());receiverAudioReports=await Promise.all(list.map(async r=>{try{const heart=await timeout(store.get(LINK_HEART+r.target));return {target:r.target,name:conversationName(r.target),worker:heart?.worker??null,version:heart?.version??null,heartbeatAt:heart?.at??null,heartbeatAgeMs:heart?.at?Date.now()-heart.at:null,hidden:heart?.hidden??null,pulseSeq:heart?.watchdog?.seq??null,maxGapMs:heart?.watchdog?.maxGapMs??null,audio:heart?.watchdog?.audio??null,audioCounts:heart?.lifecycle?.audioCounts??null,audioExamples:heart?.lifecycle?.audioExamples??null};}catch(e){return {target:r.target,error:String(e?.message||e).slice(0,160)};}}));}catch(e){receiverAudioReports=[{error:String(e?.message||e).slice(0,160)}];}}
     const exactExecution=request?(executionTrace?.id===request.id?executionTrace:[history?.recent?.find(e=>e.id===request.id),history?.historical?.find(e=>e.id===request.id),requestTrace?.execution,savedTrace?.execution].filter(e=>e?.id===request.id).sort((a,b)=>(b.updated||b.started)-(a.updated||a.started))[0]||null):null;
-    return JSON.stringify({version:VERSION,exportedAt:new Date().toISOString(),reportId:uid(),instance,selectedWorker,target:linkTarget,receivers:receivers.map(r=>({target:r.target,name:conversationName(r.target)})),receiverHeart,state:linkState,challenge,lastProof,lastHeart,ageMs:lastHeart?Date.now()-lastHeart.at:null,error:linkError,visibility:document.visibilityState,intervalMs:LINK_INTERVAL,expiryMs:LINK_TTL,mailbox:'metadata index; direct request keys',autoStartExpiryMs:AUTO_START_TTL,events:linkEvents,uiEvents,watchdog:pulseSnapshot(),priorPulse,lifecycle:lifeReport(),history,retention:{full:HISTORY_FULL,compact:HISTORY_COMPACT,failureExamples:HISTORY_EXAMPLES,distinctFailureSignatures:HISTORY_SIGNATURES,journal:'per tab, survives ordinary reload; sessionStorage'},live,environment:{surface:here?chatSurface():null,storage:modern?'GM async':legacy?'GM legacy':'unavailable',viewport:[innerWidth,innerHeight],visualViewport:window.visualViewport?[window.visualViewport.width,window.visualViewport.height]:null,hasFocus:document.hasFocus(),clipboard:!!navigator.clipboard,position:dock,navigation:lastNavigation,tabTitle:document.title,overlay:{mode:layerMode,error:layerError,zIndex:getComputedStyle(host).zIndex}},selfTest:lastSelfTest||savedTrace?.selfTest||null,execution:exactExecution||(!request?(executionTrace||savedTrace?.execution||null):null),latestConversationExecution:request&&!exactExecution?(savedTrace?.execution||null):null,traceReadError,traceError,clipboard:lastCopy,request:request?{id:request.id,target:request.target,chatTitle:request.chatTitle||null,created:request.created,worker:request.autoWorker||null,promptCharacters:request.text?.length||0,marker:request.marker||null,visuals:request.visuals||[],seen:request.seen,copied:request.copied,returned:!!request.reply,manualReason:request.manualReason||null,run:request.run,receipts}:null,scope:'Exact request trace when available, recent UI and connection events, live worker DOM and receipt metadata. No custom prompt or answer body. Archive retains recent full executions, compact history, aggregate outcomes and bounded rare failure examples; journal survives ordinary refresh. Latest conversation execution is separate when it belongs to another request.'},null,2);}
+    return JSON.stringify({version:VERSION,exportedAt:new Date().toISOString(),reportId:uid(),instance,selectedWorker,target:linkTarget,receivers:receivers.map(r=>({target:r.target,name:conversationName(r.target)})),receiverHeart,receiverAudioReports,state:linkState,challenge,lastProof,lastHeart,ageMs:lastHeart?Date.now()-lastHeart.at:null,error:linkError,visibility:document.visibilityState,intervalMs:LINK_INTERVAL,expiryMs:LINK_TTL,mailbox:'metadata index; direct request keys',autoStartExpiryMs:AUTO_START_TTL,events:linkEvents,uiEvents,watchdog:pulseSnapshot(),priorPulse,lifecycle:lifeReport(),history,retention:{full:HISTORY_FULL,compact:HISTORY_COMPACT,failureExamples:HISTORY_EXAMPLES,distinctFailureSignatures:HISTORY_SIGNATURES,journal:'per tab, survives ordinary reload; sessionStorage'},live,environment:{surface:here?chatSurface():null,storage:modern?'GM async':legacy?'GM legacy':'unavailable',viewport:[innerWidth,innerHeight],visualViewport:window.visualViewport?[window.visualViewport.width,window.visualViewport.height]:null,hasFocus:document.hasFocus(),clipboard:!!navigator.clipboard,position:dock,navigation:lastNavigation,tabTitle:document.title,overlay:{mode:layerMode,error:layerError,zIndex:getComputedStyle(host).zIndex}},selfTest:lastSelfTest||savedTrace?.selfTest||null,execution:exactExecution||(!request?(executionTrace||savedTrace?.execution||null):null),latestConversationExecution:request&&!exactExecution?(savedTrace?.execution||null):null,traceReadError,traceError,clipboard:lastCopy,request:request?{id:request.id,target:request.target,chatTitle:request.chatTitle||null,created:request.created,worker:request.autoWorker||null,promptCharacters:request.text?.length||0,marker:request.marker||null,visuals:request.visuals||[],seen:request.seen,copied:request.copied,returned:!!request.reply,manualReason:request.manualReason||null,run:request.run,receipts}:null,scope:'Exact request trace when available, recent UI and connection events, live worker DOM and receipt metadata. No custom prompt or answer body. Archive retains recent full executions, compact history, aggregate outcomes and bounded rare failure examples; journal survives ordinary refresh. Latest conversation execution is separate when it belongs to another request.'},null,2);}
   action('link-report',copyConnectionReport);
   function extractPocketAnswer(last) {
     if(!last)return '';
