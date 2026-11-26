@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         AI Pill OS - Pocket
 // @namespace    https://github.com/JadanPoll/AI_Pill_OS
-// @version      0.5.5
+// @version      0.5.7
 // @updateURL    https://raw.githubusercontent.com/JadanPoll/AI_Pill_OS/main/Pocket.user.js
 // @downloadURL  https://raw.githubusercontent.com/JadanPoll/AI_Pill_OS/main/Pocket.user.js
 // @description  Universal Safari pill: collect evidence, keep discoveries, and hand a question to a chosen chat.
@@ -15,13 +15,16 @@
 // @grant        GM_setValue
 // @grant        GM_listValues
 // @grant        GM_deleteValue
+// @inject-into  content
+// @require      https://raw.githubusercontent.com/JadanPoll/AI_Pill_OS/140b63cdd953f2b1210ba46b7f0413540e8e5f30/vendor/require-preamble.js
+// @require      https://cdn.jsdelivr.net/npm/@zumer/snapdom@3.8.3/dist/snapdom.js
 // @run-at       document-idle
 // @noframes
 // ==/UserScript==
 (() => {
   'use strict';
   if (window.top !== window) return;
-  const VERSION='0.5.5';
+  const VERSION='0.5.7';
   // Report initialization failures without depending on the main UI, storage or a CDN.
   function bootFailure(error,phase){
     const message=String(error?.message||error).slice(0,500);
@@ -171,21 +174,17 @@
       await navigator.clipboard.write([new ClipboardItem({'image/png':blob})]);status('Images copied. Paste into chat; Ask includes text evidence separately.');
     }catch(e){try{const b=await blob;const u=URL.createObjectURL(b);const link=document.createElement('a');link.href=u;link.download='pocket-captures.png';link.click();setTimeout(()=>URL.revokeObjectURL(u),30000);status('Image clipboard unavailable; PNG download requested.');}catch(err){status('Image export failed: '+err.message);}}
   }
-  // The optional classic bundle is packaged at build time, never imported or fetched for execution at runtime.
+  // Manager prepends the non-directive preamble before the classic bundle; no dynamic import.
   const CAPTURE_KEY='capture.last.v1';
   let captureRun=null,latestCapture=null,selecting=false;
   const RENDERER='snapdom@3.8.3', RENDERER_URL='https://cdn.jsdelivr.net/npm/@zumer/snapdom@3.8.3/dist/snapdom.mjs';
   const CLASSIC_URL=RENDERER_URL.replace('.mjs','.js');
-  const BUNDLE_PRESENT=false; // BUILD_FLAG
-  function bundledRenderer(){
-    /* SNAPDOM_BUILD_SLOT */
-    return null;
-  }
+  const BUNDLE_PRESENT=typeof window.snapdom==='function'&&typeof window.snapdom.toCanvas==='function';
   let captureLib=null,rendererPending=false;
   async function loadRenderer(){
     if(captureLib)return captureLib;
-    if(!BUNDLE_PRESENT)throw Error('Renderer not packaged. Install the bundled Pocket from the build page.');
-    const lib=bundledRenderer();
+    if(!BUNDLE_PRESENT)throw Error('Manager did not provide SnapDOM classic bundle');
+    const lib=window.snapdom;
     if(typeof lib!=='function'||typeof lib.toCanvas!=='function')throw Error('Packaged SnapDOM API unavailable');
     captureLib=lib;return lib;
   }
@@ -292,7 +291,7 @@
   async function runCapture(region){
     if(captureRun||busy)return;
     const {x,y,w,h,sx,sy,source}=region,controller=new AbortController();
-    const run={started:performance.now(),controller,report:{version:VERSION,renderer:RENDERER,source,time:new Date().toISOString(),viewport:[innerWidth,innerHeight],documentSize:[document.documentElement.scrollWidth,document.documentElement.scrollHeight],region:[x,y,w,h],scroll:[sx,sy],events:[],rendererURL:CLASSIC_URL,delivery:BUNDLE_PRESENT?'local classic bundle':'unbundled recovery',environment:depEnvironment(),browserEvents:[]}};
+    const run={started:performance.now(),controller,report:{version:VERSION,renderer:RENDERER,source,time:new Date().toISOString(),viewport:[innerWidth,innerHeight],documentSize:[document.documentElement.scrollWidth,document.documentElement.scrollHeight],region:[x,y,w,h],scroll:[sx,sy],events:[],rendererURL:CLASSIC_URL,delivery:'manager classic bundle with non-directive preamble',environment:depEnvironment(),browserEvents:[]}};
     captureRun=run;busy=true;$('capture-cancel').hidden=false;
     let watchdog,clock;
     const browserEvent=(type,detail)=>{if(run.report.browserEvents.length<80)run.report.browserEvents.push({ms:Math.round(performance.now()-run.started),type,...detail});};
