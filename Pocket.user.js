@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         AI Pill OS - Pocket
 // @namespace    https://github.com/JadanPoll/AI_Pill_OS
-// @version      0.7.2
+// @version      0.7.3
 // @updateURL    https://raw.githubusercontent.com/JadanPoll/AI_Pill_OS/main/Pocket.user.js
 // @downloadURL  https://raw.githubusercontent.com/JadanPoll/AI_Pill_OS/main/Pocket.user.js
 // @description  Universal Safari pill: collect evidence, keep discoveries, and hand a question to a chosen chat.
@@ -24,7 +24,7 @@
 (() => {
   'use strict';
   if (window.top !== window) return;
-  const VERSION='0.7.2';
+  const VERSION='0.7.3';
   // Report initialization failures without depending on the main UI, storage or a CDN.
   function bootFailure(error,phase){
     const message=String(error?.message||error).slice(0,500);
@@ -66,12 +66,12 @@
   Object.assign(icons,{bookmark:'<path d="M6 3h12v18l-6-4-6 4z"/>',back:'<path d="m15 18-6-6 6-6"/>',trash:'<path d="M3 6h18M9 6V3h6v3M6 6l1 15h10l1-15M10 10v7M14 10v7"/>',settings:'<circle cx="5" cy="12" r="1"/><circle cx="12" cy="12" r="1"/><circle cx="19" cy="12" r="1"/>',arrow:'<path d="M7 17 17 7M7 7h10v10"/>',pin:'<path d="m16 3 5 5-4 2-3 5-2-2-6 6-1-1 6-6-2-2 5-3z"/>',search:'<circle cx="10" cy="10" r="6"/><path d="m14 14 6 6"/>'});
   icons.point='<path d="m4 3 15 9-7 2-3 7z"/>';icons.notes='<rect x="5" y="3" width="14" height="18" rx="2"/><path d="M8 8h8M8 12h8M8 16h5"/>';icons.crop='<path d="M6 3v15h15M3 6h15v15"/>';icons.chat='<path d="M20 11a8 8 0 0 1-8 8H4l2-4a8 8 0 1 1 14-4Z"/><path d="M9 11h6"/>';const icon=k=>'<svg width="21" height="21" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round" stroke-linecap="round" aria-hidden="true">'+icons[k]+'</svg>';
   const btn=(id,k,title,words='')=>'<button id="'+id+'" type="button" aria-label="'+title+'" title="'+title+'">'+icon(k)+(words?' '+words:'')+'</button>';
-  root.innerHTML='<style>:host{all:initial;position:fixed;left:12px;bottom:18px;z-index:2147483645;color:#172033;font:14px system-ui}*{box-sizing:border-box}[hidden]{display:none!important}button,input,textarea{font:inherit;color:inherit}button{min-height:44px;min-width:44px;border:0;border-radius:8px;background:transparent;display:inline-flex;align-items:center;justify-content:center;gap:5px;padding:8px;cursor:pointer}button:disabled{opacity:.35}button:focus-visible,a:focus-visible,summary:focus-visible{outline:2px solid #2563eb}#open[data-storage-error=true]{outline:2px solid #dc2626}#open{font-size:11px;border-radius:22px;background:#172033;color:#fff;box-shadow:0 2px 10px #0004}#panel{width:min(380px,calc(100vw - 24px));max-height:78vh;overflow:auto;background:rgba(255,255,255,.86);backdrop-filter:blur(3px);-webkit-backdrop-filter:blur(3px);border:1px solid #cbd5e1;border-radius:14px;padding:10px;box-shadow:0 4px 20px #0004}.row{display:flex;gap:4px;align-items:center;margin:4px 0}.grow{flex:1;min-width:0}textarea,input{width:100%;border:1px solid #cbd5e1;border-radius:8px;padding:9px;background:#fff;font-size:16px}input{min-height:44px}textarea{resize:vertical}small,#status{font-size:12px;color:#475569;overflow-wrap:anywhere}h3{font-size:16px;margin:0}#list{max-height:30vh;overflow:auto}.entry{display:block;text-align:left;width:100%;border-bottom:1px solid #e2e8f0;border-radius:0;overflow-wrap:anywhere}.entry b,.entry small{display:block}#detail{border-top:1px solid #e2e8f0;margin-top:6px;padding-top:6px}#body,#handoff-preview{white-space:pre-wrap;overflow-wrap:anywhere;max-height:25vh;overflow:auto;background:#f8fafc;padding:8px;font:13px/1.45 ui-monospace,monospace;user-select:text}#ask{background:#172033;color:white}button[aria-pressed=true]{background:#e2e8f0;font-weight:600}#handoff{border:1px solid #cbd5e1;border-radius:8px;padding:5px;margin:6px 0}#open[data-incoming=true]{outline:2px solid #16a34a}#handoff-reply{max-height:26vh;overflow:auto;white-space:pre-wrap;overflow-wrap:anywhere;font:14px/1.5 system-ui;background:#f8fafc;padding:8px;border-radius:6px}#reply-draft{margin:6px 0}#handoff-open{color:#1d4ed8;min-height:44px;min-width:44px;display:inline-flex;align-items:center;justify-content:center}#status:empty,#count:empty{display:none}details{border-top:1px solid #e2e8f0;padding:4px 0}summary{cursor:pointer;min-height:44px;display:flex;align-items:center;gap:6px;list-style:none}summary::-webkit-details-marker{display:none}#settings summary{justify-content:flex-end}#settings .settings-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:5px;margin:8px 0}#settings .settings-grid>button,#settings .settings-grid>span{min-width:0;width:100%;font-size:12px}#settings .settings-grid button{border:1px solid #cbd5e1;white-space:normal;overflow-wrap:anywhere;line-height:1.25;text-align:center}#settings .settings-grid>span>button{width:100%}#chat-target{min-height:44px;min-width:44px;border-radius:8px;display:inline-flex;align-items:center;justify-content:center;padding:8px;color:inherit;text-decoration:none;flex:none;-webkit-touch-callout:default}#source-label{font-size:11px}#pin{border:1px solid #cbd5e1}#remove,#clear-tray{color:#991b1b}#open[data-pinned=true],#chat-target[data-pinned=true]{background:#e9bf58;color:#392804}#chat-target{border:1px solid #cbd5e1}#target-label{display:block;line-height:1.3}#target-label:empty{display:none}#ask{background:rgba(23,32,51,.94)}#draft{background:rgba(255,255,255,.75)}#quote{border-left:3px solid #64748b;padding:4px 8px;margin:4px 0;background:#f1f5f9;border-radius:4px}#quote-text{font-size:12px;white-space:pre-wrap;overflow-wrap:anywhere;max-height:74px;overflow:auto}#quote .row{margin:0}#quote-clear{min-height:44px}#include-row{display:flex;align-items:center;gap:8px;font-size:12px;color:#475569;min-height:34px}#include-tray{width:18px;min-height:18px;height:18px;flex:none}#collection-head{margin-top:6px}#crop-editor{position:fixed;inset:8px;z-index:2147483647;display:flex;flex-direction:column;background:#f8fafc;border:1px solid #94a3b8;border-radius:12px;padding:10px;box-shadow:0 4px 20px #0005}#crop-stage{flex:1;min-height:0;display:flex;align-items:center;justify-content:center;overflow:hidden;background:#e2e8f0;border-radius:8px;position:relative}#crop-image-wrap{position:relative;max-width:100%;max-height:100%;display:flex;align-items:center;justify-content:center;touch-action:none;user-select:none}#crop-image{display:block;max-width:100%;max-height:100%;object-fit:contain;pointer-events:none}#crop-selection{position:absolute;outline:2px solid #2563eb;background:rgba(37,99,235,.12);pointer-events:none;box-shadow:0 0 0 200vmax #0004}#crop-stage:has(#crop-image-wrap:not([hidden])) #crop-empty{display:none}#crop-help{padding:5px 2px}#crop-editor .row{flex-wrap:wrap}#crop-add{background:#172033;color:white}#crop-empty{padding:16px;text-align:center;color:#475569}#primary{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:6px;margin:6px 0}#primary button{flex-direction:column;gap:3px;min-height:66px;border:1px solid #cbd5e1;font-size:13px}#primary svg{width:25px;height:25px}#panel[data-mode=home] #workspace,#panel:not([data-mode=notes]) #note-tools,#panel:not([data-mode=notes]) #note-context,#panel:not([data-mode=ask]) #ask-tools,#panel:not([data-mode=ask]) #handoff,#panel:not([data-mode=notes]) #notes-list,#panel:not([data-mode=ask]) #ask-context{display:none}#note-context,#ask-context{display:flex;flex-wrap:wrap;gap:5px;margin:6px 0}#note-context button,#ask-context button,#note-tools button{border:1px solid #cbd5e1}#attachments{font-size:12px;overflow-wrap:anywhere}#attachments .row{margin:2px 0}#notes-list{margin-top:8px}.note-entry{display:flex;align-items:center;border-bottom:1px solid #e2e8f0;gap:4px}.note-entry .entry{flex:1;min-width:0;border-bottom:0}.note-entry .ask-note{border:1px solid #cbd5e1;flex:none}.note-entry .ask-note svg{width:19px;height:19px}#mode-ask[data-pinned=true]{background:#e9bf58;color:#392804}#settings summary{min-height:36px}#mode-ask[data-incoming=true]{outline:2px solid #16a34a}#mode-ask[data-pinned=true]{background:#e9bf58;color:#392804}[data-link=ready]{box-shadow:inset 0 0 0 2px #16a34a!important}[data-link=responding]{box-shadow:inset 0 0 0 2px #2563eb!important}[data-link=checking],[data-link=uncertain]{box-shadow:inset 0 0 0 2px #d97706!important}[data-link=stale]{box-shadow:inset 0 0 0 2px #94a3b8!important}#link-health{display:block;margin:4px 0;font-size:12px}#link-health:empty{display:none}</style>'+
+  root.innerHTML='<style>:host{all:initial;position:fixed;left:12px;bottom:18px;z-index:2147483645;color:#172033;font:14px system-ui}*{box-sizing:border-box}[hidden]{display:none!important}button,input,textarea{font:inherit;color:inherit}button{min-height:44px;min-width:44px;border:0;border-radius:8px;background:transparent;display:inline-flex;align-items:center;justify-content:center;gap:5px;padding:8px;cursor:pointer}button:disabled{opacity:.35}button:focus-visible,a:focus-visible,summary:focus-visible{outline:2px solid #2563eb}#open[data-storage-error=true]{outline:2px solid #dc2626}#open{font-size:11px;border-radius:22px;background:#172033;color:#fff;box-shadow:0 2px 10px #0004}#panel{width:min(380px,calc(100vw - 24px));max-height:78vh;overflow:auto;background:rgba(255,255,255,.86);backdrop-filter:blur(3px);-webkit-backdrop-filter:blur(3px);border:1px solid #cbd5e1;border-radius:14px;padding:10px;box-shadow:0 4px 20px #0004}.row{display:flex;gap:4px;align-items:center;margin:4px 0}.grow{flex:1;min-width:0}textarea,input{width:100%;border:1px solid #cbd5e1;border-radius:8px;padding:9px;background:#fff;font-size:16px}input{min-height:44px}textarea{resize:vertical}small,#status{font-size:12px;color:#475569;overflow-wrap:anywhere}h3{font-size:16px;margin:0}#list{max-height:30vh;overflow:auto}.entry{display:block;text-align:left;width:100%;border-bottom:1px solid #e2e8f0;border-radius:0;overflow-wrap:anywhere}.entry b,.entry small{display:block}#detail{border-top:1px solid #e2e8f0;margin-top:6px;padding-top:6px}#body,#handoff-preview{white-space:pre-wrap;overflow-wrap:anywhere;max-height:25vh;overflow:auto;background:#f8fafc;padding:8px;font:13px/1.45 ui-monospace,monospace;user-select:text}#ask{background:#172033;color:white}button[aria-pressed=true]{background:#e2e8f0;font-weight:600}#handoff{border:1px solid #cbd5e1;border-radius:8px;padding:5px;margin:6px 0}#open[data-incoming=true]{outline:2px solid #16a34a}#handoff-reply{max-height:26vh;overflow:auto;white-space:pre-wrap;overflow-wrap:anywhere;font:14px/1.5 system-ui;background:#f8fafc;padding:8px;border-radius:6px}#reply-draft{margin:6px 0}#handoff-open{color:#1d4ed8;min-height:44px;min-width:44px;display:inline-flex;align-items:center;justify-content:center}#status:empty,#count:empty{display:none}details{border-top:1px solid #e2e8f0;padding:4px 0}summary{cursor:pointer;min-height:44px;display:flex;align-items:center;gap:6px;list-style:none}summary::-webkit-details-marker{display:none}#settings summary{justify-content:flex-end}#settings .settings-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:5px;margin:8px 0}#settings .settings-grid>button,#settings .settings-grid>span{min-width:0;width:100%;font-size:12px}#settings .settings-grid button{border:1px solid #cbd5e1;white-space:normal;overflow-wrap:anywhere;line-height:1.25;text-align:center}#settings .settings-grid>span>button{width:100%}#chat-target{min-height:44px;min-width:44px;border-radius:8px;display:inline-flex;align-items:center;justify-content:center;padding:8px;color:inherit;text-decoration:none;flex:none;-webkit-touch-callout:default}#source-label{font-size:11px}#pin{border:1px solid #cbd5e1}#remove,#clear-tray{color:#991b1b}#open[data-pinned=true],#chat-target[data-pinned=true]{background:#e9bf58;color:#392804}#chat-target{border:1px solid #cbd5e1}#target-label{display:block;line-height:1.3}#target-label:empty{display:none}#ask{background:rgba(23,32,51,.94)}#draft{background:rgba(255,255,255,.75)}#quote{border-left:3px solid #64748b;padding:4px 8px;margin:4px 0;background:#f1f5f9;border-radius:4px}#quote-text{font-size:12px;white-space:pre-wrap;overflow-wrap:anywhere;max-height:74px;overflow:auto}#quote .row{margin:0}#quote-clear{min-height:44px}#include-row{display:flex;align-items:center;gap:8px;font-size:12px;color:#475569;min-height:34px}#include-tray{width:18px;min-height:18px;height:18px;flex:none}#collection-head{margin-top:6px}#crop-editor{position:fixed;inset:8px;z-index:2147483647;display:flex;flex-direction:column;background:#f8fafc;border:1px solid #94a3b8;border-radius:12px;padding:10px;box-shadow:0 4px 20px #0005}#crop-stage{flex:1;min-height:0;display:flex;align-items:center;justify-content:center;overflow:hidden;background:#e2e8f0;border-radius:8px;position:relative}#crop-image-wrap{position:relative;max-width:100%;max-height:100%;display:flex;align-items:center;justify-content:center;touch-action:none;user-select:none}#crop-image{display:block;max-width:100%;max-height:100%;object-fit:contain;pointer-events:none}#crop-selection{position:absolute;outline:2px solid #2563eb;background:rgba(37,99,235,.12);pointer-events:none;box-shadow:0 0 0 200vmax #0004}#crop-stage:has(#crop-image-wrap:not([hidden])) #crop-empty{display:none}#crop-help{padding:5px 2px}#crop-editor .row{flex-wrap:wrap}#crop-add{background:#172033;color:white}#crop-empty{padding:16px;text-align:center;color:#475569}#primary{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:6px;margin:6px 0}#primary button{flex-direction:column;gap:3px;min-height:66px;border:1px solid #cbd5e1;font-size:13px}#primary svg{width:25px;height:25px}#panel[data-mode=home] #workspace,#panel:not([data-mode=notes]) #note-tools,#panel:not([data-mode=notes]) #note-context,#panel:not([data-mode=ask]) #ask-tools,#panel:not([data-mode=ask]) #handoff,#panel:not([data-mode=notes]) #notes-list,#panel:not([data-mode=ask]) #ask-context{display:none}#note-context,#ask-context{display:flex;flex-wrap:wrap;gap:5px;margin:6px 0}#note-context button,#ask-context button,#note-tools button{border:1px solid #cbd5e1}#attachments{font-size:12px;overflow-wrap:anywhere}#attachments .row{margin:2px 0}#notes-list{margin-top:8px}.note-entry{display:flex;align-items:center;border-bottom:1px solid #e2e8f0;gap:4px}.note-entry .entry{flex:1;min-width:0;border-bottom:0}.note-entry .ask-note{border:1px solid #cbd5e1;flex:none}.note-entry .ask-note svg{width:19px;height:19px}#mode-ask[data-pinned=true]{background:#e9bf58;color:#392804}#settings summary{min-height:36px}#mode-ask[data-incoming=true]{outline:2px solid #16a34a}#mode-ask[data-pinned=true]{background:#e9bf58;color:#392804}[data-link=ready]{box-shadow:inset 0 0 0 2px #16a34a!important}[data-link=responding]{box-shadow:inset 0 0 0 2px #2563eb!important}[data-link=checking],[data-link=uncertain]{box-shadow:inset 0 0 0 2px #d97706!important}[data-link=stale]{box-shadow:inset 0 0 0 2px #94a3b8!important}#link-health{display:block;margin:4px 0;font-size:12px}#link-health:empty{display:none}#panel[data-chat=true]{width:min(310px,calc(100vw - 24px))}#panel[data-chat=true] #primary,#panel[data-chat=true] #settings,#panel[data-chat=true] #workspace,#panel[data-chat=true] #handoff{display:none}#panel[data-chat=true][data-mode=notes] #workspace,#panel[data-chat=true][data-mode=notes] #settings{display:block}#panel[data-chat=true][data-mode=worker] #handoff{display:block}#panel:not([data-chat=true]) #worker,#panel[data-chat=true][data-mode=notes] #worker{display:none}#panel[data-chat=true] #handoff{border:0;padding:0}#worker-status{font-size:13px}#worker-pin{background:#172033;color:white}#worker-recovery summary{min-height:36px;font-size:12px}#worker-recovery button{border:1px solid #cbd5e1}#open[data-pinned=true]{background:#172033;color:white}#open[data-chat=true]{padding:7px 10px}#panel[data-chat=true] #handoff-reply{display:none}</style>'+
     btn('open','pocket','Open AI Pocket','v'+VERSION)+
-    '<section id="panel" data-mode="home" hidden><div class="row"><h3 class="grow">Pocket <small>v'+VERSION+'</small></h3>'+btn('close','close','Close Pocket')+'</div><nav id="primary" aria-label="Pocket actions">'+btn('mode-notes','notes','Open notes','Notes')+btn('mode-ask','chat','Ask or read answer','Ask')+'</nav><div id="workspace">'+
+    '<section id="panel" data-mode="home" hidden><div class="row"><h3 class="grow" id="panel-title">Pocket <small>v'+VERSION+'</small></h3>'+btn('worker-notes','notes','Open Notes', '')+btn('close','close','Close Pocket')+'</div><div id="worker" hidden><div class="row"><span class="grow" id="worker-status">Checking connection…</span><button id="worker-pin" hidden>Use this chat</button></div><small id="worker-detail" role="status"></small><details id="worker-tools"><summary>Connection details</summary><button id="worker-report">Copy connection report</button></details></div><nav id="primary" aria-label="Pocket actions">'+btn('mode-notes','notes','Open notes','Notes')+btn('mode-ask','chat','Ask or read answer','Ask')+'</nav><div id="workspace">'+
     '<section id="quote" hidden><div class="row"><small class="grow">Selected passage</small>'+btn('quote-clear','close','Remove selected passage')+'</div><div id="quote-text"></div></section><textarea id="draft" rows="2" placeholder="What do you want to know or do?" aria-label="Question or draft"></textarea>'+
     '<div id="note-context">'+btn('snip','crop','Drag to capture webpage region','Region')+'<button id="whole-page">Page text</button></div><div class="row" id="note-tools"><button id="save-note" class="grow">Save note</button>'+btn('collect','plus','Collect temporary evidence')+btn('saved-tab','bookmark','Open saved notes')+'</div><div id="ask-context">'+btn('ask-snip','crop','Capture region for this question','Region')+'<button id="ask-page">Page text</button><button id="copy-context">Copy text</button><button id="copy-ask-images" hidden>Copy images</button></div><div id="attachments" hidden></div><div id="ask-tools"><div class="row"><button id="ask" class="grow">Ask</button>'+'<a id="chat-target" href="https://chatgpt.com/" target="_blank" rel="noopener noreferrer" aria-label="Open or set ChatGPT" title="Open or set ChatGPT">'+icon('chat')+'</a>'+'</div><small id="target-label"></small><small id="link-health" role="status"></small><label id="include-row" hidden><input id="include-tray" type="checkbox"><span id="include-label">Include collected evidence</span></label></div>'+
-    '<section id="handoff" hidden><div class="row"><small class="grow" id="handoff-status"></small><a id="handoff-open" target="_blank" rel="noopener noreferrer" aria-label="Open selected chat" title="Open selected chat" hidden>'+icon('arrow')+'</a>'+btn('handoff-copy','copy','Copy prepared question')+btn('handoff-clear','close','Dismiss handoff')+'</div><pre id="handoff-preview" hidden></pre><details id="reply-compose" hidden><summary>Manual reply (fallback)</summary><textarea id="reply-draft" rows="3" placeholder="Paste the answer from this chat…" aria-label="Answer to return"></textarea><button id="reply-return">Return answer</button></details><section id="reply-result" hidden><div class="row"><strong class="grow">Answer</strong>'+btn('reply-copy','copy','Copy returned answer')+'</div><div id="handoff-reply"></div></section></section>'+
+    '<section id="handoff" hidden><div class="row"><small class="grow" id="handoff-status"></small><a id="handoff-open" target="_blank" rel="noopener noreferrer" aria-label="Open selected chat" title="Open selected chat" hidden>'+icon('arrow')+'</a>'+btn('handoff-clear','close','Dismiss question or answer')+'</div><button id="worker-send" hidden>Send question</button><details id="worker-recovery" hidden><summary>Manual recovery</summary><pre id="handoff-preview" hidden></pre>'+btn('handoff-copy','copy','Copy prepared question','Copy question')+'<details id="reply-compose" hidden><summary>Return answer manually</summary><textarea id="reply-draft" rows="3" placeholder="Paste the answer from this chat…" aria-label="Answer to return"></textarea><button id="reply-return">Return answer</button></details></details><section id="reply-result" hidden><div class="row"><strong class="grow">Answer</strong>'+btn('reply-copy','copy','Copy returned answer')+'</div><div id="handoff-reply"></div></section></section>'+
     '<div id="notes-list"><div class="row" id="collection-head">'+btn('tray-tab','back','Return to collected items')+'<strong id="collection-title" class="grow"></strong>'+btn('copy-tray','copy','Copy collected evidence')+'</div>'+
     '<div class="row" id="filter-row" hidden><input id="filter" class="grow" placeholder="Find items…" aria-label="Find items"></div><small id="count"></small><div id="list"></div>'+
     '<section id="detail" hidden><div class="row">'+btn('done','back','Back to items')+'<small class="grow" id="meta"></small>'+btn('copy','copy','Copy selected text')+'</div><pre id="body"></pre><button id="note-ask">Ask about this</button><details><summary>More</summary><div class="row"><button id="copy-record">Copy with source</button><button id="keep">Keep in saved</button>'+btn('remove','trash','Delete item')+'</div></details></section></div>'+
@@ -80,6 +80,9 @@
     '<section id="crop-editor" hidden><div class="row"><h3 class="grow">Crop screenshot <small>v'+VERSION+'</small></h3><button id="crop-paste">Paste image</button><button id="crop-choose">Choose image</button>'+btn('crop-close','close','Close screenshot editor')+'</div><div id="crop-stage"><div id="crop-empty">Take a native screenshot, copy it, then tap Paste image. Or choose a saved screenshot.</div><div id="crop-image-wrap" hidden><img id="crop-image" alt="Screenshot to crop" draggable="false"><div id="crop-selection" hidden></div></div></div><small id="crop-help" role="status">No image selected.</small><div class="row"><button id="crop-reset" hidden>Reset crop</button><button id="crop-add" class="grow" disabled>Collect image</button></div></section>';
   // Keep native text editing and IME behavior; don't let page hotkeys see our keystrokes.
   for(const type of ['keydown','keypress','keyup'])root.addEventListener(type,e=>{if(e.composedPath().some(el=>el instanceof Element&&el.matches('textarea,input,[contenteditable]')))e.stopPropagation();});
+  // Worker status is independent of the Notes/Ask workspace.
+  $('panel').insertBefore($('handoff'),$('settings'));
+  $('worker-notes').hidden=true;
   document.documentElement.append(host);
   phase='event binding';
   let records=[],tray=[],selected=null,busy=false,loadEpoch=0,view='tray',target=null,pending=null,handoffBusy=false,handoffRead=0,replyDraftId=null,pollBusy=false,sourceWatch=false,initialHandoffCheck=true;
@@ -105,6 +108,9 @@
   function setMode(next){
     if(next!==mode){if(mode==='notes'||mode==='ask')drafts[mode]=$('draft').value;if(next==='notes'||next==='ask')$('draft').value=drafts[next];}
     mode=next;$('panel').dataset.mode=mode;
+    $('worker-notes').hidden=!chatURL(location.href);
+    $('worker-notes').title=mode==='notes'?'Back to connection':'Open Notes';
+    $('worker-notes').setAttribute('aria-label',$('worker-notes').title);
     for(const v of ['notes','ask'])$('mode-'+v).setAttribute('aria-pressed',String(v===mode));
     $('draft').placeholder=mode==='notes'?'Write a note…':'What do you want to know or do?';
     if(mode==='notes'){hideDetail();render();}
@@ -535,6 +541,16 @@
   function openChat(dest){if(!dest)return;const a=document.createElement('a');a.href=dest;a.target='_blank';a.rel='noopener noreferrer';a.click();}
   function paintTarget(){
     const here=chatURL(location.href),pinned=!!target&&here===target;
+    const chat=!!here,wasChat=$('panel').dataset.chat==='true';
+    $('panel').dataset.chat=String(chat);$('open').dataset.chat=String(chat);
+    $('worker').hidden=!chat;$('worker-notes').hidden=!chat;
+    if(chat!==wasChat){setMode(chat?'worker':'home');$('worker-recovery').open=false;}
+    $('panel-title').firstChild.textContent=chat?'Pocket connection ':'Pocket ';
+    $('worker-pin').hidden=!chat||pinned;
+    $('worker-pin').textContent=target?'Use this chat instead':'Use this chat';
+    $('worker-status').textContent=pinned?'Selected chat':chat?'Not selected':'';
+    $('open').lastChild.textContent=chat?' '+(pinned?'Connected chat':'Connect chat'):' v'+VERSION;
+    $('open').title=chat?(pinned?'Pocket · selected chat':'Pocket · use this chat'):'Pocket v'+VERSION;
     $('open').setAttribute('data-pinned',String(pinned));$('mode-ask').setAttribute('data-pinned',String(pinned));$('chat-target').setAttribute('data-pinned',String(pinned));
     const name=target?(target.includes('chatgpt.com')?'ChatGPT':'Gemini'):'ChatGPT';
     const label=pinned?'Selected '+name+' destination':here?'Use this chat':target?'Open selected '+name:'Open ChatGPT to choose a chat';
@@ -557,7 +573,7 @@
     if(!store)return;const dest=chatURL(location.href);
     if(!dest){status('Open ChatGPT or an existing Gemini conversation first.');return;}
     await store.set(TARGET,dest);if(await store.get(TARGET)!==dest)throw Error('Chat setting could not be read back');
-    await load();status('This conversation is now the Ask destination.');
+    await refreshTarget();await refreshHandoff(loadEpoch);void linkTick();status('This conversation is now the Ask destination.');
   }
   function validReply(v,r){return v&&v.id===r.id&&v.target===r.target&&v.sourcePage===r.sourcePage&&typeof v.text==='string'&&v.text.length>0&&v.text.length<=LIMIT&&typeof v.created==='string';}
   function validSeen(v,r){return v&&v.id===r.id&&v.target===r.target&&typeof v.seenAt==='string';}
@@ -594,8 +610,13 @@
     const manual=!auto||expired||run?.phase==='failed';
     const fallback=manual||interrupted||run?.phase==='uncertain';
     const connectionLost=!!auto&&!atChat&&!hasReply&&linkState==='stale';
-    if(replyDraftId!==pending?.id){$('reply-compose').open=false;$('reply-draft').value='';replyDraftId=pending?.id||null;}
-    $('handoff').hidden=!pending;
+    if(replyDraftId!==pending?.id){$('reply-compose').open=false;$('worker-recovery').open=false;$('reply-draft').value='';replyDraftId=pending?.id||null;}
+    const imageQuestion=!!pending?.text?.includes('(Image: copy collected images separately)');
+    const canRecoverSend=atChat&&!!pending&&!hasReply&&!pending.copied&&!run&&manual&&!imageQuestion&&here===dest&&here.startsWith('https://chatgpt.com/')&&here!=='https://chatgpt.com/';
+    $('worker-send').hidden=!canRecoverSend;
+    $('worker-recovery').hidden=!atChat||hasReply||!(fallback||pending?.copied);
+    $('handoff-clear').hidden=atChat&&!fallback;
+    $('handoff').hidden=!pending||(atChat&&hasReply);
     $('handoff-preview').hidden=!atChat||!fallback||hasReply;
     $('handoff-preview').textContent=atChat?pending.text:'';
     $('handoff-copy').hidden=!atChat||!manual||hasReply;
@@ -606,7 +627,7 @@
     $('open').setAttribute('data-incoming',String(!!pending&&(atChat?fallback&&!pending.copied&&!hasReply:hasReply)));$('mode-ask').setAttribute('data-incoming',String(!!pending&&(atChat?fallback&&!pending.copied&&!hasReply:hasReply)));
     if(pending){
       $('handoff-open').href=chatURL(pending.target);
-      $('handoff-status').textContent=hasReply?(atChat?'Answer returned':'Answer received'):pending.copied?'Question copied · awaiting answer':interrupted?'Submission may have occurred · check chat, do not resend':run?.phase==='uncertain'?'Check chat · '+run.detail:run?.phase==='failed'?'Manual fallback · '+run.detail:manual?(expired?'Chat did not claim question · open chat':atChat?'Copy question to chat':pending.manualReason||'Open chat to send'):connectionLost?'Chat connection paused · check selected tab':run?.phase==='sent'?'ChatGPT is responding…':run?.phase==='armed'?'Checking submission…':run?.phase==='claimed'?'Sending to ChatGPT…':'Queued for connected chat…';
+      $('handoff-status').textContent=hasReply?(atChat?'Answer returned':'Answer received'):pending.copied?'Question copied · awaiting answer':interrupted?'Submission may have occurred · check chat, do not resend':run?.phase==='uncertain'?'Check chat · '+run.detail:run?.phase==='failed'?'Manual fallback · '+run.detail:manual?(expired?'Chat did not claim question · open chat':atChat?(canRecoverSend?'Question waiting to be sent':pending.manualReason||'Question needs attention'):pending.manualReason||'Open chat to send'):connectionLost?'Chat connection paused · check selected tab':run?.phase==='sent'?'ChatGPT is responding…':run?.phase==='armed'?'Checking submission…':run?.phase==='claimed'?'Sending to ChatGPT…':'Queued for connected chat…';
     }else $('handoff-open').removeAttribute('href');
   }
   async function returnAnswer(){
@@ -644,13 +665,35 @@
       if(text.length>LIMIT){status('Prepared question exceeds 100,000 characters. Remove or split evidence.');return;}
       const heart=await store.get(LINK_HEART),now=Date.now(),isChatGPT=dest.startsWith('https://chatgpt.com/')&&dest!=='https://chatgpt.com/';
       const proved=heart?.target===dest&&heart.version===VERSION&&fresh(heart.at,now)&&heart.editor&&!heart.disabled&&typeof heart.worker==='string'&&((lastProof?.worker===heart.worker&&lastProof.target===dest&&fresh(lastProof.at,now))||(chatURL(location.href)===dest&&heart.worker===instance));
-      const autoWorker=isChatGPT&&proved&&!items.some(v=>v.image)?heart.worker:null;
+      const hasImages=items.some(v=>v.image);
+      const autoWorker=isChatGPT&&proved&&!heart.draft&&!hasImages?heart.worker:null;
+      // A disconnected text Ask is not a clipboard workflow. Keep the draft
+      // and evidence intact until the selected tab is ready.
+      if(isChatGPT&&!hasImages&&!autoWorker){status(heart?.draft&&fresh(heart.at,now)?'The selected chat has an unsent draft. Finish it, then Ask again.':'Chat not ready. Open the selected chat, then Ask again. Your question is kept.');return;}
       const manualReason=items.some(v=>v.image)?'Images require manual paste · open chat':!isChatGPT?'Choose an existing ChatGPT conversation for automatic Ask':'Chat not connected · open chat';
       const id=uid(),r={id,created:new Date().toISOString(),sourcePage:origin,target:dest,text,...(autoWorker?{autoWorker}:{manualReason})};
       await store.set(HANDOFF+id,r);
       const check=await store.get(HANDOFF+id);if(check?.id!==id||check.text!==text||check.target!==dest)throw Error('Handoff could not be read back');
       if($('draft').value.trim()===question)$('draft').value='';if(quoted===passage)setQuote('');attachments=attachments.filter(v=>!explicit.some(r=>r.id===v.id));paintAttachments();$('include-tray').checked=false;await load();status(r.autoWorker?'Question queued for the connected tab.':'Question prepared. '+r.manualReason);
     }finally{handoffBusy=false;$('ask').disabled=false;}
+  }
+  async function recoverSend(){
+    if(!store||!pending||handoffBusy||$('worker-send').hidden)return;
+    const r=pending;
+    if(chatURL(location.href)!==r.target||await store.get(TARGET)!==r.target)return;
+    handoffBusy=true;
+    try{
+      if(await store.get(RUN+r.id)||await store.get(ACK+r.id)||await store.get(REPLY+r.id))throw Error('Question already handled; check the chat');
+      const original=await store.get(HANDOFF+r.id);
+      if(!original||original.text!==r.text||original.target!==r.target||original.text.includes('(Image: copy collected images separately)'))throw Error('Question changed or requires images');
+      if(!chatEditor()||editorText(chatEditor())||composerAttachments(chatEditor())||streamActive())throw Error('Finish the current chat draft or response first');
+      const next={...original,autoWorker:instance,created:new Date().toISOString()};delete next.manualReason;
+      await store.set(HANDOFF+r.id,next);
+      const check=await store.get(HANDOFF+r.id);
+      if(check?.autoWorker!==instance||check?.text!==r.text)throw Error('Question could not be queued');
+      await refreshHandoff(loadEpoch);
+      status('Question queued.');
+    }finally{handoffBusy=false;void autoTick();}
   }
   async function copyHandoff(){
     if(!store||!pending||handoffBusy||chatURL(location.href)!==pending.target)return;
@@ -672,11 +715,16 @@
   action('open',async()=>{
     $('open').hidden=true;$('panel').hidden=false;
     const chosen=picked||selection();if(chosen){setQuote(chosen);$('source').value=sourceURL();}else if(!$('draft').value&&!quoted){$('source').value=sourceURL();}
-    picked='';setMode('home');await load();
+    picked='';await refreshTarget();
+    if(chatURL(location.href)){setMode('worker');await refreshHandoff(loadEpoch);void linkTick();}
+    else{setMode('home');await load();if(pending?.reply)setMode('ask');}
   });
   action('close',()=>{setMode('home');++loadEpoch;hideDetail();$('fallback').hidden=true;$('fallback').value='';records=[];tray=[];pending=null;$('handoff-preview').textContent='';$('handoff-reply').textContent='';$('handoff').hidden=true;$('list').replaceChildren();$('panel').hidden=true;$('open').hidden=false;});
   for(const id of ['mode-notes','mode-ask'])$(id).addEventListener('pointerdown',e=>{if(e.isTrusted){const text=selection();if(text){setQuote(text);$('source').value=sourceURL();}}});
   action('mode-notes',()=>{view='saved';setMode('notes');});action('mode-ask',()=>setMode('ask'));
+  action('worker-notes',async()=>{if(mode==='notes'){setMode('worker');await refreshHandoff(loadEpoch);}else{view='saved';setMode('notes');await load();}});
+  action('worker-pin',pinChat);action('worker-send',recoverSend);
+  action('worker-report',copyConnectionReport);
   action('whole-page',pageContext);action('ask-page',pageContext);action('save-note',saveNote);action('ask-snip',startSnip);
   action('note-ask',()=>{if(selected){attach(selected);hideDetail();setMode('ask');}});
   function askItems(){const found=attachments.slice();if($('include-tray').checked)for(const r of tray)if(!found.some(v=>v.id===r.id))found.push(r);return found;}
@@ -725,6 +773,9 @@
     if(next!==linkState){linkState=next;linkLog('state',{state:next,detail});}
     for(const id of ['open','mode-ask','chat-target'])$(id).setAttribute('data-link',next);
     $('link-health').textContent=detail;
+    $('worker-detail').textContent=detail;
+    if(chatURL(location.href)&&chatURL(location.href)===target){$('worker-status').textContent=next==='ready'?'Ready':next==='responding'?'Responding':next==='uncertain'?'Needs attention':'Selected chat';}
+    if(chatURL(location.href)&&chatURL(location.href)===target){$('open').lastChild.textContent=next==='ready'?' Ready':next==='responding'?' Responding':' Selected chat';}
     $('mode-ask').title='Ask · '+detail;
   }
   async function linkTick(){
@@ -733,7 +784,7 @@
     try{
       const dest=chatURL(await store.get(TARGET)),here=chatURL(location.href);
       if(dest!==linkTarget){linkTarget=dest;challenge=null;lastProof=null;lastHeart=null;lastChallengeAt=0;linkStarted=Date.now();linkLog('destination changed',{selected:!!dest});}
-      if(target!==dest){target=dest;paintTarget();}
+      if(target!==dest||$('panel').dataset.chat!==String(!!here)){target=dest;paintTarget();}
       if(!dest){paintLink('off','No chat selected');return;}
       if(here===dest){
         const ping=await store.get(LINK_PING);
@@ -743,11 +794,12 @@
         const heart={target:dest,worker:instance,version:VERSION,seq:++linkSeq,at:now,...ob,echo};
         await store.set(LINK_HEART,heart);
         lastHeart=heart;
-        // Gold remains the local selection marker; remote accent requires an actual round trip.
-        paintLink('off',ob.stop?'Selected chat · responding':ob.editor&&!ob.disabled?'Selected chat · heartbeat running':'Selected chat · editor not confirmed');
+        // Local worker readiness is distinct from remote round-trip proof.
+        paintLink(ob.stop?'responding':ob.editor&&!ob.disabled&&!ob.draft?'ready':'uncertain',ob.stop?'Generating an answer':ob.draft?'Unsent draft in chat':ob.editor&&!ob.disabled?'Listening for questions':'Composer unavailable');
         return;
       }
       if(document.hidden)return;
+      if(here){paintLink('off',dest?'Another chat is selected':'Select this chat to receive questions');return;}
       const heart=await store.get(LINK_HEART),now=Date.now();
       lastHeart=heart?.target===dest?heart:null;
       if(challenge&&lastHeart&&fresh(lastHeart.at,now)&&lastHeart.echo?.id===challenge.id&&lastHeart.echo.sender===instance&&lastHeart.echo.issuedAt===challenge.at&&lastHeart.at>=challenge.at&&fresh(challenge.at,now)&&lastProof?.id!==challenge.id){
@@ -769,7 +821,8 @@
     }catch(e){linkError=String(e?.message||e).slice(0,300);paintLink('stale','Chat connection check failed');linkLog('error',{message:linkError});}
     finally{linkBusy=false;}
   }
-  action('link-report',async()=>{await copyText(JSON.stringify({version:VERSION,instance,target:linkTarget,state:linkState,challenge,lastProof,lastHeart,ageMs:lastHeart?Date.now()-lastHeart.at:null,error:linkError,visibility:document.visibilityState,intervalMs:LINK_INTERVAL,expiryMs:LINK_TTL,events:linkEvents,request:pending?{id:pending.id,created:pending.created,worker:pending.autoWorker||null,seen:pending.seen,copied:pending.copied,returned:!!pending.reply,manualReason:pending.manualReason||null,run:pending.run}:null,scope:'Local GM ping/pong, editor/stop observations and explicit Ask transaction events. No prompt or answer text in this report.'},null,2));});
+  async function copyConnectionReport(){await copyText(JSON.stringify({version:VERSION,instance,target:linkTarget,state:linkState,challenge,lastProof,lastHeart,ageMs:lastHeart?Date.now()-lastHeart.at:null,error:linkError,visibility:document.visibilityState,intervalMs:LINK_INTERVAL,expiryMs:LINK_TTL,events:linkEvents,request:pending?{id:pending.id,created:pending.created,worker:pending.autoWorker||null,seen:pending.seen,copied:pending.copied,returned:!!pending.reply,manualReason:pending.manualReason||null,run:pending.run}:null,scope:'Local GM ping/pong, editor/stop observations and explicit Ask transaction events. No prompt or answer text in this report.'},null,2));}
+  action('link-report',copyConnectionReport);
   function extractPocketAnswer(last) {
     if(!last)return '';
     const clone = last.cloneNode(true);
@@ -980,7 +1033,7 @@
     }finally{autoBusy=false;}
   }
 
-  function refreshVisible(){if(document.hidden||busy||handoffBusy)return;const work=$('panel').hidden?refreshTarget():load();work.catch(e=>{status('Storage refresh failed: '+String(e.message||e));$('open').title='Pocket v'+VERSION+' · Storage refresh failed';$('open').setAttribute('data-storage-error','true');});}
+  function refreshVisible(){if(document.hidden||busy||handoffBusy)return;const work=$('panel').hidden?refreshTarget():chatURL(location.href)&&mode==='worker'?refreshHandoff(loadEpoch):load();work.catch(e=>{status('Storage refresh failed: '+String(e.message||e));$('open').title='Pocket v'+VERSION+' · Storage refresh failed';$('open').setAttribute('data-storage-error','true');});}
   phase='initial refresh';
   refreshVisible();
   let lastChatURL=chatURL(location.href);const routeTimer=setInterval(()=>{if(document.hidden)return;const here=chatURL(location.href);if(here!==lastChatURL){lastChatURL=here;refreshVisible();}},1200);
