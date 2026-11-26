@@ -1,6 +1,6 @@
 {
   "schema": "ai_pill_os.capability_atlas",
-  "version": 2,
+  "version": 3,
   "updated": "2026-11-25",
   "purpose": "Can I operate at the speed of thought? Living design inventory, not a promise of implementation.",
   "design_rules": {
@@ -61,7 +61,10 @@
     "patent_cards": "https://github.com/JadanPoll/Learning_Visualizations_Taxonomy/blob/main/Patent.Card.user.js",
     "patent_graph": "https://github.com/JadanPoll/Learning_Visualizations_Taxonomy/blob/main/PatentX.user.js",
     "youtube_comments": "https://github.com/JadanPoll/Learning_Visualizations_Taxonomy/blob/main/Youtube_Comments.user.js",
-    "grokipedia_fix": "https://github.com/JadanPoll/Learning_Visualizations_Taxonomy/blob/main/Grok_Wikipedia_Correction.user.js"
+    "grokipedia_fix": "https://github.com/JadanPoll/Learning_Visualizations_Taxonomy/blob/main/Grok_Wikipedia_Correction.user.js",
+    "eruda": "https://github.com/liriliri/eruda",
+    "devtools": "https://github.com/JadanPoll/AI_Pill_OS/blob/main/AI_Pill.user.js",
+    "native_model": "https://support.apple.com/guide/shortcuts/use-apple-intelligence-in-shortcuts-tpg3vrvwmclv/ios"
   },
   "capabilities": [
     {
@@ -700,6 +703,88 @@
         "microsoft"
       ],
       "boundary": "No silent corruption or destructive rewriting; don't mistake cosmetic correction for correct source content."
+    },
+    {
+      "id": "develop.inspect",
+      "name": "Inspect and export browser evidence",
+      "family": "development",
+      "priority": "P0",
+      "status": "candidate",
+      "intentions": [
+        "Inspect this",
+        "Show sources",
+        "Record what happens",
+        "Copy report"
+      ],
+      "why": "Reduces the time between encountering a site or userscript problem and giving AI actionable evidence.",
+      "mechanisms": [
+        "AI_Pill.user.js v0.1.1: Eruda pinned dependency; element geometry/attributes/ancestors; bounded interaction and resource timing report; explicit review and copy"
+      ],
+      "depends_on": [
+        "control.recover"
+      ],
+      "acceptance": "On an actual site, inspect a control, record a failing or surprising interaction, and provide enough evidence to change the corresponding script without requesting redundant data.",
+      "week_later": "One visible pill; no manual selector reconstruction; compare time and number of handoffs against current screenshot-only workflow.",
+      "sources": [
+        "eruda",
+        "devtools",
+        "microsoft",
+        "REM"
+      ],
+      "boundary": "Committed prototype parses; target iPad not tested. Resource Timing is not full request capture. Eruda realm and initialization coverage unverified. No response bodies or credentials in custom report by design; review URLs, labels and IDs."
+    },
+    {
+      "id": "develop.plan",
+      "name": "AI-directed browser evidence gathering",
+      "family": "development",
+      "priority": "P0",
+      "status": "candidate",
+      "intentions": [
+        "Find the selector",
+        "Gather the evidence ChatGPT needs"
+      ],
+      "why": "Lets an AI request focused follow-up observations rather than requiring the human to operate developer tools repeatedly.",
+      "mechanisms": [
+        "Paste JSON plan returned by ChatGPT; validate read-only operations inspect, controls, sources, resources; export results manually"
+      ],
+      "depends_on": [
+        "develop.inspect",
+        "intelligence.ask"
+      ],
+      "acceptance": "Give ChatGPT a real report; run its follow-up plan on the real website; use resulting evidence to make a meaningful userscript change.",
+      "week_later": "Prefer one plan round trip over several manual inspections; promote automation only if it improves this actual loop.",
+      "sources": [
+        "devtools",
+        "RSM",
+        "labx"
+      ],
+      "boundary": "No automatic reading of ChatGPT outputs or arbitrary JS execution. No clicking or writing in v0.1.1; no unattended agent."
+    },
+    {
+      "id": "intelligence.shortcut",
+      "name": "Native model transport canary",
+      "family": "development",
+      "priority": "P0",
+      "status": "candidate",
+      "intentions": [
+        "Ask ChatGPT from the pill",
+        "Return the answer"
+      ],
+      "why": "Can certify a supported subscription-based inference path without relying on automated web-chat extraction.",
+      "mechanisms": [
+        "Manual clipboard handoff; Apple Shortcuts Get Clipboard -> Use Model (ChatGPT) -> Copy to Clipboard; explicit invocation by pill"
+      ],
+      "depends_on": [
+        "intelligence.ask"
+      ],
+      "acceptance": "On iPad, copy a real contextual prompt, run AI Pill Ask, confirm model response, paste it into Safari; then investigate automatic return if justified.",
+      "week_later": "Only keep as default if it is faster than opening ChatGPT; retain browser handoff.",
+      "sources": [
+        "native_model",
+        "devtools",
+        "oauth"
+      ],
+      "boundary": "Requires an eligible device or supported ChatGPT app action; no assumption of installed Shortcut or automatic callback."
     }
   ],
   "workflows": [
@@ -767,9 +852,21 @@
         "control.dom",
         "control.recover"
       ]
+    },
+    {
+      "id": "userscript-fast-iteration",
+      "example": "Notice friction -> inspect or record -> copy report to ChatGPT -> run requested read-only plan -> update script -> reload -> verify",
+      "uses": [
+        "develop.inspect",
+        "develop.plan",
+        "intelligence.ask",
+        "compute.update",
+        "control.recover"
+      ]
     }
   ],
   "next_experiments": [
+    "Install AI_Pill.user.js v0.1.1 on iPad; inspect a real site element, record an interaction, copy report to ChatGPT and run a read-only plan. Test Eruda separately. Then test AI Pill Ask Shortcut; defer iSH.",
     "Choose one heavily used site and compare two or three representative recurring tasks in its stock and specialized UI; preserve existing scripts and validate on iPad Safari before changing defaults.",
     "Preserve existing AssistiveTouch double tap; manually test screenshot+question handoff.",
     "Enable Voice Control and test known native commands; then test dictation to a minimal DOM pill on GitHub/Kami.",
@@ -798,7 +895,8 @@
     "A local computation provider can be useful even if iPadOS never permits dependable background execution.",
     "A website is a source of capabilities and content; its default interface is not necessarily the best way for this person to access them.",
     "The AI is often more valuable at design time (generating and revising the user's interface) than at runtime (adding inference latency to common operations).",
-    "A collection of specialized userscripts is a legitimate core architecture; standardize only after discovering repeated needs, not to satisfy an abstract framework."
+    "A collection of specialized userscripts is a legitimate core architecture; standardize only after discovering repeated needs, not to satisfy an abstract framework.",
+    "The key acceleration is closing the evidence-to-code loop; DevTools is infrastructure for producing many specialized interfaces, not merely another feature."
   ],
   "site_scripts": {
     "purpose": "A collection of focused personal interface implementations. Existing code remains canonical in its own repository; this is a source index, not duplicate scripts or a universal injected runtime.",
