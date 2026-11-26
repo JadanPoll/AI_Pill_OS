@@ -986,7 +986,8 @@
   // version and observed state. This probe never submits a prompt or reads replies.
   const LINK_PING='link.ping.v1',LINK_HEART='link.heart.v1',LINK_INTERVAL=5000,LINK_TTL=25000;
   const instance=uid();
-  let selectedWorker=null;
+  let previousInstance=null,selectedWorker=null;
+  try{previousInstance=sessionStorage.getItem('ai-pill-pocket-instance.v1');sessionStorage.setItem('ai-pill-pocket-instance.v1',instance);}catch{}
   let linkBusy=false,linkTarget=null,challenge=null,lastProof=null,lastHeart=null,linkState='off',linkDetail='',linkError=null,linkSeq=0,lastChallengeAt=0,linkStarted=0;
   const linkEvents=journal.link;
   // Real, near-silent nonzero PCM in an HTML media element, not an oscillator
@@ -1028,7 +1029,7 @@
   function localPulse(){
     const now=Date.now(),gap=now-pulseAt;pulseAt=now;pulseCount++;pulseMaxGap=Math.max(pulseMaxGap,gap);
     if(gap>5000){pulseGaps.push({at:now,gapMs:gap,visibility:document.visibilityState});if(pulseGaps.length>20)pulseGaps.shift();linkLog('scheduler-gap',{gapMs:gap});}
-    if(awakeAudio){const t=awakeAudio.currentTime;if(audioPrev!==null&&Math.abs(t-audioPrev)>.03)audioProgressAt=now;audioPrev=t;if(chatURL(location.href)!==target)stopAwake('destination changed');}
+    if(awakeAudio){const t=awakeAudio.currentTime;if(audioPrev!==null&&Math.abs(t-audioPrev)>.03)audioProgressAt=now;audioPrev=t;if(chatURL(location.href)!==target||(selectedWorker&&selectedWorker!==instance))stopAwake('destination changed');}
     // Durable lightweight samples even if GM storage stops responding.
     try{sessionStorage.setItem('ai-pill-pocket-watchdog.v1',JSON.stringify(pulseSnapshot()));}catch{}
   }
@@ -1106,7 +1107,7 @@
       if(here===dest){
         // Upgrade old URL-only selection once; never let two tabs routinely
         // publish competing heartbeats for the same conversation.
-        if(!selectedWorker&&!document.hidden){await store.set(WORKER,{target:dest,worker:instance});const check=await store.get(WORKER);selectedWorker=check?.target===dest?check.worker:null;}
+        if((!selectedWorker||selectedWorker===previousInstance)&&!document.hidden){const current=await store.get(WORKER);if(!current||current.target!==dest||current.worker===previousInstance){await store.set(WORKER,{target:dest,worker:instance});const check=await store.get(WORKER);selectedWorker=check?.target===dest?check.worker:null;previousInstance=null;}}
         if(selectedWorker!==instance){paintLink('off','Same conversation, different receiver tab');return;}
         const ping=await store.get(LINK_PING);
         if(chatURL(location.href)!==dest)return;
@@ -1497,7 +1498,7 @@
       if(!sameTurn(a.baseline,current)){
         const all=turns('user'),baseIndex=all.findIndex(n=>a.baseline.id&&turnID(n)===a.baseline.id);
         const eligible=baseIndex>=0?all.slice(baseIndex+1):all.slice(-1);
-        const matches=eligible.filter(n=>turnText(n)===a.expected&&(!turnID(n)||!a.knownUserIds?.includes(turnID(n)))&&turnID(n)!==a.baseline.id);
+        const matches=eligible.filter(n=>turnText(n)===a.expected&&(!turnID(n)||!a.knownUserIds?.includes(turnID(n)))&&(!a.baseline.id||turnID(n)!==a.baseline.id));
         if(matches.length!==1){await finishAsk(a,'uncertain','Original turn not identified · other chat activity is allowed');return;}
         const matched=matches[0];a.user={count:all.length,id:turnID(matched),text:turnText(matched)};
         testStage(r,'user-verified','New user turn matched submitted text',{userId:current.id,userCount:current.count});
