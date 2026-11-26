@@ -1,6 +1,6 @@
 {
   "schema": "ai_pill_os.rsm_investigation",
-  "version": 4,
+  "version": 5,
   "updated": "2026-11-25",
   "parent_purpose": "Reduce mechanical distance from human intention to useful realization; preserve agency, context, and recoverability.",
   "scope": "Safari-first personal computing: direct touch for low-information operations, dictation and AI collaboration for high-information intentions, universal pill plus contextual mini-pills, local working state and context-aware canonical persistence.",
@@ -91,7 +91,12 @@
     "ipad_windows": "https://support.apple.com/en-us/125309",
     "dictation": "https://support.apple.com/guide/ipad/dictate-text-ipad5d3e5653/ipados",
     "speech_api": "https://developer.mozilla.org/en-US/docs/Web/API/SpeechRecognition",
-    "clipboard_api": "https://developer.mozilla.org/en-US/docs/Web/API/Clipboard_API"
+    "clipboard_api": "https://developer.mozilla.org/en-US/docs/Web/API/Clipboard_API",
+    "snapdom": "https://github.com/zumerlab/snapdom",
+    "snapdom_clip": "https://github.com/zumerlab/snapdom/blob/main/__tests__/core.clip.test.js",
+    "safari_capture_apple": "https://developer.apple.com/documentation/safariservices/assessing-your-safari-web-extension-s-browser-compatibility",
+    "safari_capture_mdn": "https://github.com/mdn/browser-compat-data/blob/main/webextensions/api/tabs.json",
+    "webkit_clipboard": "https://webkit.org/blog/10855/async-clipboard-api/"
   },
   "question_tree": [
     {
@@ -765,18 +770,23 @@
       ],
       "status": "parallel_device_test",
       "why": "Visual debugging needs several ordered observations; screenshots are not interchangeable with DOM reconstruction.",
-      "model": "Capture rectangle -> ordered tray -> numbered composite or individual files; native actual pixels via screenshot import; DOM-rendered images labeled reconstructed. Text/HTML/JSON/file references share evidence identity and source, not necessarily same binary storage.",
+      "model": "Separate actual pixels from DOM reconstruction. One SnapDOM region-clipping trial (SVG rendering, no custom CSS painter), with independent native image import and composite export; extension pixel capture requires actual supported API/manager access.",
       "belief": "Clipboard supports PNG on modern browsers with user activation constraints. Cross-origin canvas/frame fidelity and manager large payload limits unresolved.",
-      "certificate": "Existing Copy Screenshot branch remains pixel-accurate fallback; universal tray should not promise privileged tab capture. No binary storage claim until measured. Ordered text tray implemented in Pocket v0.2.1; rectangle/image capture remains open.",
+      "certificate": "Existing Copy Screenshot branch remains pixel-accurate fallback; universal tray should not promise privileged tab capture. No binary storage claim until measured. Ordered text tray implemented in Pocket v0.2.1; rectangle/image capture remains open. Safari screenshots show html2canvas-pro parsing failure on ChatGPT and unfinished Grokipedia capture; source inspection of SnapDOM core.clip.test.js and type declarations establishes page-coordinate region clipping and offscreen culling, not device fidelity.",
       "evidence": [
         "clipboard_api",
         "copy_screenshot",
         "pocket",
-        "atlas"
+        "atlas",
+        "snapdom",
+        "snapdom_clip",
+        "safari_capture_apple",
+        "safari_capture_mdn",
+        "webkit_clipboard"
       ],
-      "stop": "Capture three regions of one real UI issue, preserving order and legibility, transfer in one user action where possible. If DOM fails on remote/PDF, use native screenshot import; if large images exceed GM quota, use files/references. No generalized media vault.",
+      "stop": "One representative SnapDOM capture on each of Grokipedia and ChatGPT; if either remains unreliable, stop renderer replacement and prioritize native import + composite. Success requires legible image, correct region, no freeze, paste; no claim of general pixel fidelity. Reopen only if a specific working pixel capture interface becomes available.",
       "reopen": "Reopen on actual fidelity, attachment or storage failure.",
-      "next": "Prototype crop/import and composite export; test one real GitHub/Kami and opaque canvas case. Keep images local until explicit transfer.",
+      "next": "Pocket v0.3.2: repeat exact failing real pages; verify 12s async deadline, not synchronous freeze cure. Import two native screenshots and composite separately to discriminate capture from storage/clipboard.",
       "depends_on": [
         "I14"
       ]
