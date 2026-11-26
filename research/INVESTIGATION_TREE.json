@@ -1,6 +1,6 @@
 {
   "schema": "ai_pill_os.rsm_investigation",
-  "version": 14,
+  "version": 15,
   "updated": "2026-11-25",
   "parent_purpose": "Asymptotically reduce the mechanical distance from human intention to useful realization, preserving attention, agency, intellectual continuity and recoverability. Optimize the complete recurring human–AI loop, not a browser transport.",
   "scope": "Safari-first personal computing: direct touch for low-information operations, dictation and AI collaboration for high-information intentions, universal pill plus contextual mini-pills, local working state and context-aware canonical persistence.",
@@ -109,7 +109,9 @@
     "lumen": "https://github.com/brgv-code/lumen",
     "openclip": "https://github.com/ganeshmshetty/openclip",
     "eisonai": "https://github.com/qoli/eisonAI",
-    "select_to_ai": "https://github.com/arnav-goel10/select-to-ai"
+    "select_to_ai": "https://github.com/arnav-goel10/select-to-ai",
+    "swarm_heartbeat": "https://github.com/JadanPoll/SwarmX/blob/main/Tamperworker.user.js#L374-L403",
+    "labx_heartbeat": "https://github.com/JadanPoll/LabX/blob/main/hub/labx_bridge.user.js#L343-L359"
   },
   "question_tree": [
     {
@@ -761,11 +763,11 @@
         "Q5.1",
         "Q5.2"
       ],
-      "status": "pruned_manual_relay",
+      "status": "background_liveness_probe",
       "why": "Minimize switching while retaining the correct AI conversation and explicit user control.",
-      "model": "Reuse exact conversation target and existing GM handoff keys; add independent delivery receipt and user-supplied reply keyed by original request ID. Poll only lightweight handoff metadata while source panel or selected chat is visible; no automatic provider submission or response extraction. Preserve explicit manual chat workflow and native companion window option. Transport is a probe, not the final interaction design.",
+      "model": "Keep Notes and Ask primary controls; context capture belongs inside both. Distinguish fresh heartbeat, correlated round trip, observed composer/stop-control state and real inference. Single foreground challenge slot is deliberate minimal scope; no server, no new permissions or automatic provider interaction.",
       "belief": "Consumer ChatGPT terms restrict automatic/programmatic extraction; Google terms restrict automated access contrary to machine-readable instructions. LabX code contains consumer UI adapters but no live certification; do not port unattended submission/response harvesting. Account plans have limits.",
-      "certificate": "LabX uses task/attempt identity, stale guards, conversation attribution and explicit failure recovery. Its state audit models rather than proves the browser. Safari can display multiple windows; exact existing-tab focus and background wake need testing. Pocket 0.5.9 actual handoff functions exercised in four simulated tabs with shared asynchronous storage: request with evidence, exact target, delivery receipt, separate copy receipt, preservation of reply draft during polling, source reply without reload, source reload, unrelated route isolation, dismissal preserving tray/target all passed. 0.5.10 also retains copied active question when additional requests arrive; syntax checked. No actual Safari scheduling or live inference certificate. User reported horrible experience and lost gold selection in v0.5.10. Screenshot shows a non-gold pill on an existing conversation; exact cause not established. Current code stops polling when hidden. The manual reply flow increases human work and is rejected as a product direction regardless of whether its transport functions correctly.",
+      "certificate": "LabX uses task/attempt identity, stale guards, conversation attribution and explicit failure recovery. Its state audit models rather than proves the browser. Safari can display multiple windows; exact existing-tab focus and background wake need testing. Pocket 0.5.9 actual handoff functions exercised in four simulated tabs with shared asynchronous storage: request with evidence, exact target, delivery receipt, separate copy receipt, preservation of reply draft during polling, source reply without reload, source reload, unrelated route isolation, dismissal preserving tray/target all passed. 0.5.10 also retains copied active question when additional requests arrive; syntax checked. No actual Safari scheduling or live inference certificate. User reported horrible experience and lost gold selection in v0.5.10. Screenshot shows a non-gold pill on an existing conversation; exact cause not established. Current code stops polling when hidden. The manual reply flow increases human work and is rejected as a product direction regardless of whether its transport functions correctly. Inspected LabX hub/labx_bridge.user.js lines 343–359, 450–477, 699–712 and SwarmX Tamperworker.user.js lines 374–403: independent heartbeat, identity, observed status, throttling and lifecycle handling. LabX explicitly forbids starting new submission from hidden tab; no evidence of Safari background scheduling. Pocket v0.6.3 local GM heartbeat uses exact selected route, worker identity, sequence, timestamp, visibility and echoed nonce. Ten simulated checks passed across three contexts with controlled time, including hidden acknowledgment, wrong route, responding/missing editor, expiry/recovery and destination changes. Actual Safari still pending.",
       "evidence": [
         "labx_bridge",
         "labx_audit",
@@ -773,11 +775,13 @@
         "openai_terms",
         "google_terms",
         "ipad_windows",
-        "gm_manager"
+        "gm_manager",
+        "swarm_heartbeat",
+        "labx_heartbeat"
       ],
-      "stop": "Existing manual flow is sufficient as fallback, not a speed-of-thought success. Do not require proof of background communication without a useful, supported inference path.",
+      "stop": "A source page receives fresh nonce-matched echo from selected ChatGPT tab with hidden=true, without leaving source. Green means transport is alive and editor detected, not a guarantee that inference accepts requests. Expiration and state changes are observable.",
       "reopen": "A specific candidate architecture materially benefits from background messaging, with no comparable cheaper mechanism.",
-      "next": "No further manual-relay product polishing or device verification. Keep durable handoff as fallback. Reopen tab transport only if a supported end-to-end architecture selected by I21 depends on it.",
+      "next": "Pocket v0.6.3: while remaining on a source page, observe Ask accent and connection report. Fresh nonce-matched acknowledgment from selected hidden chat certifies cross-origin background round trip; stale after missed heartbeat distinguishes loss of observation from proof of closure. No provider submission/extraction. Reopen mechanism only on real observed failure.",
       "depends_on": [
         "I15"
       ]
@@ -987,6 +991,7 @@
     }
   ],
   "active_queue": [
+    "I16",
     "I21",
     "I12",
     "I15",
@@ -1063,6 +1068,11 @@
       "date": "2026-11-25",
       "decision": "Recenter on speed of thought: add Q7 utility and comparative flow questions, Q3.5 experience-first precedents, Q5.6 continuity. Prune manual-relay branch I16; prioritize I21 and I12. Keep implementation unchanged pending evidence.",
       "method": "RSM parent purpose and question/investigation distinction; REM subtractive UX"
+    },
+    {
+      "date": "2026-11-26",
+      "decision": "User removes Point as a primary control; capture lives behind Notes and Ask. Reuse LabX and SwarmX independent heartbeat/state concepts for real hidden-tab communication; no inference integration yet.",
+      "method": "REM subtractive interaction; RSM constituent verification"
     }
   ],
   "functional_intent": {
