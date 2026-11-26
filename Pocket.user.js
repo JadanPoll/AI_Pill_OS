@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         AI Pill OS - Pocket
 // @namespace    https://github.com/JadanPoll/AI_Pill_OS
-// @version      0.5.4
+// @version      0.5.5
 // @updateURL    https://raw.githubusercontent.com/JadanPoll/AI_Pill_OS/main/Pocket.user.js
 // @downloadURL  https://raw.githubusercontent.com/JadanPoll/AI_Pill_OS/main/Pocket.user.js
 // @description  Universal Safari pill: collect evidence, keep discoveries, and hand a question to a chosen chat.
@@ -15,15 +15,13 @@
 // @grant        GM_setValue
 // @grant        GM_listValues
 // @grant        GM_deleteValue
-// @inject-into  content
-// @require      https://cdn.jsdelivr.net/npm/@zumer/snapdom@3.8.3/dist/snapdom.js
 // @run-at       document-idle
 // @noframes
 // ==/UserScript==
 (() => {
   'use strict';
   if (window.top !== window) return;
-  const VERSION='0.5.4';
+  const VERSION='0.5.5';
   // Report initialization failures without depending on the main UI, storage or a CDN.
   function bootFailure(error,phase){
     const message=String(error?.message||error).slice(0,500);
@@ -173,16 +171,22 @@
       await navigator.clipboard.write([new ClipboardItem({'image/png':blob})]);status('Images copied. Paste into chat; Ask includes text evidence separately.');
     }catch(e){try{const b=await blob;const u=URL.createObjectURL(b);const link=document.createElement('a');link.href=u;link.download='pocket-captures.png';link.click();setTimeout(()=>URL.revokeObjectURL(u),30000);status('Image clipboard unavailable; PNG download requested.');}catch(err){status('Image export failed: '+err.message);}}
   }
-  // SnapDOM classic bundle is downloaded by the userscript manager at installation, not imported by the website.
+  // The optional classic bundle is packaged at build time, never imported or fetched for execution at runtime.
   const CAPTURE_KEY='capture.last.v1';
   let captureRun=null,latestCapture=null,selecting=false;
   const RENDERER='snapdom@3.8.3', RENDERER_URL='https://cdn.jsdelivr.net/npm/@zumer/snapdom@3.8.3/dist/snapdom.mjs';
   const CLASSIC_URL=RENDERER_URL.replace('.mjs','.js');
+  const BUNDLE_PRESENT=false; // BUILD_FLAG
+  function bundledRenderer(){
+    /* SNAPDOM_BUILD_SLOT */
+    return null;
+  }
   let captureLib=null,rendererPending=false;
   async function loadRenderer(){
     if(captureLib)return captureLib;
-    const lib=window.snapdom;
-    if(typeof lib!=='function'||typeof lib.toCanvas!=='function')throw Error('Manager-provided SnapDOM classic bundle unavailable in content context');
+    if(!BUNDLE_PRESENT)throw Error('Renderer not packaged. Install the bundled Pocket from the build page.');
+    const lib=bundledRenderer();
+    if(typeof lib!=='function'||typeof lib.toCanvas!=='function')throw Error('Packaged SnapDOM API unavailable');
     captureLib=lib;return lib;
   }
   // Evidence only: same pinned distribution, independent transport probes, no retry or eval.
@@ -190,7 +194,7 @@
   const diagError=e=>({name:e?.name||'',message:String(e?.message||e),stack:String(e?.stack||'').slice(0,4000)});
   function diagURL(v){if(!v)return '';try{const u=new URL(v,location.href);return u.origin+u.pathname;}catch{return String(v).slice(0,180);}}
   function depResources(){return performance.getEntriesByType('resource').filter(e=>/snapdom|jsdelivr|unpkg/.test(e.name)).map(e=>({url:diagURL(e.name),initiatorType:e.initiatorType,startTime:e.startTime,duration:e.duration,fetchStart:e.fetchStart,redirectStart:e.redirectStart,redirectEnd:e.redirectEnd,domainLookupStart:e.domainLookupStart,domainLookupEnd:e.domainLookupEnd,connectStart:e.connectStart,connectEnd:e.connectEnd,secureConnectionStart:e.secureConnectionStart,requestStart:e.requestStart,responseStart:e.responseStart,responseEnd:e.responseEnd,transferSize:e.transferSize,encodedBodySize:e.encodedBodySize,decodedBodySize:e.decodedBodySize,nextHopProtocol:e.nextHopProtocol,responseStatus:e.responseStatus??null}));}
-  function depEnvironment(){return {ua:navigator.userAgent,platform:navigator.platform,secureContext:isSecureContext,origin:location.origin,online:navigator.onLine,visibility:document.visibilityState,devicePixelRatio,viewport:[innerWidth,innerHeight],visualViewport:window.visualViewport?{width:visualViewport.width,height:visualViewport.height,scale:visualViewport.scale,offsetLeft:visualViewport.offsetLeft,offsetTop:visualViewport.offsetTop}:null,features:{fetch:typeof fetch,snapdomGlobal:typeof window.snapdom,snapdomMethods:Object.keys(window.snapdom||{}),createImageBitmap:typeof createImageBitmap,GM:typeof GM,GM_xmlhttpRequest:typeof GM_xmlhttpRequest,clipboardRead:!!navigator.clipboard?.read,clipboardWrite:!!navigator.clipboard?.write,ClipboardItem:typeof ClipboardItem,cryptoDigest:!!globalThis.crypto?.subtle,foreignObject:typeof SVGForeignObjectElement},cspMeta:[...document.querySelectorAll('meta[http-equiv="Content-Security-Policy" i]')].map(e=>e.content)};}
+  function depEnvironment(){return {ua:navigator.userAgent,platform:navigator.platform,secureContext:isSecureContext,origin:location.origin,online:navigator.onLine,visibility:document.visibilityState,devicePixelRatio,viewport:[innerWidth,innerHeight],visualViewport:window.visualViewport?{width:visualViewport.width,height:visualViewport.height,scale:visualViewport.scale,offsetLeft:visualViewport.offsetLeft,offsetTop:visualViewport.offsetTop}:null,features:{fetch:typeof fetch,bundlePresent:BUNDLE_PRESENT,snapdomGlobal:typeof window.snapdom,snapdomMethods:Object.keys(window.snapdom||{}),createImageBitmap:typeof createImageBitmap,GM:typeof GM,GM_xmlhttpRequest:typeof GM_xmlhttpRequest,clipboardRead:!!navigator.clipboard?.read,clipboardWrite:!!navigator.clipboard?.write,ClipboardItem:typeof ClipboardItem,cryptoDigest:!!globalThis.crypto?.subtle,foreignObject:typeof SVGForeignObjectElement},cspMeta:[...document.querySelectorAll('meta[http-equiv="Content-Security-Policy" i]')].map(e=>e.content)};}
   async function depFetch(url){
     const start=performance.now(),ac=new AbortController(),timer=setTimeout(()=>ac.abort(),10000);
     try{
@@ -288,7 +292,7 @@
   async function runCapture(region){
     if(captureRun||busy)return;
     const {x,y,w,h,sx,sy,source}=region,controller=new AbortController();
-    const run={started:performance.now(),controller,report:{version:VERSION,renderer:RENDERER,source,time:new Date().toISOString(),viewport:[innerWidth,innerHeight],documentSize:[document.documentElement.scrollWidth,document.documentElement.scrollHeight],region:[x,y,w,h],scroll:[sx,sy],events:[],rendererURL:CLASSIC_URL,delivery:'manager @require / content',environment:depEnvironment(),browserEvents:[]}};
+    const run={started:performance.now(),controller,report:{version:VERSION,renderer:RENDERER,source,time:new Date().toISOString(),viewport:[innerWidth,innerHeight],documentSize:[document.documentElement.scrollWidth,document.documentElement.scrollHeight],region:[x,y,w,h],scroll:[sx,sy],events:[],rendererURL:CLASSIC_URL,delivery:BUNDLE_PRESENT?'local classic bundle':'unbundled recovery',environment:depEnvironment(),browserEvents:[]}};
     captureRun=run;busy=true;$('capture-cancel').hidden=false;
     let watchdog,clock;
     const browserEvent=(type,detail)=>{if(run.report.browserEvents.length<80)run.report.browserEvents.push({ms:Math.round(performance.now()-run.started),type,...detail});};
@@ -339,7 +343,7 @@
     }catch(err){
       const failedAt=run.report.stage;
       run.report.error={stage:failedAt,message:redactCSS(String(err?.message||err)),stack:String(err?.stack||'').replace(/https?:\/\/[^\s)]+/g,m=>m.includes('snapdom')?m:'[url omitted]').slice(0,1800)};
-      if(failedAt==='loading renderer'){run.report.managerBundle={expected:CLASSIC_URL,global:typeof window.snapdom,methods:Object.keys(window.snapdom||{})};await checkpointCapture(run);try{await probeFailedDependency(run);}catch(e){run.report.diagnosticError=diagError(e);}}
+      if(failedAt==='loading renderer'){run.report.bundle={present:BUNDLE_PRESENT,expected:CLASSIC_URL,global:typeof window.snapdom,methods:Object.keys(window.snapdom||{})};await checkpointCapture(run);}
       recordCapture(run,'failed');status('Capture failed at '+failedAt+' · '+run.report.error.message+' · More → Copy capture report');
     }finally{
       clearTimeout(watchdog);clearInterval(clock);
@@ -352,7 +356,7 @@
   action('capture-report',async()=>{
     const report=latestCapture||await store?.get(CAPTURE_KEY)||{version:VERSION,rendererLoaded:!!captureLib,stage:'no capture attempted'};
     const images=[...tray,...records].filter(r=>r.image).slice(-12).map(r=>({id:r.id,renderer:r.renderer||null,characters:String(r.image).length,format:String(r.image).split(',')[0].slice(0,50),storedDimensions:r.storedDimensions||null}));
-    const output={...report,rendererLoaded:!!captureLib,managerBundle:{url:CLASSIC_URL,global:typeof window.snapdom,methods:Object.keys(window.snapdom||{})},storage:modern?'modern GM':legacy?'legacy GM':'unavailable',imageRecords:images,resourceTiming:depResources()};
+    const output={...report,rendererLoaded:!!captureLib,bundle:{present:BUNDLE_PRESENT,url:CLASSIC_URL,loaded:!!captureLib},storage:modern?'modern GM':legacy?'legacy GM':'unavailable',imageRecords:images,resourceTiming:depResources()};
     await copyText(JSON.stringify(output,null,2));
   });
   // Native bitmap acquisition is separate from crop geometry. No DOM renderer or network dependency.
