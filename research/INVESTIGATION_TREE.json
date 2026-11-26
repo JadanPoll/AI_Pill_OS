@@ -1,8 +1,8 @@
 {
   "schema": "ai_pill_os.rsm_investigation",
-  "version": 13,
+  "version": 14,
   "updated": "2026-11-25",
-  "parent_purpose": "Reduce mechanical distance from human intention to useful realization; preserve agency, context, and recoverability.",
+  "parent_purpose": "Asymptotically reduce the mechanical distance from human intention to useful realization, preserving attention, agency, intellectual continuity and recoverability. Optimize the complete recurring human–AI loop, not a browser transport.",
   "scope": "Safari-first personal computing: direct touch for low-information operations, dictation and AI collaboration for high-information intentions, universal pill plus contextual mini-pills, local working state and context-aware canonical persistence.",
   "method_trace": [
     {
@@ -29,6 +29,11 @@
       "decision": "Stop or defer branches when answers no longer change action",
       "clause": "RSM-02.05–02.06; RSM-04.07",
       "why": "Bound cost and preserve reopening conditions."
+    },
+    {
+      "decision": "Reject a working constituent mechanism when the composed human workflow becomes worse",
+      "clause": "RSM-02.09–02.12; RSM-05.01–05.02; REM-04.03",
+      "why": "User rejected manual relay; optimize parent purpose and compare complete workflow rather than certify isolated transport."
     }
   ],
   "sources": {
@@ -99,14 +104,22 @@
     "webkit_clipboard": "https://webkit.org/blog/10855/async-clipboard-api/",
     "manager_require": "https://github.com/quoid/userscripts/blob/main/README.md#userscript-metadata",
     "snapdom_exporter": "https://github.com/zumerlab/snapdom/blob/v3.8.3/src/exporters/toCanvas.js",
-    "manager_concat": "https://github.com/quoid/userscripts/blob/main/xcode/Ext-Safari/Functions.swift#L1299-L1310"
+    "manager_concat": "https://github.com/quoid/userscripts/blob/main/xcode/Ext-Safari/Functions.swift#L1299-L1310",
+    "aski": "https://github.com/jxmnhm/aski",
+    "lumen": "https://github.com/brgv-code/lumen",
+    "openclip": "https://github.com/ganeshmshetty/openclip",
+    "eisonai": "https://github.com/qoli/eisonAI",
+    "select_to_ai": "https://github.com/arnav-goel10/select-to-ai"
   },
   "question_tree": [
     {
       "id": "Q0",
       "parent": null,
       "question": "Can I operate at the speed of thought?",
-      "why": "Recover the goal independent of implementations."
+      "why": "Recover the goal independent of implementations.",
+      "children": [
+        "Q7"
+      ]
     },
     {
       "id": "Q1",
@@ -168,7 +181,8 @@
         "Q3.1",
         "Q3.2",
         "Q3.3",
-        "Q3.4"
+        "Q3.4",
+        "Q3.5"
       ]
     },
     {
@@ -245,7 +259,8 @@
         "Q5.2",
         "Q5.3",
         "Q5.4",
-        "Q5.5"
+        "Q5.5",
+        "Q5.6"
       ]
     },
     {
@@ -330,6 +345,61 @@
       "parent": "Q6",
       "question": "How far can manager-native version/update/rollback features eliminate script delivery overhead?",
       "why": "Do not create a loader until manager limits are observed."
+    },
+    {
+      "id": "Q7",
+      "parent": "Q0",
+      "question": "Which complete recurring intention-to-result loops actually become easier than the existing workflow?",
+      "why": "Primary decision criterion; a functioning component does not establish usefulness.",
+      "children": [
+        "Q7.1",
+        "Q7.2",
+        "Q7.3",
+        "Q7.4",
+        "Q7.5"
+      ]
+    },
+    {
+      "id": "Q7.1",
+      "parent": "Q7",
+      "question": "What are the baseline human actions, attention switches, re-explanation, waiting and recovery costs for a quick question, deeper inquiry, direct operation and engineering investigation?",
+      "why": "Measure marginal human burden, including the cost of building and verifying the tool."
+    },
+    {
+      "id": "Q7.2",
+      "parent": "Q7",
+      "question": "Can the human express a question once, continue reading, and encounter the answer at the point of need without manually relaying it?",
+      "why": "Quick inquiry is the first target; no mandatory tray or chat UI."
+    },
+    {
+      "id": "Q7.3",
+      "parent": "Q7",
+      "question": "When does a persistent conversation materially improve the result versus a self-contained quick answer with source context?",
+      "why": "Avoid assuming that quick questions must use the same provider thread; preserve continuity when it matters."
+    },
+    {
+      "id": "Q7.4",
+      "parent": "Q7",
+      "question": "Which work should be immediate and deterministic, which should return asynchronously, and which warrants sustained dialogue or explicit approval?",
+      "why": "Different interaction timescales; no universal chatbot interface."
+    },
+    {
+      "id": "Q7.5",
+      "parent": "Q7",
+      "question": "What survives a week of ordinary use without instructions, and which features should be removed?",
+      "why": "Cold demo and forgotten-operation return; compare to native baseline."
+    },
+    {
+      "id": "Q3.5",
+      "parent": "Q3",
+      "question": "What existing implementations deliver a contextual answer in a lightweight popover, or run an investigation while the user continues working?",
+      "why": "Search by the experience, not by an assumed tab transport. Compare supported inference, existing native surfaces, and user-controlled companion views."
+    },
+    {
+      "id": "Q5.6",
+      "parent": "Q5",
+      "question": "What minimal identity, context and state must remain continuous across quick answers, deeper conversations and deferred results?",
+      "why": "Separate human intellectual continuity from implementation-specific tab IDs and exact provider thread identity."
     }
   ],
   "investigations": [
@@ -594,9 +664,11 @@
         "Q5.3",
         "Q6.2",
         "Q6.3",
-        "Q1.3"
+        "Q1.3",
+        "Q7.1",
+        "Q7.5"
       ],
-      "status": "active_after_capture",
+      "status": "active_priority",
       "why": "Measure whole-system value rather than isolated functionality.",
       "model": "Representative workflow = encounter -> evidence -> inference -> reviewed result -> persistent source or changed script -> verify. Repeated commands become deterministic affordances.",
       "belief": "Prior scripts demonstrate design pattern; new end-to-end utility and retention unmeasured.",
@@ -608,7 +680,7 @@
       ],
       "stop": "One real Kami research result retained, one real userscript defect improved, one week/month rediscovery review. Stop adding controls if no actual demand; compare against prior workflow.",
       "reopen": "Reopen for observed failures, lost provenance, or unused controls.",
-      "next": "Use web chat and Safari DevTools to complete one real userscript fix and one source-linked capture; compare transfer and rediscovery cost after a week.",
+      "next": "Use the observed friction of actual Pocket and standard browser/chat workflows as baseline; compare quick inquiry, deep inquiry, engineering evidence and deterministic action by human interventions and interruption/recovery costs. No formal tracking UI.",
       "depends_on": [
         "I13",
         "I14"
@@ -689,11 +761,11 @@
         "Q5.1",
         "Q5.2"
       ],
-      "status": "implemented_awaiting_device",
+      "status": "pruned_manual_relay",
       "why": "Minimize switching while retaining the correct AI conversation and explicit user control.",
       "model": "Reuse exact conversation target and existing GM handoff keys; add independent delivery receipt and user-supplied reply keyed by original request ID. Poll only lightweight handoff metadata while source panel or selected chat is visible; no automatic provider submission or response extraction. Preserve explicit manual chat workflow and native companion window option. Transport is a probe, not the final interaction design.",
       "belief": "Consumer ChatGPT terms restrict automatic/programmatic extraction; Google terms restrict automated access contrary to machine-readable instructions. LabX code contains consumer UI adapters but no live certification; do not port unattended submission/response harvesting. Account plans have limits.",
-      "certificate": "LabX uses task/attempt identity, stale guards, conversation attribution and explicit failure recovery. Its state audit models rather than proves the browser. Safari can display multiple windows; exact existing-tab focus and background wake need testing. Pocket 0.5.9 actual handoff functions exercised in four simulated tabs with shared asynchronous storage: request with evidence, exact target, delivery receipt, separate copy receipt, preservation of reply draft during polling, source reply without reload, source reload, unrelated route isolation, dismissal preserving tray/target all passed. 0.5.10 also retains copied active question when additional requests arrive; syntax checked. No actual Safari scheduling or live inference certificate.",
+      "certificate": "LabX uses task/attempt identity, stale guards, conversation attribution and explicit failure recovery. Its state audit models rather than proves the browser. Safari can display multiple windows; exact existing-tab focus and background wake need testing. Pocket 0.5.9 actual handoff functions exercised in four simulated tabs with shared asynchronous storage: request with evidence, exact target, delivery receipt, separate copy receipt, preservation of reply draft during polling, source reply without reload, source reload, unrelated route isolation, dismissal preserving tray/target all passed. 0.5.10 also retains copied active question when additional requests arrive; syntax checked. No actual Safari scheduling or live inference certificate. User reported horrible experience and lost gold selection in v0.5.10. Screenshot shows a non-gold pill on an existing conversation; exact cause not established. Current code stops polling when hidden. The manual reply flow increases human work and is rejected as a product direction regardless of whether its transport functions correctly.",
       "evidence": [
         "labx_bridge",
         "labx_audit",
@@ -703,9 +775,9 @@
         "ipad_windows",
         "gm_manager"
       ],
-      "stop": "Transport probe passes when real source receives its correlated user-returned reply without reload and no wrong conversation receives it. Long-term zero-switch experience requires a supported inference integration or interactive companion; do not add queues/dashboards merely to improve this transitional workflow.",
-      "reopen": "Reopen if switching or manual transfer repeatedly dominates whole workflow and a supported alternative is available.",
-      "next": "Use an existing specific chat, not a new-chat homepage. One real question, manually copy/paste/send in companion chat and return the answer through Pocket; source panel should update without reload. If transport works, evaluate supported low-friction inference mechanisms rather than treating manual clipboard relay as the end state.",
+      "stop": "Existing manual flow is sufficient as fallback, not a speed-of-thought success. Do not require proof of background communication without a useful, supported inference path.",
+      "reopen": "A specific candidate architecture materially benefits from background messaging, with no comparable cheaper mechanism.",
+      "next": "No further manual-relay product polishing or device verification. Keep durable handoff as fallback. Reopen tab transport only if a supported end-to-end architecture selected by I21 depends on it.",
       "depends_on": [
         "I15"
       ]
@@ -821,6 +893,35 @@
       "depends_on": [
         "I15"
       ]
+    },
+    {
+      "id": "I21",
+      "questions": [
+        "Q7.2",
+        "Q7.3",
+        "Q7.4",
+        "Q3.5",
+        "Q5.6"
+      ],
+      "status": "active_priority",
+      "why": "The critical gap is low-friction realization of an intention, not message plumbing.",
+      "model": "Separate expression, context resolution, execution/inference, result presentation and optional persistence. Quick inquiry: speak/point -> answer in place or when ready -> continue. Deep inquiry: actual conversation when valuable. Familiar action: direct command. Investigation: evidence plus asynchronous work and meaningful checkpoints. Compare native supported actions, inline inference with explicitly authorized provider, existing multi-view browser, and ordinary direct chat baseline.",
+      "belief": "Existing open-source desktop/browser precedents establish useful interaction patterns, not Safari compatibility or same ChatGPT thread access. No assumption that separate API sessions inherit consumer conversation state. Use background-tab messaging only when justified by chosen supported mechanism.",
+      "certificate": "User rejected manual message relay. Existing capture and early console journal produced real utility; transport-only simulated passes did not. Candidate repositories identified from public descriptions: Aski, Lumen, OpenClip, EisonAI, select-to-ai; implementation source audit pending. No new runtime or device test.",
+      "evidence": [
+        "aski",
+        "lumen",
+        "openclip",
+        "eisonai",
+        "select_to_ai",
+        "rsm",
+        "pocket",
+        "openai_terms"
+      ],
+      "stop": "Select the cheapest supported mechanism that can beat existing browser/chat use on one recurring real quick inquiry. Before any human test, inspect working implementation and applicable platform/API contracts. Demonstration: ask once from source, see answer with no manual relay and no lost place, dismiss and continue. Deep inquiry may use direct chat. If no viable mechanism, keep direct chat rather than increase friction.",
+      "reopen": "New working precedent, supported integration, or actual repeated friction sufficient to justify cost.",
+      "next": "Inspect EisonAI for actual iPad Safari/native inference boundary; Aski and Lumen for quick-answer presentation and context resolution; OpenClip and select-to-ai for intent/action factoring. Compare exact code paths and authorization, deployment and cost; do not port desktop UI or assume background tab execution.",
+      "depends_on": []
     }
   ],
   "relationships": [
@@ -886,13 +987,13 @@
     }
   ],
   "active_queue": [
+    "I21",
+    "I12",
     "I15",
     "I14",
     "I19",
-    "I16",
     "I17",
-    "I20",
-    "I12"
+    "I20"
   ],
   "conditional_queue": [
     "I1",
@@ -905,7 +1006,7 @@
     "I10",
     "I11"
   ],
-  "global_stop": "Use the environment after one actual cross-site handoff, one useful multi-region visual debugging flow, one verified source-linked persistence action, and one script update/rollback with retained data. Do not demand unattended AI transport or universal native control before use. Reopen only concrete recurrent friction after a week/month.",
+  "global_stop": "A recurring real workflow must beat the direct existing workflow on human interventions, attention interruption and recovery cost while preserving useful output and agency. No obligation to realize every possible capability. Stop adding mechanisms once sufficient for the parent goal; reopen on actual recurrent friction. Manual relay is not a success criterion.",
   "limitations": "Source review and user-relayed prior experiments only. Drive root metadata inspected privately; no private IDs/content copied into public repository. No new device execution, provider automation, data migration or installation. Browser manager/version and support/authorization for any automated inference must be established separately.",
   "trajectory": [
     {
@@ -957,6 +1058,11 @@
       "date": "2026-11-25",
       "decision": "Apply REM cold-demo and forgotten-operation return tests. Reuse existing request path and extend with delivery receipt and reply; no server, new app, message dashboard, or automated consumer model access. Treat human-mediated relay as transport experiment, not desired final UX.",
       "method": "REM-02.05; REM-04.03"
+    },
+    {
+      "date": "2026-11-25",
+      "decision": "Recenter on speed of thought: add Q7 utility and comparative flow questions, Q3.5 experience-first precedents, Q5.6 continuity. Prune manual-relay branch I16; prioritize I21 and I12. Keep implementation unchanged pending evidence.",
+      "method": "RSM parent purpose and question/investigation distinction; REM subtractive UX"
     }
   ],
   "functional_intent": {
@@ -970,7 +1076,7 @@
       "One update interface with version inspection, rollback and copyable diagnostics",
       "Context-aware routing with explicit requested persistence; preserve canonical ownership"
     ],
-    "aspiration": "From a reading/engineering tab, speak a question and receive the answer without leaving the work. Background submission and response delivery are desired, not established or authorized via arbitrary consumer UI automation.",
+    "aspiration": "At the moment of a thought, speak, point or act; context is resolved with minimal explicit work; an answer, useful action or investigation result becomes available in context. Continue thinking rather than operating the transport. Use a full conversation only when depth or continuity warrants it.",
     "unsettled": [
       "Browser lifecycle and GM manager support",
       "Supported model transport for return to source without automatic extraction",
