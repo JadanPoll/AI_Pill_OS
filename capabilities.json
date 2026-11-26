@@ -1,6 +1,6 @@
 {
   "schema": "ai_pill_os.capability_atlas",
-  "version": 4,
+  "version": 5,
   "updated": "2026-11-25",
   "purpose": "Can I operate at the speed of thought? Living design inventory, not a promise of implementation.",
   "design_rules": {
@@ -27,7 +27,8 @@
     "maintenance": "Append or refine stable IDs in this canonical file. Consolidate overlapping intentions; change priority with observed use; promote only on actual evidence. Keep rare operations discoverable without placing them on the main surface. Record a concrete failure and decision when abandoning a branch. No telemetry or persistent personal captures in this public repo.",
     "week_review": "After seven days of real use, compare frequency, interactions avoided, interruptions, rediscovery without docs, failures and whether the result advanced a real goal. Review after one month too. No invented scores or usage counts.",
     "public_privacy": "This public atlas is design metadata only, not a screenshot archive, task log, credential store or personal research inbox.",
-    "interface_specialization": "Treat site-specific userscripts as independently useful products and first-class execution surfaces, not merely adapters to a universal AI overlay. Optimize the recurring human task distribution, preserve direct deterministic paths, keep original behavior recoverable, and use AI to help design or revise the UI rather than requiring inference for each interaction. Shared primitives must earn their coupling cost."
+    "interface_specialization": "Treat site-specific userscripts as independently useful products and first-class execution surfaces, not merely adapters to a universal AI overlay. Optimize the recurring human task distribution, preserve direct deterministic paths, keep original behavior recoverable, and use AI to help design or revise the UI rather than requiring inference for each interaction. Shared primitives must earn their coupling cost.",
+    "interface_visibility": "REM-04.01–04.03: distinguish capability utility from permanent control utility. Use recognizable icons with accessible names and 44px targets, short labels for less obvious actions, contextual controls, and one stateful control per reversible action. Rank after real week/month use; never invent frequencies. Keep failures visible and evidence review explicit."
   },
   "sources": {
     "REM": "https://github.com/JadanPoll/Learning_Visualizations_Taxonomy/blob/main/Navigationals/The_Richer_Engineering_Method.md",
@@ -722,7 +723,8 @@
       "why": "Reduces the time between encountering a site or userscript problem and giving AI actionable evidence.",
       "mechanisms": [
         "AI_Pill.user.js v0.1.1: Eruda pinned dependency; element geometry/attributes/ancestors; bounded interaction and resource timing report; explicit review and copy",
-        "v0.2.1 large opacity/height controls and dedicated source browser: explicit file selection, raw/format toggle, search and bounded excerpt review"
+        "v0.2.1 large opacity/height controls and dedicated source browser: explicit file selection, raw/format toggle, search and bounded excerpt review",
+        "v0.3.0 compact four-action toolbar, contextual evidence and source controls, stateful recording, icon-based debugger controls"
       ],
       "depends_on": [
         "control.recover"
@@ -738,7 +740,7 @@
         "eruda_sources",
         "beautify"
       ],
-      "boundary": "Committed prototype parses; target iPad not tested. Resource Timing is not full request capture. Eruda realm and initialization coverage unverified. No response bodies or credentials in custom report by design; review URLs, labels and IDs. First iPad Eruda launch observed; new ergonomics and source browser not yet tested."
+      "boundary": "Committed prototype parses; target iPad not tested. Resource Timing is not full request capture. Eruda realm and initialization coverage unverified. No response bodies or credentials in custom report by design; review URLs, labels and IDs. First iPad Eruda launch observed; new ergonomics and source browser not yet tested. v0.3.0 interface redesign syntax checked; real usability and target-device behavior unverified."
     },
     {
       "id": "develop.plan",
@@ -873,6 +875,7 @@
     }
   ],
   "next_experiments": [
+    "v0.3.0: cold-demo Inspect/Record/Sources/DevTools; record while closed and stop after reopening; verify contextual Copy and source search; revisit usefulness after a week and a month.",
     "On the same GitHub page test v0.2.1 opacity/height/close, Sources file filter, format HTML/JS, search and review/copy an excerpt; report concrete failure if blocked.",
     "Install AI_Pill.user.js v0.1.1 on iPad; inspect a real site element, record an interaction, copy report to ChatGPT and run a read-only plan. Test Eruda separately. Then test AI Pill Ask Shortcut; defer iSH.",
     "Choose one heavily used site and compare two or three representative recurring tasks in its stock and specialized UI; preserve existing scripts and validate on iPad Safari before changing defaults.",
@@ -911,7 +914,8 @@
     "The AI is often more valuable at design time (generating and revising the user's interface) than at runtime (adding inference latency to common operations).",
     "A collection of specialized userscripts is a legitimate core architecture; standardize only after discovering repeated needs, not to satisfy an abstract framework.",
     "The key acceleration is closing the evidence-to-code loop; DevTools is infrastructure for producing many specialized interfaces, not merely another feature.",
-    "A developer tool should optimize time to useful evidence, not reproduce the appearance of desktop F12. Prefer thumb-sized controls and a direct searchable source-to-excerpt workflow."
+    "A developer tool should optimize time to useful evidence, not reproduce the appearance of desktop F12. Prefer thumb-sized controls and a direct searchable source-to-excerpt workflow.",
+    "A capability earning its existence does not imply its control earns permanent screen space. Familiar icon, contextual appearance, secondary control and removal are distinct choices."
   ],
   "site_scripts": {
     "purpose": "A collection of focused personal interface implementations. Existing code remains canonical in its own repository; this is a source index, not duplicate scripts or a universal injected runtime.",
