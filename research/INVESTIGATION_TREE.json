@@ -1,9 +1,9 @@
 {
   "schema": "ai_pill_os.rsm_investigation",
-  "version": 1,
+  "version": 2,
   "updated": "2026-11-25",
   "parent_purpose": "Reduce mechanical distance from human intention to useful realization; preserve agency, context, and recoverability.",
-  "scope": "iPad-first everyday research and software engineering; not full OS automation for its own sake.",
+  "scope": "Safari-first everyday research and engineering. Native capabilities via rare stable Shortcuts; specialist apps only after concrete unmet needs.",
   "method_trace": [
     {
       "decision": "Separate question landscape from selected investigations",
@@ -66,7 +66,11 @@
     "relay": "https://github.com/rishiv7/relay",
     "describe": "https://shortcutjar.com/describe/documentation/",
     "archive": "https://www.macstories.net/Shortcuts/",
-    "talon": "https://github.com/cursorless-dev/cursorless"
+    "talon": "https://github.com/cursorless-dev/cursorless",
+    "pocket": "https://github.com/JadanPoll/AI_Pill_OS/blob/main/Pocket.user.js",
+    "gm_storage": "https://github.com/quoid/userscripts/blob/main/README.md",
+    "gm_scope": "https://stackoverflow.com/questions/77011466/how-do-i-access-the-same-json-file-from-two-different-tampermonkey-scripts",
+    "copy_screenshot": "https://www.reddit.com/r/shortcuts/comments/1nn8qc4/"
   },
   "question_tree": [
     {
@@ -280,7 +284,7 @@
       "questions": [
         "Q2.1"
       ],
-      "status": "ready_for_device_test",
+      "status": "deferred_conditional",
       "why": "Screen context is essential for diagrams and opaque applications.",
       "model": "Screenshot or share input + spoken question -> Minis attachment -> response.",
       "belief": "Share extension and App Intent accept images at source level; capture order, installed provider vision support and target-device runtime are unverified.",
@@ -293,9 +297,10 @@
         "relay"
       ],
       "stop": "One real Kami diagram answered using its actual image, with source/session preserved; no new screenshot manager.",
-      "reopen": "Reopen if capture timing, model vision or attachment coercion loses content.",
+      "reopen": "Only reopen for a concrete high-value workflow that Safari userscripts and minimal native Shortcuts cannot handle economically. Reopen if capture timing, model vision or attachment coercion loses content.",
       "next": "First share existing Kami screenshot directly to Minis; if useful, build Take Screenshot before Dictate Text then Send Prompt with attachment.",
-      "depends_on": []
+      "depends_on": [],
+      "prior_status": "ready_for_device_test"
     },
     {
       "id": "I3",
@@ -304,7 +309,7 @@
         "Q4.2",
         "Q5.1"
       ],
-      "status": "ready_for_device_test",
+      "status": "deferred_conditional",
       "why": "Avoid copying page evidence and losing active Safari context.",
       "model": "Safari Share Sheet -> JS read -> Minis Send Prompt -> fixed second JS or display; alternative existing pill + clipboard.",
       "belief": "Documented Safari webpage input and multiple JavaScript actions; long model wait may invalidate original page context.",
@@ -317,11 +322,12 @@
         "pill"
       ],
       "stop": "One real page evidence/response round trip; retain same document if possible. If second JS cannot use original input after model wait, stop this variant and use clipboard/pill.",
-      "reopen": "Reopen when Share Sheet route is too slow or Safari lifecycle blocks recurring tasks.",
+      "reopen": "Only reopen for a concrete high-value workflow that Safari userscripts and minimal native Shortcuts cannot handle economically. Reopen when Share Sheet route is too slow or Safari lifecycle blocks recurring tasks.",
       "next": "Use harmless title/URL/heading count, then real diagnostic evidence; second fixed JS only displays reviewed text, never eval model output.",
       "depends_on": [
         "I5"
-      ]
+      ],
+      "prior_status": "ready_for_device_test"
     },
     {
       "id": "I4",
@@ -339,7 +345,7 @@
       ],
       "stop": "Do not build general runtime until a real task exposes a gap. Compare remote compute only for work beyond local capacity.",
       "reopen": "Reopen on a failed representative build, model cost/quality problem, or inability to preserve required artifacts.",
-      "next": "Use existing Minis for repository work and research; defer separate iSH bridge and secondary provider setup.",
+      "next": "Retain reported Minis acceptance; use only for specific specialist work that justifies switching apps. No integration now.",
       "depends_on": []
     },
     {
@@ -348,7 +354,7 @@
         "Q3.2",
         "Q5.2"
       ],
-      "status": "highest_priority_device_test",
+      "status": "deferred_conditional",
       "why": "Prove transport before automating UI or designing custom APIs.",
       "model": "Minis Send Prompt App Intent -> typed result -> completed Response or Session ID recovery.",
       "belief": "Swift source establishes native contract, not installed version execution.",
@@ -359,9 +365,10 @@
         "minis_result"
       ],
       "stop": "One exact text round trip and one real Safari diagnostic; if Running preserve session rather than misreport completion. No additional inference backend unless necessary.",
-      "reopen": "Reopen on absent action, incompatible output property or runtime failure.",
+      "reopen": "Only reopen for a concrete high-value workflow that Safari userscripts and minimal native Shortcuts cannot handle economically. Reopen on absent action, incompatible output property or runtime failure.",
       "next": "Create AI Pill Ask: clipboard -> Send Prompt Wait for Result -> inspect status -> copy Response or recover session. Test with actual evidence.",
-      "depends_on": []
+      "depends_on": [],
+      "prior_status": "highest_priority_device_test"
     },
     {
       "id": "I6",
@@ -369,7 +376,7 @@
         "Q5.1",
         "Q5.2"
       ],
-      "status": "candidate_after_I5",
+      "status": "deferred_conditional",
       "why": "Determine whether app transitions can be eliminated economically.",
       "model": "Clipboard with explicit paste; x-callback URL; Safari share sheet; later native extension or file/mailbox.",
       "belief": "Apple documents callback textual output, not return to identical live tab; URL data can leak. Extension messaging requires installed extension/app integration.",
@@ -382,11 +389,12 @@
         "safari_multiple"
       ],
       "stop": "Prefer simplest usable route. Test callback only with non-sensitive nonce, not actual user data in URL. If no same-tab return, keep explicit copy/paste or share sheet; no new extension until recurring cost established.",
-      "reopen": "Reopen after repeated handoff friction or loss of state.",
+      "reopen": "Only reopen for a concrete high-value workflow that Safari userscripts and minimal native Shortcuts cannot handle economically. Reopen after repeated handoff friction or loss of state.",
       "next": "Compare same-page Share Sheet flow (I3) with current pill clipboard handoff; if needed test harmless callback to controlled local/personal page.",
       "depends_on": [
         "I5"
-      ]
+      ],
+      "prior_status": "candidate_after_I5"
     },
     {
       "id": "I7",
@@ -485,7 +493,7 @@
       "questions": [
         "Q6.1"
       ],
-      "status": "research_sufficient",
+      "status": "deferred_conditional",
       "why": "Avoid recreating visual blocks and bindings repeatedly.",
       "model": "Stable native triggers; reviewed source/config updates; existing Minis Shortcuts Builder.",
       "belief": "Builder supports drafting, validation and signing backends; installation and third-party intent binding not yet verified.",
@@ -495,11 +503,12 @@
         "atlas"
       ],
       "stop": "One minimal working Shortcut; use builder only when complexity exceeds manual editing. Preserve same invocation name.",
-      "reopen": "Reopen if repeated Shortcut iteration becomes bottleneck.",
+      "reopen": "Only reopen for a concrete high-value workflow that Safari userscripts and minimal native Shortcuts cannot handle economically. Reopen if repeated Shortcut iteration becomes bottleneck.",
       "next": "Use built-in Minis actions first; ask builder for validated draft only if needed.",
       "depends_on": [
         "I5"
-      ]
+      ],
+      "prior_status": "research_sufficient"
     },
     {
       "id": "I12",
@@ -509,7 +518,7 @@
         "Q6.3",
         "Q1.3"
       ],
-      "status": "ready_after_transport",
+      "status": "active_after_capture",
       "why": "Measure whole-system value rather than isolated functionality.",
       "model": "Representative workflow = encounter -> evidence -> inference -> reviewed result -> persistent source or changed script -> verify. Repeated commands become deterministic affordances.",
       "belief": "Prior scripts demonstrate design pattern; new end-to-end utility and retention unmeasured.",
@@ -521,12 +530,54 @@
       ],
       "stop": "One real Kami research result retained, one real userscript defect improved, one week/month rediscovery review. Stop adding controls if no actual demand; compare against prior workflow.",
       "reopen": "Reopen for observed failures, lost provenance, or unused controls.",
-      "next": "Track manual app switches, copy/paste operations, repeated explanations and recoverability on actual workflows; no telemetry archive.",
+      "next": "Use web chat and Safari DevTools to complete one real userscript fix and one source-linked capture; compare transfer and rediscovery cost after a week.",
       "depends_on": [
-        "I2",
-        "I3",
-        "I5"
+        "I13",
+        "I14"
       ]
+    },
+    {
+      "id": "I13",
+      "questions": [
+        "Q2.2",
+        "Q5.1",
+        "Q5.3"
+      ],
+      "status": "highest_priority_device_test",
+      "why": "Universal low-friction data transfer across Safari websites without app switching, API billing or new backend.",
+      "model": "Same installed userscript on multiple origins -> GM storage -> explicit recall/copy; separate origin-local storage is inadequate.",
+      "belief": "Documented same-script cross-origin GM storage; manager/version and permission behavior unverified.",
+      "certificate": "Existing Kami script uses GM storage across matched domains. Pocket v0.1.1 implements explicit text/JSON capture, local recall, per-item keys and JSON export; syntax checked, not target tested.",
+      "evidence": [
+        "pocket",
+        "gm_storage",
+        "gm_scope",
+        "atlas"
+      ],
+      "stop": "Save real selected content on one site, recall and copy on web ChatGPT, reload and verify data. If manager lacks shared GM storage, diagnose specific manager instead of silently falling back to localStorage.",
+      "reopen": "Observed data loss, permission failure, or actual recurring need for cross-script or cross-device integration.",
+      "next": "Two-site capture/recall test; test persistence after updating same script.",
+      "depends_on": []
+    },
+    {
+      "id": "I14",
+      "questions": [
+        "Q1.1",
+        "Q2.1"
+      ],
+      "status": "highest_priority_device_test",
+      "why": "The native screenshot is a real OS-only capability with frequent engineering and reading utility.",
+      "model": "One native Shortcut Take Screenshot -> Copy to Clipboard; invoke via supported gesture or Siri; paste in existing web conversation.",
+      "belief": "Community precedent supports recipe; device picker, foreground capture and web paste need verification.",
+      "certificate": "Apple documents AssistiveTouch custom actions and screenshot interface. Community reports direct screenshot-to-clipboard Shortcut. No device result yet.",
+      "evidence": [
+        "assistive",
+        "copy_screenshot"
+      ],
+      "stop": "Paste a real screenshot into ChatGPT/Gemini web chat without manual photo navigation. Preserve existing screenshot gesture until successful; no new inference app.",
+      "reopen": "Clipboard image cannot paste or trigger captures wrong foreground; use built-in Copy and Delete as fallback.",
+      "next": "Create the two-action shortcut, try a harmless screenshot, bind only after verified.",
+      "depends_on": []
     }
   ],
   "relationships": [
@@ -567,19 +618,28 @@
     }
   ],
   "active_queue": [
-    "I5",
-    "I2",
-    "I3",
+    "I13",
+    "I14",
     "I12"
   ],
   "conditional_queue": [
     "I1",
+    "I2",
+    "I3",
+    "I5",
     "I6",
-    "I11",
     "I8",
     "I9",
-    "I10"
+    "I10",
+    "I11"
   ],
-  "global_stop": "If one real screenshot question and one real userscript iteration can be accomplished with fewer manual transfers and recoverable outputs, stop infrastructure expansion and use the system. Reopen only observed consequential gaps.",
-  "limitations": "Source review and user-relayed prior acceptance only. No new device execution. No exhaustive proof of impossibility; no hardware purchase or new agent backend. Source links may evolve; check installed versions."
+  "global_stop": "When cross-site capture/recall and screenshot-to-web-chat work and one real userscript defect is fixed faster, use the Safari-first environment rather than expand infrastructure. Reopen only demonstrated recurring gaps.",
+  "limitations": "Source review and user-relayed prior acceptance only. No new device execution. No exhaustive proof of impossibility; no hardware purchase or new agent backend. Source links may evolve; check installed versions.",
+  "trajectory": [
+    {
+      "date": "2026-11-25",
+      "decision": "User explicitly prioritizes portability and rapid browser-based iteration over general agent integration; preserve prior evidence but demote Minis/complex Shortcuts.",
+      "method": "RSM-02.07; RSM-04.07; REM-04.01"
+    }
+  ]
 }
