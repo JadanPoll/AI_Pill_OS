@@ -1,6 +1,6 @@
 {
   "schema": "ai_pill_os.capability_atlas",
-  "version": 12,
+  "version": 13,
   "updated": "2026-11-25",
   "purpose": "Can I operate at the speed of thought? Living design inventory, not a promise of implementation.",
   "design_rules": {
@@ -28,7 +28,8 @@
     "week_review": "After seven days of real use, compare frequency, interactions avoided, interruptions, rediscovery without docs, failures and whether the result advanced a real goal. Review after one month too. No invented scores or usage counts.",
     "public_privacy": "This public atlas is design metadata only, not a screenshot archive, task log, credential store or personal research inbox.",
     "interface_specialization": "Treat site-specific userscripts as independently useful products and first-class execution surfaces, not merely adapters to a universal AI overlay. Optimize the recurring human task distribution, preserve direct deterministic paths, keep original behavior recoverable, and use AI to help design or revise the UI rather than requiring inference for each interaction. Shared primitives must earn their coupling cost.",
-    "interface_visibility": "REM-04.01–04.03: distinguish capability utility from permanent control utility. Use recognizable icons with accessible names and 44px targets, short labels for less obvious actions, contextual controls, and one stateful control per reversible action. Rank after real week/month use; never invent frequencies. Keep failures visible and evidence review explicit."
+    "interface_visibility": "REM-04.01–04.03: distinguish capability utility from permanent control utility. Use recognizable icons with accessible names and 44px targets, short labels for less obvious actions, contextual controls, and one stateful control per reversible action. Rank after real week/month use; never invent frequencies. Keep failures visible and evidence review explicit.",
+    "visible_version": "Every userscript must visibly display its running version in the launcher and expanded interface; bump metadata and runtime version together for changes. A visible version diagnoses stale injection or cached builds; it does not itself invalidate caches."
   },
   "sources": {
     "REM": "https://github.com/JadanPoll/Learning_Visualizations_Taxonomy/blob/main/Navigationals/The_Richer_Engineering_Method.md",
@@ -562,6 +563,7 @@
       ],
       "why": "The feedback loop from agent commit to running iPad behavior is itself a frequent workflow.",
       "mechanisms": [
+        "Visible running version on collapsed launcher and expanded interface; Pocket v0.2.3 and AI Pill v0.3.1 implement this rule.",
         "Pocket v0.2.1 has @updateURL and @downloadURL pointing to its canonical raw GitHub path; existing script identity/storage namespace preserved.",
         "Manager-native @version/@updateURL/@downloadURL plus one version inventory, copyable diagnostics and manual known-good rollback; no arbitrary remote eval or silent replacement.",
         "Git pull or raw .user.js install via Userscripts",
