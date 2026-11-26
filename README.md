@@ -20,11 +20,11 @@ Speed of thought is an asymptotic objective, not a latency guarantee. Some think
 
 The primary environment is Safari, the existing signed-in ChatGPT/Gemini web chats and rapidly iterated userscripts. Native Shortcuts are deliberately rare: create one when it unlocks a genuinely valuable OS capability that Safari cannot supply. OpenMinis has reported successful Git inspection, local validation and its own browser navigation; retain those results but defer integration and app switching until a concrete task justifies it. Separate API inference, iCTRL and iSH integration are not current priorities.
 
-### Pocket — universal working tray and handoff (v0.2.1)
+### Pocket — universal working tray and handoff (v0.5.7)
 
 [Install / update Pocket.user.js](https://raw.githubusercontent.com/JadanPoll/AI_Pill_OS/main/Pocket.user.js) · [Source](Pocket.user.js).
 
-Collect evidence across sites, Save a discovery for later, or Ask with tray. One installed script owns cross-site GM storage. The temporary working tray and explicitly durable items are separate; previous v0.1.x saved records retain their keys. No server, new model account or separate app. Text, links and JSON only for this slice; rectangular image capture is next after real text handoff acceptance.
+Collect evidence across sites, Save a discovery for later, or Ask with tray. One installed script owns cross-site GM storage. The temporary working tray and explicitly durable items are separate; previous v0.1.x saved records retain their keys. No server, new model account or separate app. Text, links, JSON and rectangular DOM-reconstructed image capture are implemented. SnapDOM v3.8.3 with a manager preamble works on a real GitHub page in Safari; the older Grokipedia image now previews. New Grokipedia/ChatGPT captures and composite clipboard paste remain to be certified.
 
 **Live demo / acceptance:** Open an existing ChatGPT or Gemini conversation, open Pocket and tap Use this chat. On Wikipedia and GitHub, select real passages, open Pocket and Collect. Dictate a question in the draft, choose Ask with tray, then Open chat. At the selected conversation, open Pocket, review and Copy question, paste into the normal composer and send explicitly. Return to the source and refresh: the receipt says copied, not confirmed sent. Reload and verify the request and previous saved items. Clear tray only when finished; prepared questions preserve their evidence snapshot. Dismiss finished handoffs when no longer useful.
 
@@ -34,7 +34,11 @@ Nine integration-style checks passed executing the actual script with mocked DOM
 
 **Canonical persistence:** when asked to preserve a research finding in Kami, use [Kami_Uploads_RSM_Tree](https://github.com/JadanPoll/Kami_Uploads_RSM_Tree)'s existing domain investigation records and source anchors, not a parallel note database or Kami annotation sync. FKEN and Drive remain other explicit destinations. Authorized ChatGPT connector writes and exact readback receipts are the first route, not browser-held credentials.
 
-Keep Eruda/DevTools as the existing separate mini-pill until real usage warrants consolidation. Do not build a task dashboard, worker system, or custom update manager before observing a consequential gap.
+### Instrumentation-first engineering
+
+The objective is not to recreate desktop DevTools on an iPad. It is to let a human reproduce, point and express intent while software collects inspectable evidence and an AI investigates. The dependency-free [Console journal v0.1.0](https://raw.githubusercontent.com/JadanPoll/AI_Pill_OS/main/AI_Pill_Console.user.js) starts before the other listed userscripts and captures manager errors; it is independently accessible if the main debugger fails. Actual reports established the strict-directive exception that blocked Pocket, then the preamble fix restored it. Keep the recorder independent of optional viewers and renderers.
+
+Proposed direction (not implemented): an always-on bounded local flight recorder; action-scoped traces; explicit point/region snapshots; and a copyable evidence packet with versions, timestamps, provenance, limitations and source references. Prefer structured network/lifecycle/DOM evidence and selectable exports over desktop panel parity. Retain raw bounded observations and summarize repeated events without losing counts, order or source. Collect sensitive contents only with explicit purpose and review; no automatic upload. Distinguish manager/content/page realms and expose missing coverage. Eruda remains optional for direct manual exploration. Preserve current working controls pending further UX decisions.
 
 ### One native bridge: Copy Screenshot
 
@@ -42,7 +46,7 @@ Create a Shortcut named `Copy Screenshot` with two actions: Take Screenshot → 
 
 [Current RSM investigation tree](research/INVESTIGATION_TREE.json) and [capability atlas](capabilities.json) preserve the revised priorities and stopping conditions.
 
-## Try the current implementation (v0.3.0)
+## Try the current implementation (v0.4.1)
 
 [Install / view raw AI_Pill.user.js](https://raw.githubusercontent.com/JadanPoll/AI_Pill_OS/main/AI_Pill.user.js) · [Source](AI_Pill.user.js).
 
