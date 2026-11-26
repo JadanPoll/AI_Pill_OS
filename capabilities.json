@@ -1,6 +1,6 @@
 {
   "schema": "ai_pill_os.capability_atlas",
-  "version": 8,
+  "version": 9,
   "updated": "2026-11-25",
   "purpose": "Can I operate at the speed of thought? Living design inventory, not a promise of implementation.",
   "design_rules": {
@@ -1246,5 +1246,15 @@
       ],
       "finding": "Receive What's On Screen can supply supported app content. Safari Run JavaScript on Webpage requires appropriate page input and user permission; test Share Sheet first. No claim of arbitrary native accessibility tree or unattended UI automation."
     }
+  },
+  "investigation_tree": {
+    "path": "research/INVESTIGATION_TREE.json",
+    "purpose": "Mechanism-independent RSM question landscape and selected investigations with source-linked certificates, stopping/reopening conditions and prioritized device tests.",
+    "active_queue": [
+      "I5",
+      "I2",
+      "I3",
+      "I12"
+    ]
   }
 }
