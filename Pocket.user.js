@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         AI Pill OS - Pocket
 // @namespace    https://github.com/JadanPoll/AI_Pill_OS
-// @version      0.7.5
+// @version      0.7.6
 // @updateURL    https://raw.githubusercontent.com/JadanPoll/AI_Pill_OS/main/Pocket.user.js
 // @downloadURL  https://raw.githubusercontent.com/JadanPoll/AI_Pill_OS/main/Pocket.user.js
 // @description  Universal Safari pill: collect evidence, keep discoveries, and hand a question to a chosen chat.
@@ -24,7 +24,7 @@
 (() => {
   'use strict';
   if (window.top !== window) return;
-  const VERSION='0.7.5';
+  const VERSION='0.7.6';
   // Report initialization failures without depending on the main UI, storage or a CDN.
   function bootFailure(error,phase){
     const message=String(error?.message||error).slice(0,500);
@@ -50,7 +50,7 @@
     if(document.getElementById('ai-pill-pocket'))return;
     let phase='storage setup';
     try{
-  const PREFIX='pocket.v1.', TRAY='tray.v1.', HANDOFF='handoff.v1.', ACK='ack.v1.', SEEN='seen.v1.', REPLY='reply.v1.', RUN='run.v1.', MAILBOX='mailbox.v1', TARGET='target.v1', LIMIT=100000, MAX_ITEMS=250;
+  const PREFIX='pocket.v1.', TRAY='tray.v1.', HANDOFF='handoff.v1.', ACK='ack.v1.', SEEN='seen.v1.', REPLY='reply.v1.', RUN='run.v1.', TRACE='trace.v1.', MAILBOX='mailbox.v1', TARGET='target.v1', LIMIT=100000, MAX_ITEMS=250;
   const uid=()=>globalThis.crypto?.randomUUID?.()||Date.now().toString(36)+'-'+Math.random().toString(36).slice(2);
   // Deliberately no localStorage fallback: that would appear to work but silently
   // partition the data by site. Only this installed script owns these GM keys.
@@ -66,9 +66,9 @@
   Object.assign(icons,{bookmark:'<path d="M6 3h12v18l-6-4-6 4z"/>',back:'<path d="m15 18-6-6 6-6"/>',trash:'<path d="M3 6h18M9 6V3h6v3M6 6l1 15h10l1-15M10 10v7M14 10v7"/>',settings:'<circle cx="5" cy="12" r="1"/><circle cx="12" cy="12" r="1"/><circle cx="19" cy="12" r="1"/>',arrow:'<path d="M7 17 17 7M7 7h10v10"/>',pin:'<path d="m16 3 5 5-4 2-3 5-2-2-6 6-1-1 6-6-2-2 5-3z"/>',search:'<circle cx="10" cy="10" r="6"/><path d="m14 14 6 6"/>'});
   icons.point='<path d="m4 3 15 9-7 2-3 7z"/>';icons.notes='<rect x="5" y="3" width="14" height="18" rx="2"/><path d="M8 8h8M8 12h8M8 16h5"/>';icons.crop='<path d="M6 3v15h15M3 6h15v15"/>';icons.chat='<path d="M20 11a8 8 0 0 1-8 8H4l2-4a8 8 0 1 1 14-4Z"/><path d="M9 11h6"/>';const icon=k=>'<svg width="21" height="21" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round" stroke-linecap="round" aria-hidden="true">'+icons[k]+'</svg>';
   const btn=(id,k,title,words='')=>'<button id="'+id+'" type="button" aria-label="'+title+'" title="'+title+'">'+icon(k)+(words?' '+words:'')+'</button>';
-  root.innerHTML='<style>:host{all:initial;position:fixed;left:12px;bottom:18px;z-index:2147483645;color:#172033;font:14px system-ui}*{box-sizing:border-box}[hidden]{display:none!important}button,input,textarea{font:inherit;color:inherit}button{min-height:44px;min-width:44px;border:0;border-radius:8px;background:transparent;display:inline-flex;align-items:center;justify-content:center;gap:5px;padding:8px;cursor:pointer}button:disabled{opacity:.35}button:focus-visible,a:focus-visible,summary:focus-visible{outline:2px solid #2563eb}#open[data-storage-error=true]{outline:2px solid #dc2626}#open{font-size:11px;border-radius:22px;background:#172033;color:#fff;box-shadow:0 2px 10px #0004}#panel{width:min(380px,calc(100vw - 24px));max-height:78vh;overflow:auto;background:rgba(255,255,255,.86);backdrop-filter:blur(3px);-webkit-backdrop-filter:blur(3px);border:1px solid #cbd5e1;border-radius:14px;padding:10px;box-shadow:0 4px 20px #0004}.row{display:flex;gap:4px;align-items:center;margin:4px 0}.grow{flex:1;min-width:0}textarea,input{width:100%;border:1px solid #cbd5e1;border-radius:8px;padding:9px;background:#fff;font-size:16px}input{min-height:44px}textarea{resize:vertical}small,#status{font-size:12px;color:#475569;overflow-wrap:anywhere}h3{font-size:16px;margin:0}#list{max-height:30vh;overflow:auto}.entry{display:block;text-align:left;width:100%;border-bottom:1px solid #e2e8f0;border-radius:0;overflow-wrap:anywhere}.entry b,.entry small{display:block}#detail{border-top:1px solid #e2e8f0;margin-top:6px;padding-top:6px}#body,#handoff-preview{white-space:pre-wrap;overflow-wrap:anywhere;max-height:25vh;overflow:auto;background:#f8fafc;padding:8px;font:13px/1.45 ui-monospace,monospace;user-select:text}#ask{background:#172033;color:white}button[aria-pressed=true]{background:#e2e8f0;font-weight:600}#handoff{border:1px solid #cbd5e1;border-radius:8px;padding:5px;margin:6px 0}#open[data-incoming=true]{outline:2px solid #16a34a}#handoff-reply{max-height:26vh;overflow:auto;white-space:pre-wrap;overflow-wrap:anywhere;font:14px/1.5 system-ui;background:#f8fafc;padding:8px;border-radius:6px}#reply-draft{margin:6px 0}#handoff-open{color:#1d4ed8;min-height:44px;min-width:44px;display:inline-flex;align-items:center;justify-content:center}#status:empty,#count:empty{display:none}details{border-top:1px solid #e2e8f0;padding:4px 0}summary{cursor:pointer;min-height:44px;display:flex;align-items:center;gap:6px;list-style:none}summary::-webkit-details-marker{display:none}#settings summary{justify-content:flex-end}#settings .settings-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:5px;margin:8px 0}#settings .settings-grid>button,#settings .settings-grid>span{min-width:0;width:100%;font-size:12px}#settings .settings-grid button{border:1px solid #cbd5e1;white-space:normal;overflow-wrap:anywhere;line-height:1.25;text-align:center}#settings .settings-grid>span>button{width:100%}#chat-target{min-height:44px;min-width:44px;border-radius:8px;display:inline-flex;align-items:center;justify-content:center;padding:8px;color:inherit;text-decoration:none;flex:none;-webkit-touch-callout:default}#source-label{font-size:11px}#pin{border:1px solid #cbd5e1}#remove,#clear-tray{color:#991b1b}#open[data-pinned=true],#chat-target[data-pinned=true]{background:#e9bf58;color:#392804}#chat-target{border:1px solid #cbd5e1}#target-label{display:block;line-height:1.3}#target-label:empty{display:none}#ask{background:rgba(23,32,51,.94)}#draft{background:rgba(255,255,255,.75)}#quote{border-left:3px solid #64748b;padding:4px 8px;margin:4px 0;background:#f1f5f9;border-radius:4px}#quote-text{font-size:12px;white-space:pre-wrap;overflow-wrap:anywhere;max-height:74px;overflow:auto}#quote .row{margin:0}#quote-clear{min-height:44px}#include-row{display:flex;align-items:center;gap:8px;font-size:12px;color:#475569;min-height:34px}#include-tray{width:18px;min-height:18px;height:18px;flex:none}#collection-head{margin-top:6px}#crop-editor{position:fixed;inset:8px;z-index:2147483647;display:flex;flex-direction:column;background:#f8fafc;border:1px solid #94a3b8;border-radius:12px;padding:10px;box-shadow:0 4px 20px #0005}#crop-stage{flex:1;min-height:0;display:flex;align-items:center;justify-content:center;overflow:hidden;background:#e2e8f0;border-radius:8px;position:relative}#crop-image-wrap{position:relative;max-width:100%;max-height:100%;display:flex;align-items:center;justify-content:center;touch-action:none;user-select:none}#crop-image{display:block;max-width:100%;max-height:100%;object-fit:contain;pointer-events:none}#crop-selection{position:absolute;outline:2px solid #2563eb;background:rgba(37,99,235,.12);pointer-events:none;box-shadow:0 0 0 200vmax #0004}#crop-stage:has(#crop-image-wrap:not([hidden])) #crop-empty{display:none}#crop-help{padding:5px 2px}#crop-editor .row{flex-wrap:wrap}#crop-add{background:#172033;color:white}#crop-empty{padding:16px;text-align:center;color:#475569}#primary{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:6px;margin:6px 0}#primary button{flex-direction:column;gap:3px;min-height:66px;border:1px solid #cbd5e1;font-size:13px}#primary svg{width:25px;height:25px}#panel[data-mode=home] #workspace,#panel:not([data-mode=notes]) #note-tools,#panel:not([data-mode=notes]) #note-context,#panel:not([data-mode=ask]) #ask-tools,#panel:not([data-mode=ask]) #handoff,#panel:not([data-mode=notes]) #notes-list,#panel:not([data-mode=ask]) #ask-context{display:none}#note-context,#ask-context{display:flex;flex-wrap:wrap;gap:5px;margin:6px 0}#note-context button,#ask-context button,#note-tools button{border:1px solid #cbd5e1}#attachments{font-size:12px;overflow-wrap:anywhere}#attachments .row{margin:2px 0}#notes-list{margin-top:8px}.note-entry{display:flex;align-items:center;border-bottom:1px solid #e2e8f0;gap:4px}.note-entry .entry{flex:1;min-width:0;border-bottom:0}.note-entry .ask-note{border:1px solid #cbd5e1;flex:none}.note-entry .ask-note svg{width:19px;height:19px}#mode-ask[data-pinned=true]{background:#e9bf58;color:#392804}#settings summary{min-height:36px}#mode-ask[data-incoming=true]{outline:2px solid #16a34a}#mode-ask[data-pinned=true]{background:#e9bf58;color:#392804}[data-link=ready]{box-shadow:inset 0 0 0 2px #16a34a!important}[data-link=responding]{box-shadow:inset 0 0 0 2px #2563eb!important}[data-link=checking],[data-link=uncertain]{box-shadow:inset 0 0 0 2px #d97706!important}[data-link=stale]{box-shadow:inset 0 0 0 2px #94a3b8!important}#link-health{display:block;margin:4px 0;font-size:12px}#link-health:empty{display:none}#panel[data-chat=true]{width:min(310px,calc(100vw - 24px))}#panel[data-chat=true] #primary,#panel[data-chat=true] #settings,#panel[data-chat=true] #workspace,#panel[data-chat=true] #handoff{display:none}#panel[data-chat=true][data-mode=notes] #workspace,#panel[data-chat=true][data-mode=notes] #settings{display:block}#panel[data-chat=true][data-mode=worker] #handoff{display:block}#panel:not([data-chat=true]) #worker,#panel[data-chat=true][data-mode=notes] #worker{display:none}#panel[data-chat=true] #handoff{border:0;padding:0}#worker-status{font-size:13px}#self-test{border-top:1px solid #e2e8f0;margin-top:8px;padding-top:4px}#self-test input{min-width:0;width:100%}#self-test-status{display:block;font-size:12px;overflow-wrap:anywhere}#self-test-status[data-result=pass]{color:#15803d}#self-test-status[data-result=fail]{color:#b91c1c}#self-test-status:empty{display:none}#self-test-run{border:1px solid #cbd5e1}#worker-pin{background:#172033;color:white}#worker-recovery summary{min-height:36px;font-size:12px}#worker-recovery button{border:1px solid #cbd5e1}#open[data-pinned=true]{background:#172033;color:white}#open[data-chat=true]{padding:7px 10px}#panel[data-chat=true] #handoff-reply{display:none}</style>'+
+  root.innerHTML='<style>:host{all:initial;position:fixed;left:12px;bottom:18px;z-index:2147483645;color:#172033;font:14px system-ui}*{box-sizing:border-box}[hidden]{display:none!important}button,input,textarea{font:inherit;color:inherit}button{min-height:44px;min-width:44px;border:0;border-radius:8px;background:transparent;display:inline-flex;align-items:center;justify-content:center;gap:5px;padding:8px;cursor:pointer}button:disabled{opacity:.35}button:focus-visible,a:focus-visible,summary:focus-visible{outline:2px solid #2563eb}#open[data-storage-error=true]{outline:2px solid #dc2626}#open{font-size:11px;border-radius:22px;background:#172033;color:#fff;box-shadow:0 2px 10px #0004}#panel{width:min(380px,calc(100vw - 24px));max-height:78vh;overflow:auto;background:rgba(255,255,255,.86);backdrop-filter:blur(3px);-webkit-backdrop-filter:blur(3px);border:1px solid #cbd5e1;border-radius:14px;padding:10px;box-shadow:0 4px 20px #0004}.row{display:flex;gap:4px;align-items:center;margin:4px 0}.grow{flex:1;min-width:0}textarea,input{width:100%;border:1px solid #cbd5e1;border-radius:8px;padding:9px;background:#fff;font-size:16px}input{min-height:44px}textarea{resize:vertical}small,#status{font-size:12px;color:#475569;overflow-wrap:anywhere}h3{font-size:16px;margin:0}#list{max-height:30vh;overflow:auto}.entry{display:block;text-align:left;width:100%;border-bottom:1px solid #e2e8f0;border-radius:0;overflow-wrap:anywhere}.entry b,.entry small{display:block}#detail{border-top:1px solid #e2e8f0;margin-top:6px;padding-top:6px}#body,#handoff-preview{white-space:pre-wrap;overflow-wrap:anywhere;max-height:25vh;overflow:auto;background:#f8fafc;padding:8px;font:13px/1.45 ui-monospace,monospace;user-select:text}#ask{background:#172033;color:white}button[aria-pressed=true]{background:#e2e8f0;font-weight:600}#handoff{border:1px solid #cbd5e1;border-radius:8px;padding:5px;margin:6px 0}#open[data-incoming=true]{outline:2px solid #16a34a}#handoff-reply{max-height:26vh;overflow:auto;white-space:pre-wrap;overflow-wrap:anywhere;font:14px/1.5 system-ui;background:#f8fafc;padding:8px;border-radius:6px}#reply-draft{margin:6px 0}#handoff-open{color:#1d4ed8;min-height:44px;min-width:44px;display:inline-flex;align-items:center;justify-content:center}#status:empty,#count:empty{display:none}details{border-top:1px solid #e2e8f0;padding:4px 0}summary{cursor:pointer;min-height:44px;display:flex;align-items:center;gap:6px;list-style:none}summary::-webkit-details-marker{display:none}#settings summary{justify-content:flex-end}#settings .settings-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:5px;margin:8px 0}#settings .settings-grid>button,#settings .settings-grid>span{min-width:0;width:100%;font-size:12px}#settings .settings-grid button{border:1px solid #cbd5e1;white-space:normal;overflow-wrap:anywhere;line-height:1.25;text-align:center}#settings .settings-grid>span>button{width:100%}#chat-target{min-height:44px;min-width:44px;border-radius:8px;display:inline-flex;align-items:center;justify-content:center;padding:8px;color:inherit;text-decoration:none;flex:none;-webkit-touch-callout:default}#source-label{font-size:11px}#pin{border:1px solid #cbd5e1}#remove,#clear-tray{color:#991b1b}#open[data-pinned=true],#chat-target[data-pinned=true]{background:#e9bf58;color:#392804}#chat-target{border:1px solid #cbd5e1}#target-label{display:block;line-height:1.3}#target-label:empty{display:none}#ask{background:rgba(23,32,51,.94)}#draft{background:rgba(255,255,255,.75)}#quote{border-left:3px solid #64748b;padding:4px 8px;margin:4px 0;background:#f1f5f9;border-radius:4px}#quote-text{font-size:12px;white-space:pre-wrap;overflow-wrap:anywhere;max-height:74px;overflow:auto}#quote .row{margin:0}#quote-clear{min-height:44px}#include-row{display:flex;align-items:center;gap:8px;font-size:12px;color:#475569;min-height:34px}#include-tray{width:18px;min-height:18px;height:18px;flex:none}#collection-head{margin-top:6px}#crop-editor{position:fixed;inset:8px;z-index:2147483647;display:flex;flex-direction:column;background:#f8fafc;border:1px solid #94a3b8;border-radius:12px;padding:10px;box-shadow:0 4px 20px #0005}#crop-stage{flex:1;min-height:0;display:flex;align-items:center;justify-content:center;overflow:hidden;background:#e2e8f0;border-radius:8px;position:relative}#crop-image-wrap{position:relative;max-width:100%;max-height:100%;display:flex;align-items:center;justify-content:center;touch-action:none;user-select:none}#crop-image{display:block;max-width:100%;max-height:100%;object-fit:contain;pointer-events:none}#crop-selection{position:absolute;outline:2px solid #2563eb;background:rgba(37,99,235,.12);pointer-events:none;box-shadow:0 0 0 200vmax #0004}#crop-stage:has(#crop-image-wrap:not([hidden])) #crop-empty{display:none}#crop-help{padding:5px 2px}#crop-editor .row{flex-wrap:wrap}#crop-add{background:#172033;color:white}#crop-empty{padding:16px;text-align:center;color:#475569}#primary{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:6px;margin:6px 0}#primary button{flex-direction:column;gap:3px;min-height:66px;border:1px solid #cbd5e1;font-size:13px}#primary svg{width:25px;height:25px}#panel[data-mode=home] #workspace,#panel:not([data-mode=notes]) #note-tools,#panel:not([data-mode=notes]) #note-context,#panel:not([data-mode=ask]) #ask-tools,#panel:not([data-mode=ask]) #handoff,#panel:not([data-mode=notes]) #notes-list,#panel:not([data-mode=ask]) #ask-context{display:none}#note-context,#ask-context{display:flex;flex-wrap:wrap;gap:5px;margin:6px 0}#note-context button,#ask-context button,#note-tools button{border:1px solid #cbd5e1}#attachments{font-size:12px;overflow-wrap:anywhere}#attachments .row{margin:2px 0}#notes-list{margin-top:8px}.note-entry{display:flex;align-items:center;border-bottom:1px solid #e2e8f0;gap:4px}.note-entry .entry{flex:1;min-width:0;border-bottom:0}.note-entry .ask-note{border:1px solid #cbd5e1;flex:none}.note-entry .ask-note svg{width:19px;height:19px}#mode-ask[data-pinned=true]{background:#e9bf58;color:#392804}#settings summary{min-height:36px}#mode-ask[data-incoming=true]{outline:2px solid #16a34a}#mode-ask[data-pinned=true]{background:#e9bf58;color:#392804}[data-link=ready]{box-shadow:inset 0 0 0 2px #16a34a!important}[data-link=responding]{box-shadow:inset 0 0 0 2px #2563eb!important}[data-link=checking],[data-link=uncertain]{box-shadow:inset 0 0 0 2px #d97706!important}[data-link=stale]{box-shadow:inset 0 0 0 2px #94a3b8!important}#link-health{display:block;margin:4px 0;font-size:12px}#link-health:empty{display:none}#panel[data-chat=true]{width:min(310px,calc(100vw - 24px))}#panel[data-chat=true] #primary,#panel[data-chat=true] #settings,#panel[data-chat=true] #workspace,#panel[data-chat=true] #handoff{display:none}#panel[data-chat=true][data-mode=notes] #workspace,#panel[data-chat=true][data-mode=notes] #settings{display:block}#panel[data-chat=true][data-mode=worker] #handoff{display:block}#panel:not([data-chat=true]) #worker,#panel[data-chat=true][data-mode=notes] #worker{display:none}#panel[data-chat=true] #handoff{border:0;padding:0}#worker-status{font-size:13px}#self-test{border-top:1px solid #e2e8f0;margin-top:8px;padding-top:4px}#self-test input{min-width:0;width:100%}#self-test-status{display:block;font-size:12px;overflow-wrap:anywhere}#self-test-status[data-result=pass]{color:#15803d}#self-test-status[data-result=fail]{color:#b91c1c}#self-test-status:empty{display:none}#self-test-run{border:1px solid #cbd5e1}#worker-pin{background:#172033;color:white}#worker-recovery summary{min-height:36px;font-size:12px}#worker-recovery button{border:1px solid #cbd5e1}#open[data-pinned=true]{background:#172033;color:white}#open[data-chat=true]{padding:7px 10px}#panel[data-chat=true] #handoff-reply{display:none}#worker-status{min-height:20px}#worker-report{border:1px solid #cbd5e1}#worker-refresh{margin-left:auto}#worker .row{min-height:44px}</style>'+
     btn('open','pocket','Open AI Pocket','v'+VERSION)+
-    '<section id="panel" data-mode="home" hidden><div class="row"><h3 class="grow" id="panel-title">Pocket <small>v'+VERSION+'</small></h3>'+btn('worker-notes','notes','Open Notes', '')+btn('close','close','Close Pocket')+'</div><div id="worker" hidden><div class="row"><span class="grow" id="worker-status">Checking connection…</span><button id="worker-pin" hidden>Use this chat</button></div><small id="worker-detail" role="status"></small><section id="self-test" hidden><div class="row"><input id="self-test-prompt" class="grow" placeholder="Optional test message" aria-label="Optional self-test message"><button id="self-test-run" title="Send a real message in this chat and verify its response">Self-test</button></div><small id="self-test-status" role="status"></small></section><details id="worker-tools"><summary>Connection details</summary><button id="worker-report">Copy connection report</button><button id="worker-refresh">Refresh connection</button></details></div><nav id="primary" aria-label="Pocket actions">'+btn('mode-notes','notes','Open notes','Notes')+btn('mode-ask','chat','Ask or read answer','Ask')+'</nav><div id="workspace">'+
+    '<section id="panel" data-mode="home" hidden><div class="row"><h3 class="grow" id="panel-title">Pocket <small>v'+VERSION+'</small></h3>'+btn('worker-notes','notes','Open Notes', '')+btn('close','close','Close Pocket')+'</div><div id="worker" hidden><div class="row"><span class="grow" id="worker-status" role="status">Checking…</span><button id="worker-pin" hidden>Use this chat</button></div><section id="self-test" hidden><div class="row"><input id="self-test-prompt" class="grow" placeholder="Optional test message" aria-label="Optional self-test message"><button id="self-test-run" title="Send a real message in this chat and verify its response">Self-test</button></div><small id="self-test-status" role="status"></small></section><div class="row">'+btn('worker-report','copy','Copy diagnostic report','Report')+btn('worker-refresh','refresh','Refresh connection','')+'</div></div><nav id="primary" aria-label="Pocket actions">'+btn('mode-notes','notes','Open notes','Notes')+btn('mode-ask','chat','Ask or read answer','Ask')+'</nav><div id="workspace">'+
     '<section id="quote" hidden><div class="row"><small class="grow">Selected passage</small>'+btn('quote-clear','close','Remove selected passage')+'</div><div id="quote-text"></div></section><textarea id="draft" rows="2" placeholder="What do you want to know or do?" aria-label="Question or draft"></textarea>'+
     '<div id="note-context">'+btn('snip','crop','Drag to capture webpage region','Region')+'<button id="whole-page">Page text</button></div><div class="row" id="note-tools"><button id="save-note" class="grow">Save note</button>'+btn('collect','plus','Collect temporary evidence')+btn('saved-tab','bookmark','Open saved notes')+'</div><div id="ask-context">'+btn('ask-snip','crop','Capture region for this question','Region')+'<button id="ask-page">Page text</button><button id="copy-context">Copy text</button><button id="copy-ask-images" hidden>Copy images</button></div><div id="attachments" hidden></div><div id="ask-tools"><div class="row"><button id="ask" class="grow">Ask</button>'+'<a id="chat-target" href="https://chatgpt.com/" target="_blank" rel="noopener noreferrer" aria-label="Open or set ChatGPT" title="Open or set ChatGPT">'+icon('chat')+'</a>'+'</div><small id="target-label"></small><small id="link-health" role="status"></small><label id="include-row" hidden><input id="include-tray" type="checkbox"><span id="include-label">Include collected evidence</span></label></div>'+
     '<section id="handoff" hidden><div class="row"><small class="grow" id="handoff-status"></small><a id="handoff-open" target="_blank" rel="noopener noreferrer" aria-label="Open selected chat" title="Open selected chat" hidden>'+icon('arrow')+'</a>'+btn('handoff-clear','close','Dismiss question or answer')+'</div><button id="worker-send" hidden>Send question</button><details id="worker-recovery" hidden><summary>Manual recovery</summary><pre id="handoff-preview" hidden></pre>'+btn('handoff-copy','copy','Copy prepared question','Copy question')+'<details id="reply-compose" hidden><summary>Return answer manually</summary><textarea id="reply-draft" rows="3" placeholder="Paste the answer from this chat…" aria-label="Answer to return"></textarea><button id="reply-return">Return answer</button></details></details><section id="reply-result" hidden><div class="row"><strong class="grow">Answer</strong>'+btn('reply-copy','copy','Copy returned answer')+'</div><div id="handoff-reply"></div></section></section>'+
@@ -85,7 +85,7 @@
   $('worker-notes').hidden=true;
   document.documentElement.append(host);
   phase='event binding';
-  let records=[],tray=[],selected=null,busy=false,loadEpoch=0,view='tray',target=null,pending=null,handoffBusy=false,handoffRead=0,replyDraftId=null,pollBusy=false,sourceWatch=false;
+  let records=[],tray=[],selected=null,busy=false,loadEpoch=0,view='tray',target=null,pending=null,handoffBusy=false,handoffRead=0,replyDraftId=null,pollBusy=false,sourceWatch=false,targetRead=0,pinBusy=false;
   const status=t=>$('status').textContent=t;
   const action=(id,fn)=>{$(id).addEventListener('click',e=>{if(!e.isTrusted)return;try{Promise.resolve(fn()).catch(err=>status('Error: '+String(err?.message||err).slice(0,250)));}catch(err){status('Error: '+String(err?.message||err).slice(0,250));}});};
   function sourceURL(){try{const u=new URL(location.href);return u.origin+u.pathname;}catch{return '';}}
@@ -547,11 +547,7 @@
     $('self-test').hidden=!(here?.startsWith('https://chatgpt.com/')&&here!=='https://chatgpt.com/');
     if(chat!==wasChat){setMode(chat?'worker':'home');$('worker-recovery').open=false;}
     $('panel-title').firstChild.textContent=chat?'Pocket connection ':'Pocket ';
-    $('worker-pin').hidden=!chat||pinned;
-    $('worker-pin').textContent=target?'Use this chat instead':'Use this chat';
-    $('worker-status').textContent=pinned?'Selected chat':chat?'Not selected':'';
-    $('open').lastChild.textContent=chat?' '+(pinned?'Connected chat':'Connect chat'):' v'+VERSION;
-    $('open').title=chat?(pinned?'Pocket · selected chat':'Pocket · use this chat'):'Pocket v'+VERSION;
+    renderConnection();
     $('open').setAttribute('data-pinned',String(pinned));$('mode-ask').setAttribute('data-pinned',String(pinned));$('chat-target').setAttribute('data-pinned',String(pinned));
     const name=target?(target.includes('chatgpt.com')?'ChatGPT':'Gemini'):'ChatGPT';
     const label=pinned?'Selected '+name+' destination':here?'Use this chat':target?'Open selected '+name:'Open ChatGPT to choose a chat';
@@ -561,7 +557,7 @@
     $('target-label').textContent=pinned?'Selected '+name+(target==='https://chatgpt.com/'?' · new chat':''):here?'Tap the chat icon to use this conversation.':'';
     $('pin').hidden=!here||!target||pinned;
   }
-  async function refreshTarget(){if(!store)return;target=chatURL(await store.get(TARGET));paintTarget();}
+  async function refreshTarget(){if(!store||pinBusy)return;const read=++targetRead,dest=chatURL(await store.get(TARGET));if(read!==targetRead||pinBusy)return;target=dest;paintTarget();}
   function chatAction(){
     if(!store){status('Shared storage unavailable.');return;}
     const here=chatURL(location.href);
@@ -573,8 +569,13 @@
   async function pinChat(){
     if(!store)return;const dest=chatURL(location.href);
     if(!dest){status('Open ChatGPT or an existing Gemini conversation first.');return;}
-    await store.set(TARGET,dest);if(await store.get(TARGET)!==dest)throw Error('Chat setting could not be read back');
-    await refreshTarget();await refreshHandoff(loadEpoch);wakeTransport();status('This conversation is now the Ask destination.');
+    if(pinBusy)return;
+    pinBusy=true;++targetRead;renderConnection();
+    try{
+      await store.set(TARGET,dest);if(await store.get(TARGET)!==dest)throw Error('Chat setting could not be read back');
+      target=dest;linkLog('selection',{selected:true});paintTarget();
+    }finally{pinBusy=false;renderConnection();}
+    await refreshHandoff(loadEpoch);wakeTransport();status('This conversation is now the Ask destination.');
   }
   function validReply(v,r){return v&&v.id===r.id&&v.target===r.target&&v.sourcePage===r.sourcePage&&typeof v.text==='string'&&v.text.length>0&&v.text.length<=LIMIT&&typeof v.created==='string';}
   function validSeen(v,r){return v&&v.id===r.id&&v.target===r.target&&typeof v.seenAt==='string';}
@@ -612,7 +613,7 @@
     const current=await mailbox();await store.set(MAILBOX,current.filter(e=>e.id!==id));
   }
   async function refreshHandoff(epoch){
-    const read=++handoffRead,here=chatURL(location.href),source=sourceURL();
+    const read=++handoffRead,here=chatURL(location.href),source=sourceURL(),selectionRead=targetRead;
     const dest=chatURL(await store.get(TARGET));
     const entries=(await mailbox()).filter(e=>e.target===here||e.sourcePage===source).sort((a,b)=>b.created.localeCompare(a.created));
     const found=[];
@@ -630,7 +631,7 @@
       if(!here)break;
     }
     if(epoch!==loadEpoch||read!==handoffRead||here!==chatURL(location.href)||source!==sourceURL())return;
-    target=dest;paintTarget();
+    if(selectionRead===targetRead&&!pinBusy){target=dest;paintTarget();}
     const matching=found.sort((a,b)=>b.created.localeCompare(a.created));
     sourceWatch=matching.some(r=>r.sourcePage===source&&!r.reply);
     // Source displays newest request; destination prioritizes unanswered requests.
@@ -657,7 +658,7 @@
     $('worker-send').hidden=!canRecoverSend;
     $('worker-recovery').hidden=!atChat||hasReply||!(fallback||pending?.copied);
     $('handoff-clear').hidden=atChat&&!fallback;
-    $('handoff').hidden=!pending||(atChat&&hasReply);
+    $('handoff').hidden=!pending||(atChat&&(hasReply||(!fallback&&!pending.copied)));
     $('handoff-preview').hidden=!atChat||!fallback||hasReply;
     $('handoff-preview').textContent=atChat?pending.text:'';
     $('handoff-copy').hidden=!atChat||!manual||hasReply;
@@ -794,7 +795,7 @@
   // version and observed state. This probe never submits a prompt or reads replies.
   const LINK_PING='link.ping.v1',LINK_HEART='link.heart.v1',LINK_INTERVAL=5000,LINK_TTL=25000;
   const instance=uid();
-  let linkBusy=false,linkTarget=null,challenge=null,lastProof=null,lastHeart=null,linkState='off',linkError=null,linkSeq=0,lastChallengeAt=0,linkStarted=0;
+  let linkBusy=false,linkTarget=null,challenge=null,lastProof=null,lastHeart=null,linkState='off',linkDetail='',linkError=null,linkSeq=0,lastChallengeAt=0,linkStarted=0;
   const linkEvents=[];
   function linkLog(event,detail={}){
     linkEvents.push({at:Date.now(),event,...detail});if(linkEvents.length>100)linkEvents.shift();
@@ -816,20 +817,37 @@
     if(heart.editor&&!heart.disabled&&!heart.draft)return 'ready';
     return 'uncertain';
   }
+  // The selection and heartbeat are independent observations. Only this
+  // renderer owns their presentation; routine mailbox refresh cannot reset it.
+  function renderConnection(){
+    const here=chatURL(location.href),selected=!!here&&here===target,chat=!!here;
+    const relevant=linkTarget===target;
+    const state=pinBusy?'checking':chat&&!selected?'off':relevant?linkState:'checking';
+    const label=pinBusy?'Selecting…':!selected?'Not selected':state==='ready'?'Ready':state==='responding'?'Responding':state==='uncertain'?'Needs attention':state==='stale'?'Unavailable':'Checking…';
+    const setText=(node,value)=>{if(node.textContent!==value)node.textContent=value;};
+    const setAttr=(node,key,value)=>{if(node.getAttribute(key)!==value)node.setAttribute(key,value);};
+    $('worker-pin').hidden=!chat||selected;$('worker-pin').disabled=pinBusy;
+    setText($('worker-pin'),'Use this chat');
+    setText($('worker-status'),label);
+    $('worker-status').title=selected&&relevant?linkDetail:label;
+    // Stable launcher text and width: color, not repeated label changes,
+    // conveys connection state. No extra connection subtitle.
+    setText($('open').lastChild,chat?' Pocket':' v'+VERSION);
+    $('open').title=chat?'Pocket · '+label+(selected&&linkDetail?' · '+linkDetail:''):'Pocket v'+VERSION+' · '+(linkDetail||'No chat selected');
+    for(const id of ['open','mode-ask','chat-target'])setAttr($(id),'data-link',state);
+    setText($('link-health'),chat?'':relevant?linkDetail:'Checking…');
+    $('mode-ask').title='Ask · '+(linkDetail||'No chat selected');
+  }
   function paintLink(next,detail){
-    if(next!==linkState){linkState=next;linkLog('state',{state:next,detail});}
-    for(const id of ['open','mode-ask','chat-target'])$(id).setAttribute('data-link',next);
-    $('link-health').textContent=detail;
-    $('worker-detail').textContent=detail;
-    if(chatURL(location.href)&&chatURL(location.href)===target){$('worker-status').textContent=next==='ready'?'Ready':next==='responding'?'Responding':next==='uncertain'?'Needs attention':'Selected chat';}
-    if(chatURL(location.href)&&chatURL(location.href)===target){$('open').lastChild.textContent=next==='ready'?' Ready':next==='responding'?' Responding':' Selected chat';}
-    $('mode-ask').title='Ask · '+detail;
+    if(next!==linkState||detail!==linkDetail){linkState=next;linkDetail=detail;linkLog('state',{state:next,detail});}
+    renderConnection();
   }
   async function linkTick(){
     if(!store||linkBusy||(document.hidden&&!chatURL(location.href)))return;
     linkBusy=true;
     try{
-      const dest=chatURL(await store.get(TARGET)),here=chatURL(location.href);
+      const selectionRead=targetRead,dest=chatURL(await store.get(TARGET)),here=chatURL(location.href);
+      if(pinBusy||selectionRead!==targetRead)return;
       if(dest!==linkTarget){linkTarget=dest;challenge=null;lastProof=null;lastHeart=null;lastChallengeAt=0;linkStarted=Date.now();linkLog('destination changed',{selected:!!dest});}
       if(target!==dest||$('panel').dataset.chat!==String(!!here)){target=dest;paintTarget();}
       if(!dest){paintLink('off','No chat selected');return;}
@@ -868,7 +886,10 @@
     }catch(e){linkError=String(e?.message||e).slice(0,300);paintLink('stale','Chat connection check failed');linkLog('error',{message:linkError});}
     finally{linkBusy=false;}
   }
-  async function copyConnectionReport(){await copyText(JSON.stringify({version:VERSION,instance,target:linkTarget,state:linkState,challenge,lastProof,lastHeart,ageMs:lastHeart?Date.now()-lastHeart.at:null,error:linkError,visibility:document.visibilityState,intervalMs:LINK_INTERVAL,expiryMs:LINK_TTL,mailbox:'metadata index; direct request keys',autoStartExpiryMs:AUTO_START_TTL,events:linkEvents,selfTest:lastSelfTest,request:pending?{id:pending.id,created:pending.created,worker:pending.autoWorker||null,seen:pending.seen,copied:pending.copied,returned:!!pending.reply,manualReason:pending.manualReason||null,run:pending.run}:null,scope:'Local GM ping/pong, editor/stop observations and explicit Ask transaction events. No prompt or answer text in this report.'},null,2));}
+  async function copyConnectionReport(){
+    const here=chatURL(location.href);let savedTrace=null,traceReadError=null;
+    try{await traceWrites;if(store&&here)savedTrace=await store.get(TRACE+here);}catch(e){traceReadError=String(e?.message||e).slice(0,200);}
+    await copyText(JSON.stringify({version:VERSION,instance,target:linkTarget,state:linkState,challenge,lastProof,lastHeart,ageMs:lastHeart?Date.now()-lastHeart.at:null,error:linkError,visibility:document.visibilityState,intervalMs:LINK_INTERVAL,expiryMs:LINK_TTL,mailbox:'metadata index; direct request keys',autoStartExpiryMs:AUTO_START_TTL,events:linkEvents,selfTest:lastSelfTest||savedTrace?.selfTest||null,execution:executionTrace||savedTrace?.execution||null,traceReadError,traceError,request:pending?{id:pending.id,created:pending.created,worker:pending.autoWorker||null,seen:pending.seen,copied:pending.copied,returned:!!pending.reply,manualReason:pending.manualReason||null,run:pending.run}:null,scope:'Local GM ping/pong, editor/stop observations and explicit Ask transaction events. No prompt or answer text in this report.'},null,2));}
   action('link-report',copyConnectionReport);
   function extractPocketAnswer(last) {
     if(!last)return '';
@@ -952,15 +973,43 @@
   // handoffs and image questions are never submitted by this worker.
   // A fresh heartbeat binds each job to one live tab, not merely a URL.
   const AUTO_START_TTL=120000,AUTO_TIMEOUT=20*60*1000;
-  let autoBusy=false,activeAsk=null,lastSelfTest=null;
+  let autoBusy=false,activeAsk=null,lastSelfTest=null,executionTrace=null,traceWrites=Promise.resolve(),traceError=null;
+  const traceSnapshot=()=>{
+    const e=chatEditor(),b=sendControl(),u=fingerprint(),a=lastTurn('assistant');
+    return {visibility:document.visibilityState,hasFocus:document.hasFocus(),surface:chatSurface(),editor:!!e,editorFocused:!!e&&document.activeElement===e,editorCharacters:editorText(e).length,attachments:composerAttachments(e),sendControl:!!b,sendEnabled:canSend(b),streaming:streamActive(),turnState:latestTurnState(),userCount:u.count,userId:u.id,assistantCount:turns('assistant').length,assistantId:turnID(a)};
+  };
+  function checkpointTrace(r){
+    if(!store||!r?.target)return;
+    const key=TRACE+r.target,execution=executionTrace?.id===r.id?JSON.parse(JSON.stringify(executionTrace)):null,selfTest=lastSelfTest?.id===r.id?JSON.parse(JSON.stringify(lastSelfTest)):null;
+    traceWrites=traceWrites.then(async()=>{
+      const prev=await store.get(key);
+      await store.set(key,{schema:1,version:VERSION,updated:Date.now(),execution:execution||prev?.execution||null,selfTest:selfTest||prev?.selfTest||null});
+    }).catch(e=>{traceError=String(e?.message||e).slice(0,200);linkLog('error',{message:'Trace checkpoint: '+traceError});});
+  }
+  function recordStage(r,phase,detail,extra={}){
+    if(!r)return;
+    if(executionTrace?.id!==r.id)executionTrace={id:r.id,started:Date.now(),target:r.target,selfTest:!!r.selfTest,worker:instance,promptCharacters:r.text?.length||0,stages:[],observations:[]};
+    let snapshot;try{snapshot=traceSnapshot();}catch(e){snapshot={error:String(e?.message||e).slice(0,180)};}
+    const event={phase,detail,elapsedMs:Date.now()-executionTrace.started,at:Date.now(),...extra,dom:snapshot};
+    executionTrace.phase=phase;executionTrace.detail=detail;
+    executionTrace.stages.push(event);if(executionTrace.stages.length>80)executionTrace.stages.shift();
+    if(r.selfTest&&lastSelfTest?.id===r.id){lastSelfTest.phase=phase;lastSelfTest.detail=detail;lastSelfTest.stages.push(event);Object.assign(lastSelfTest,extra);}
+    checkpointTrace(r);
+  }
+  function recordObservation(a,extra={}){
+    if(executionTrace?.id!==a.r.id)return;
+    const snapshot={...traceSnapshot(),...extra},signature=JSON.stringify(snapshot);
+    if(a.traceSignature===signature)return;
+    a.traceSignature=signature;
+    executionTrace.observations.push({elapsedMs:Date.now()-executionTrace.started,at:Date.now(),...snapshot});
+    if(executionTrace.observations.length>100)executionTrace.observations.shift();
+    checkpointTrace(a.r);
+  }
   const terminalTest=phase=>['done','failed','uncertain'].includes(phase);
   function testStage(r,phase,detail,extra={}){
+    recordStage(r,phase,detail,extra);
     if(!r?.selfTest||lastSelfTest?.id!==r.id)return;
     const now=Date.now();
-    lastSelfTest.phase=phase;
-    lastSelfTest.detail=detail;
-    lastSelfTest.stages.push({phase,detail,elapsedMs:now-lastSelfTest.started,...extra});
-    Object.assign(lastSelfTest,extra);
     const terminal=terminalTest(phase);
     $('self-test-run').disabled=!terminal;
     $('self-test-status').dataset.result=phase==='done'?(lastSelfTest.markerMatched===false?'fail':'pass'):terminal?'fail':'';
@@ -989,7 +1038,7 @@
       await startAsk(r);
       if(!activeAsk&&!terminalTest(lastSelfTest.phase))testStage(r,'failed','No submission confirmed. Check the native composer.');
     }catch(e){testStage(r,'failed',String(e?.message||e).slice(0,220)+' · Check chat before retrying.');}
-    finally{autoBusy=false;wakeTransport();}
+    finally{if(!activeAsk&&terminalTest(lastSelfTest.phase)){await traceWrites;await cleanupSelfTest(r);}autoBusy=false;wakeTransport();}
   }
   async function cleanupSelfTest(r){
     if(!r?.selfTest)return;
@@ -1028,7 +1077,7 @@
     if(check?.worker!==instance||check.phase!==phase||check.at!==state.at)throw Error('Run receipt readback failed');
     linkLog('ask',{id:r.id,phase,detail});
     testStage(r,phase,detail);
-    if(r.selfTest&&terminalTest(phase))await cleanupSelfTest(r);
+    if(r.selfTest&&terminalTest(phase)){await traceWrites;await cleanupSelfTest(r);}
     return true;
   }
   async function finishAsk(a,phase,detail){
@@ -1045,16 +1094,19 @@
       if(!await ownsRequest(r))return;
       if(!await markRun(r,'claimed','Bound chat tab received request'))return;
       if(!await ownsRequest(r))return;
+      testStage(r,'preflight','Checking composer and existing draft');
       const editor=chatEditor();
       if(!editor||editorText(editor)||composerAttachments(editor)||streamActive()){
         await markRun(r,'failed','Chat is busy or contains a draft. No send attempted.');return;
       }
       const baseline=fingerprint(),expected=normalizeChat(r.text);
       editor.focus({preventScroll:true});
+      testStage(r,'focus','Composer focus attempted');
       if(document.activeElement!==editor||editorText(editor)||composerAttachments(editor)){await markRun(r,'failed','Composer focus or empty draft not verified. No send attempted.');return;}
       // SwarmX/client.py uses execCommand insertText in the real document.
       // Do not fabricate a paste event or overwrite a pre-existing draft.
-      document.execCommand('insertText',false,r.text);
+      const inserted=document.execCommand('insertText',false,r.text);
+      testStage(r,'insert-attempt','insertText invoked',{commandReturned:!!inserted,expectedCharacters:expected.length,actualCharacters:editorText(chatEditor()).length});
       if(editorText(chatEditor())!==expected){await markRun(r,'failed','Composer insertion not verified. Check draft before manual paste.');return;}
       testStage(r,'inserted','Composer insertion verified');
       const deadline=Date.now()+8000;
@@ -1069,8 +1121,9 @@
       activeAsk={r,baseline,expected,started:Date.now(),user:null,seenBusy:false,answer:'',stableAt:0,assistantID:null,assistantNode:null};
       attempted=true;
       sendControl().click();
-      activeAsk.seenBusy=streamActive();
       linkLog('ask-click',{id:r.id});testStage(r,'clicked','Send clicked · waiting for matching user turn');
+      activeAsk.seenBusy=streamActive();
+      if(activeAsk.seenBusy)testStage(r,'generating','Response generation observed immediately after click');
     }catch(e){
       activeAsk=null;await markRun(r,attempted?'uncertain':'failed',String(e?.message||e).slice(0,220)+(attempted?' · Check chat; do not resend.':' · No send attempted.'));
     }
@@ -1080,6 +1133,7 @@
     if(!(await store.get(HANDOFF+r.id))||validReply(await store.get(REPLY+r.id),r)){activeAsk=null;testStage(r,'uncertain','Request receipt changed before observation completed. Check chat.');return;}
     if(chatURL(location.href)!==r.target){await finishAsk(a,'uncertain','Conversation changed during request');return;}
     const now=Date.now(),busyNow=streamActive(),current=fingerprint();
+    recordObservation(a,{userMatches:current.text===a.expected,userChanged:!sameTurn(a.baseline,current)});
     if(busyNow&&!a.seenBusy)testStage(r,'generating','Response generation observed');
     a.seenBusy=a.seenBusy||busyNow;
     if(now-a.started>AUTO_TIMEOUT){await finishAsk(a,'uncertain','Response not confirmed within 20 minutes');return;}
@@ -1087,6 +1141,7 @@
       if(!sameTurn(a.baseline,current)){
         if(current.text!==a.expected){await finishAsk(a,'uncertain','A different user message appeared');return;}
         a.user=current;
+        testStage(r,'user-verified','New user turn matched submitted text',{userId:current.id,userCount:current.count});
         if(!await markRun(r,'sent','Matching new user turn observed')){activeAsk=null;return;}
       }else{
         if(now-a.started>45000)await finishAsk(a,'uncertain','Matching user turn not observed after send attempt');
@@ -1100,12 +1155,13 @@
     const text=extractPocketAnswer(candidate);
     if(!text)return;
     const id=turnID(candidate),sameCandidate=id? id===a.assistantID:candidate===a.assistantNode;
-    if(!sameCandidate||text!==a.answer||!a.stableAt){a.answer=text;a.stableAt=now;a.assistantID=id;a.assistantNode=candidate;return;}
+    if(!sameCandidate||text!==a.answer||!a.stableAt){a.answer=text;a.stableAt=now;a.assistantID=id;a.assistantNode=candidate;testStage(r,'candidate','Assistant response candidate observed',{answerCharacters:text.length,assistantId:id});return;}
     const article=candidate.closest('article,[data-testid^="conversation-turn-"]');
     const completed=modern?candidate.closest('[data-talvt-turn-state]')?.getAttribute('data-talvt-turn-state')==='complete':!!article?.querySelector('button[data-testid="copy-turn-action-button"],button[data-testid="good-response-turn-action-button"],button[data-testid="bad-response-turn-action-button"]');
     // Stable text alone is not proof of completion. Require either observed
     // streaming followed by idle or an explicit completed-turn control.
     if(now-a.stableAt<6000||(modern?!completed:(!a.seenBusy&&!completed)))return;
+    testStage(r,'completion','Response completion verified',{explicitCompletion:completed,observedGeneration:a.seenBusy,stableMs:now-a.stableAt,assistantId:id});
     if(text.length>LIMIT){await finishAsk(a,'uncertain','Answer exceeds Pocket text limit; copy from chat');return;}
     if(streamActive()||!sameTurn(a.user,fingerprint())||chatURL(location.href)!==r.target)return;
     if(validReply(await store.get(REPLY+r.id),r)){activeAsk=null;return;}
@@ -1114,7 +1170,7 @@
     await store.set(REPLY+r.id,reply);
     const check=await store.get(REPLY+r.id);
     if(!validReply(check,r)||check.text!==text)throw Error('Answer readback failed');
-    if(r.selfTest)testStage(r,'extracted','Completed answer extracted and stored', {answerCharacters:text.length,markerMatched:lastSelfTest?.expectedMarker?normalizeChat(text)===lastSelfTest.expectedMarker:null});
+    testStage(r,'extracted','Completed answer extracted and stored', {answerCharacters:text.length,replyReadback:true,markerMatched:r.selfTest&&lastSelfTest?.expectedMarker?normalizeChat(text)===lastSelfTest.expectedMarker:null});
     await finishAsk(a,'done','Matching assistant answer returned');
   }
   async function autoTick(){
@@ -1177,8 +1233,9 @@
       else if(!document.hidden||worker||activeAsk)transportTimer=setTimeout(transportTick,active?500:2000);
     }
   }
-  document.addEventListener('visibilitychange',wakeTransport);
-  window.addEventListener('pageshow',wakeTransport);
+  document.addEventListener('visibilitychange',()=>{linkLog('visibility',{state:document.visibilityState});if(activeAsk)recordObservation(activeAsk,{lifecycle:'visibilitychange'});wakeTransport();});
+  window.addEventListener('pageshow',e=>{linkLog('pageshow',{persisted:e.persisted});if(activeAsk)recordObservation(activeAsk,{lifecycle:'pageshow'});wakeTransport();});
+  window.addEventListener('pagehide',e=>{linkLog('pagehide',{persisted:e.persisted});if(activeAsk)recordObservation(activeAsk,{lifecycle:'pagehide'});});
   wakeTransport();
   window.addEventListener('popstate',refreshVisible);
   window.addEventListener('pageshow',refreshVisible);
