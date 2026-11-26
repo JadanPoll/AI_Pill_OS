@@ -1,6 +1,6 @@
 {
   "schema": "ai_pill_os.capability_atlas",
-  "version": 7,
+  "version": 8,
   "updated": "2026-11-25",
   "purpose": "Can I operate at the speed of thought? Living design inventory, not a promise of implementation.",
   "design_rules": {
@@ -76,7 +76,18 @@
     "siri_run": "https://support.apple.com/guide/shortcuts/run-shortcuts-with-siri-apd07c25bb38/ios",
     "voice_semantic": "https://support.apple.com/guide/ipad/use-voice-control-ipad4b6c9ee4/27/ipados/27",
     "shortcut_script": "https://scriptable.app/",
-    "shortcut_actions": "https://sindresorhus.com/actions"
+    "shortcut_actions": "https://sindresorhus.com/actions",
+    "minis_send": "https://github.com/OpenMinis/OpenMinis/blob/main/src/ios/Agent/Intents/SendPromptIntent.swift",
+    "minis_result": "https://github.com/OpenMinis/OpenMinis/blob/main/src/ios/Agent/Intents/SendPromptResult.swift",
+    "minis_status": "https://github.com/OpenMinis/OpenMinis/blob/main/src/ios/Agent/Intents/GetSessionStatusIntent.swift",
+    "minis_builder": "https://github.com/OpenMinis/MinisSkills/tree/main/shortcuts-builder",
+    "onscreen": "https://support.apple.com/guide/shortcuts/apd350ce757a/ios",
+    "safari_js": "https://support.apple.com/guide/shortcuts/apdb71a01d93/ios",
+    "switch_action": "https://support.apple.com/en-gb/121131",
+    "switch_recipe": "https://mattpopovich.com/posts/ios-built-in-auto-clicker-full-guide/",
+    "voice_replay": "https://www.reddit.com/r/shortcuts/comments/fk8fsg/",
+    "voice_switch": "https://www.reddit.com/r/shortcuts/comments/r7bx67/",
+    "voice_negative": "https://www.reddit.com/r/shortcuts/comments/1h3538u/"
   },
   "capabilities": [
     {
@@ -115,7 +126,8 @@
       "why": "Visual context is essential for figures, equations, UI state, remote desktops and bugs; avoids explaining what is already visible.",
       "mechanisms": [
         "Screenshot share sheet or Take Screenshot action; choose image; attach to supported AI app; OCR only when text is needed",
-        "Optional explicit crop/redaction"
+        "Optional explicit crop/redaction",
+        "Take Screenshot -> Dictate Text -> Minis Send Prompt with image attachment -> Response; compare supported Receive What's On Screen for structured context."
       ],
       "depends_on": [
         "capture.screen"
@@ -125,7 +137,9 @@
       "sources": [
         "screenshot",
         "assistive",
-        "shortcuts"
+        "shortcuts",
+        "minis_send",
+        "onscreen"
       ],
       "boundary": "No automatic silent uploads; protected content and current-screen capture may be restricted; image model input/return must be tested."
     },
@@ -431,6 +445,7 @@
       ],
       "why": "iSH is already installed; ordinary git, jq, grep, curl and Python can remove repetitive file/JSON operations without an AI request.",
       "mechanisms": [
+        "OpenMinis embedded local shell: user-reported Git clone and JSON validation passed; separate iSH deferred.",
         "iSH Alpine x86 emulation; install needed packages via apk",
         "Files app / explicit import-export or user-selected mount"
       ],
@@ -442,7 +457,7 @@
         "ish_files",
         "ecosystem"
       ],
-      "boundary": "iSH does not grant native iPad UI access; package compatibility and file-provider paths require verification."
+      "boundary": "iSH does not grant native iPad UI access; package compatibility and file-provider paths require verification. Reported Minis test covers shell/Git validation only, not standalone iSH."
     },
     {
       "id": "compute.bridge",
@@ -796,19 +811,24 @@
       ],
       "why": "Can certify a supported subscription-based inference path without relying on automated web-chat extraction.",
       "mechanisms": [
+        "OpenMinis Send Prompt App Intent: prompt, optional attachments/session/model, Wait for Result, structured Response/Status/Session ID. Use installed model connection before alternative inference routes.",
         "Manual clipboard handoff; Apple Shortcuts Get Clipboard -> Use Model (ChatGPT) -> Copy to Clipboard; explicit invocation by pill"
       ],
       "depends_on": [
         "intelligence.ask"
       ],
-      "acceptance": "On iPad, copy a real contextual prompt, run AI Pill Ask, confirm model response, paste it into Safari; then investigate automatic return if justified.",
+      "acceptance": "Run a Shortcut with Get Clipboard -> Minis Send Prompt (Wait for Result on) -> inspect Status and Response -> copy completed Response. Then test real Safari diagnostic JSON and screenshot attachments independently; recover session when status Running. No same-page automatic return assumed.",
       "week_later": "Only keep as default if it is faster than opening ChatGPT; retain browser handoff.",
       "sources": [
         "native_model",
         "devtools",
-        "oauth"
+        "oauth",
+        "minis_send",
+        "minis_result",
+        "minis_status",
+        "minis_builder"
       ],
-      "boundary": "Requires an eligible device or supported ChatGPT app action; no assumption of installed Shortcut or automatic callback."
+      "boundary": "Requires an eligible device or supported ChatGPT app action; no assumption of installed Shortcut or automatic callback. Upstream Swift implements structured result; installed-version behavior and background limits untested."
     },
     {
       "id": "control.dispatch",
@@ -922,11 +942,11 @@
     }
   ],
   "next_experiments": [
-    "Install OpenMinis from App Store if compatible; establish an authorized model connection and complete one real research or Git task. Check whether existing workspace and skill features replace planned work; do not configure broad device control before testing ordinary app utility.",
+    "Minis Send Prompt with Wait for Result on: test clipboard text, inspect returned Status/Response/Session ID; then real Kami screenshot attachment and Safari report. Keep explicit review before execution.",
+    "Inspect Set Switch Control Switch State action parameters; test one supervised harmless voice playback canary only if needed. Prefer native structured channels.",
+    "Use the current userscript version for real inspect/record/source excerpt and read-only plan handoff; preserve device-side failures.",
     "Test native Describe a Shortcut if available; otherwise compile/sign/import one minimal Cherri shortcut. Bind a non-screenshot accessibility trigger once and test a reviewed implementation update without rebinding. Test native Voice Control on AI Pill accessible button names; no new custom voice recognizer.",
     "v0.3.0: cold-demo Inspect/Record/Sources/DevTools; record while closed and stop after reopening; verify contextual Copy and source search; revisit usefulness after a week and a month.",
-    "On the same GitHub page test v0.2.1 opacity/height/close, Sources file filter, format HTML/JS, search and review/copy an excerpt; report concrete failure if blocked.",
-    "Install AI_Pill.user.js v0.1.1 on iPad; inspect a real site element, record an interaction, copy report to ChatGPT and run a read-only plan. Test Eruda separately. Then test AI Pill Ask Shortcut; defer iSH.",
     "Choose one heavily used site and compare two or three representative recurring tasks in its stock and specialized UI; preserve existing scripts and validate on iPad Safari before changing defaults.",
     "Preserve existing AssistiveTouch double tap; manually test screenshot+question handoff.",
     "Enable Voice Control and test known native commands; then test dictation to a minimal DOM pill on GitHub/Kami.",
@@ -952,6 +972,24 @@
       "capability": "develop.inspect",
       "evidence": "User screenshots show Eruda Elements and Sources opened in iPad Safari on GitHub; user reports opacity, thumb ergonomics and source readability problems.",
       "scope": "Eruda panel launch and HTML/DOM visibility observed, not full network capture or custom export."
+    },
+    {
+      "date": "2026-11-25",
+      "capability": "intelligence.ask",
+      "evidence": "User reports OpenMinis installed and ChatGPT connection works.",
+      "scope": "User-reported model connection; no Shortcut inference or authorization audit."
+    },
+    {
+      "date": "2026-11-25",
+      "capability": "compute.shell",
+      "evidence": "User relayed Minis audit: cloned AI_Pill_OS at fd9372b, inspected repository, strict JSON parsing and 16 semantic checks passed (27 capabilities, 7 workflows, 23 edges).",
+      "scope": "Reported actual Minis local runtime and read-only Git success; no remote writes, separate iSH or independent validator execution established."
+    },
+    {
+      "date": "2026-11-25",
+      "capability": "control.dom",
+      "evidence": "User relayed Minis navigated GitHub and extracted REM-04.01 using its built-in browser.",
+      "scope": "Minis browser only, no active Safari session access."
     }
   ],
   "thoughts": [
@@ -966,7 +1004,8 @@
     "A developer tool should optimize time to useful evidence, not reproduce the appearance of desktop F12. Prefer thumb-sized controls and a direct searchable source-to-excerpt workflow.",
     "A capability earning its existence does not imply its control earns permanent screen space. Familiar icon, contextual appearance, secondary control and removal are distinct choices.",
     "Accessibility is an input layer, Shortcuts a native capability layer, and reviewed versioned code/data a replaceable implementation layer. Keep the binding stable while iterating behind it.",
-    "OpenMinis and iCTRL materially change the build-versus-reuse decision. The unique value of AI Pill OS may be specialized personal interfaces and context/action routing, not a new general agent harness."
+    "OpenMinis and iCTRL materially change the build-versus-reuse decision. The unique value of AI Pill OS may be specialized personal interfaces and context/action routing, not a new general agent harness.",
+    "Use Minis App Intents as the first inference transport; separate evidence capture, model execution, and action execution. A reported built-in browser success does not certify Safari access."
   ],
   "site_scripts": {
     "purpose": "A collection of focused personal interface implementations. Existing code remains canonical in its own repository; this is a source index, not duplicate scripts or a universal injected runtime.",
@@ -1145,5 +1184,67 @@
       }
     ],
     "decision": "Try OpenMinis on the target iPad first with a supported model connection and one real Git/JSON or research task; no new agent runtime before evaluating fit. Keep existing personalized userscripts and DevTools. Investigate iCTRL signing/setup separately only if native UI control has material recurring utility. Borrow Relay's contextual capture and Talon's semantic command language, not every feature."
+  },
+  "minis_acceptance": {
+    "date": "2026-11-25",
+    "reported_by": "user relaying Minis audit",
+    "repository_commit": "fd9372b",
+    "experiments": [
+      {
+        "id": "github",
+        "status": "passed",
+        "evidence": "Read-only clone and inspection; no remote writes."
+      },
+      {
+        "id": "visual",
+        "status": "pending",
+        "evidence": "Real Kami screenshot required."
+      },
+      {
+        "id": "browser",
+        "status": "passed",
+        "evidence": "Built-in browser extracted REM-04.01; not Safari."
+      },
+      {
+        "id": "local",
+        "status": "passed",
+        "evidence": "Strict JSON parse and 16 checks; 27 capabilities, 7 workflows, 23 edges at audited commit."
+      },
+      {
+        "id": "native",
+        "status": "pending",
+        "evidence": "No device-side Shortcut invocation established."
+      }
+    ]
+  },
+  "native_control_research": {
+    "date": "2026-11-25",
+    "acoustic": {
+      "status": "conflicting_community_reports",
+      "sources": [
+        "voice_replay",
+        "voice_switch",
+        "voice_negative"
+      ],
+      "finding": "Historical same-device TTS success reports (including Switch Control coexistence) and failures on iOS 15/18; recent anecdotal success. No current target iPad evidence.",
+      "experiment": "Only supervised harmless Show Numbers/Hide Numbers canary. Compare spoken human baseline to Shortcut Speak Text. If unreliable, stop; prefer explicit native intents and deterministic Safari actions. Do not chain commands or use sensitive apps."
+    },
+    "switch_control": {
+      "status": "documented_action_unresolved_semantics",
+      "sources": [
+        "switch_action",
+        "switch_recipe"
+      ],
+      "finding": "Apple documents Set Switch Control Switch State from iOS 18. Does not establish simulated switch press or gesture invocation. Recipes support saved gestures from configured switch input.",
+      "experiment": "Inspect the action's actual parameter choices; if it only enables/disables switches, close branch rather than equate with touch injection."
+    },
+    "safari": {
+      "status": "documented",
+      "sources": [
+        "onscreen",
+        "safari_js"
+      ],
+      "finding": "Receive What's On Screen can supply supported app content. Safari Run JavaScript on Webpage requires appropriate page input and user permission; test Share Sheet first. No claim of arbitrary native accessibility tree or unattended UI automation."
+    }
   }
 }
