@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         AI Pill OS - Pocket
 // @namespace    https://github.com/JadanPoll/AI_Pill_OS
-// @version      0.7.0
+// @version      0.7.1
 // @updateURL    https://raw.githubusercontent.com/JadanPoll/AI_Pill_OS/main/Pocket.user.js
 // @downloadURL  https://raw.githubusercontent.com/JadanPoll/AI_Pill_OS/main/Pocket.user.js
 // @description  Universal Safari pill: collect evidence, keep discoveries, and hand a question to a chosen chat.
@@ -24,7 +24,7 @@
 (() => {
   'use strict';
   if (window.top !== window) return;
-  const VERSION='0.7.0';
+  const VERSION='0.7.1';
   // Report initialization failures without depending on the main UI, storage or a CDN.
   function bootFailure(error,phase){
     const message=String(error?.message||error).slice(0,500);
@@ -593,19 +593,20 @@
     const interrupted=!!auto&&!!run&&!['failed','uncertain','done'].includes(run.phase)&&((atChat&&auto!==instance)||(Date.now()-run.at>AUTO_TIMEOUT));
     const manual=!auto||expired||run?.phase==='failed';
     const fallback=manual||interrupted||run?.phase==='uncertain';
+    const connectionLost=!!auto&&!atChat&&!hasReply&&linkState==='stale';
     if(replyDraftId!==pending?.id){$('reply-compose').open=false;$('reply-draft').value='';replyDraftId=pending?.id||null;}
     $('handoff').hidden=!pending;
     $('handoff-preview').hidden=!atChat||!fallback||hasReply;
     $('handoff-preview').textContent=atChat?pending.text:'';
     $('handoff-copy').hidden=!atChat||!manual||hasReply;
-    $('handoff-open').hidden=!pending||atChat||hasReply||!fallback;
+    $('handoff-open').hidden=!pending||atChat||hasReply||!(fallback||connectionLost);
     $('reply-compose').hidden=!atChat||hasReply||!(pending?.copied||interrupted||run?.phase==='uncertain');
     $('reply-result').hidden=!hasReply;
     $('handoff-reply').textContent=hasReply?pending.reply.text:'';
     $('open').setAttribute('data-incoming',String(!!pending&&(atChat?fallback&&!pending.copied&&!hasReply:hasReply)));$('mode-ask').setAttribute('data-incoming',String(!!pending&&(atChat?fallback&&!pending.copied&&!hasReply:hasReply)));
     if(pending){
       $('handoff-open').href=chatURL(pending.target);
-      $('handoff-status').textContent=hasReply?(atChat?'Answer returned':'Answer received'):pending.copied?'Question copied · awaiting answer':interrupted?'Submission may have occurred · check chat, do not resend':run?.phase==='uncertain'?'Check chat · '+run.detail:run?.phase==='failed'?'Manual fallback · '+run.detail:manual?(expired?'Chat did not claim question · open chat':atChat?'Copy question to chat':pending.manualReason||'Open chat to send'):run?.phase==='sent'?'ChatGPT is responding…':run?.phase==='armed'?'Checking submission…':run?.phase==='claimed'?'Sending to ChatGPT…':'Queued for connected chat…';
+      $('handoff-status').textContent=hasReply?(atChat?'Answer returned':'Answer received'):pending.copied?'Question copied · awaiting answer':interrupted?'Submission may have occurred · check chat, do not resend':run?.phase==='uncertain'?'Check chat · '+run.detail:run?.phase==='failed'?'Manual fallback · '+run.detail:manual?(expired?'Chat did not claim question · open chat':atChat?'Copy question to chat':pending.manualReason||'Open chat to send'):connectionLost?'Chat connection paused · check selected tab':run?.phase==='sent'?'ChatGPT is responding…':run?.phase==='armed'?'Checking submission…':run?.phase==='claimed'?'Sending to ChatGPT…':'Queued for connected chat…';
     }else $('handoff-open').removeAttribute('href');
   }
   async function returnAnswer(){
@@ -648,7 +649,7 @@
       const id=uid(),r={id,created:new Date().toISOString(),sourcePage:origin,target:dest,text,...(autoWorker?{autoWorker}:{manualReason})};
       await store.set(HANDOFF+id,r);
       const check=await store.get(HANDOFF+id);if(check?.id!==id||check.text!==text||check.target!==dest)throw Error('Handoff could not be read back');
-      if($('draft').value.trim()===question)$('draft').value='';if(quoted===passage)setQuote('');attachments=attachments.filter(v=>!explicit.some(r=>r.id===v.id));paintAttachments();$('include-tray').checked=false;await load();status(r.autoWorker?'Question sent to the connected tab.':'Question prepared. '+r.manualReason);
+      if($('draft').value.trim()===question)$('draft').value='';if(quoted===passage)setQuote('');attachments=attachments.filter(v=>!explicit.some(r=>r.id===v.id));paintAttachments();$('include-tray').checked=false;await load();status(r.autoWorker?'Question queued for the connected tab.':'Question prepared. '+r.manualReason);
     }finally{handoffBusy=false;$('ask').disabled=false;}
   }
   async function copyHandoff(){
@@ -768,7 +769,7 @@
     }catch(e){linkError=String(e?.message||e).slice(0,300);paintLink('stale','Chat connection check failed');linkLog('error',{message:linkError});}
     finally{linkBusy=false;}
   }
-  action('link-report',async()=>{await copyText(JSON.stringify({version:VERSION,instance,target:linkTarget,state:linkState,challenge,lastProof,lastHeart,ageMs:lastHeart?Date.now()-lastHeart.at:null,error:linkError,visibility:document.visibilityState,intervalMs:LINK_INTERVAL,expiryMs:LINK_TTL,events:linkEvents,scope:'Local GM ping/pong, editor/stop observations and explicit Ask transaction events. No prompt or answer text in this report.'},null,2));});
+  action('link-report',async()=>{await copyText(JSON.stringify({version:VERSION,instance,target:linkTarget,state:linkState,challenge,lastProof,lastHeart,ageMs:lastHeart?Date.now()-lastHeart.at:null,error:linkError,visibility:document.visibilityState,intervalMs:LINK_INTERVAL,expiryMs:LINK_TTL,events:linkEvents,request:pending?{id:pending.id,created:pending.created,worker:pending.autoWorker||null,seen:pending.seen,copied:pending.copied,returned:!!pending.reply,manualReason:pending.manualReason||null,run:pending.run}:null,scope:'Local GM ping/pong, editor/stop observations and explicit Ask transaction events. No prompt or answer text in this report.'},null,2));});
   function extractPocketAnswer(last) {
     if(!last)return '';
     const clone = last.cloneNode(true);
@@ -843,7 +844,7 @@
         walk(markdownEl, lines);
         let text = lines.join('');
         preBlocks.forEach((b, i) => { text = text.replace(`\x00PRE_${i}\x00`, '\n' + b + '\n'); });
-        return text.replace(/\n{3,}/g, '\n\n').replace(/(\w)²/g, '$1**2').trim();
+        return text.replace(/\n{3,}/g, '\n\n').trim();
     }
 
   // ChatGPT text round trip. Explicit Ask is the authorization; old/manual
