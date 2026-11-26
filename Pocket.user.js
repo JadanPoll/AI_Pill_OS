@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         AI Pill OS - Pocket
 // @namespace    https://github.com/JadanPoll/AI_Pill_OS
-// @version      0.7.31
+// @version      0.7.32
 // @updateURL    https://raw.githubusercontent.com/JadanPoll/AI_Pill_OS/main/Pocket.user.js
 // @downloadURL  https://raw.githubusercontent.com/JadanPoll/AI_Pill_OS/main/Pocket.user.js
 // @description  Universal Safari pill: collect evidence, keep discoveries, and hand a question to a chosen chat.
@@ -26,7 +26,7 @@
 (() => {
   'use strict';
   if (window.top !== window) return;
-  const VERSION='0.7.31';
+  const VERSION='0.7.32';
   // Report initialization failures without depending on the main UI, storage or a CDN.
   function bootFailure(error,phase){
     const message=String(error?.message||error).slice(0,500);
@@ -85,7 +85,7 @@
     btn('open','pocket','Open AI Pocket','v'+VERSION)+
     '<section id="panel" data-mode="home" hidden><div class="row"><h3 class="grow" id="panel-title">Pocket <small>v'+VERSION+'</small></h3>'+btn('worker-notes','notes','Open Notes', '')+btn('close','close','Close Pocket')+'</div><div id="worker" hidden><div class="row"><span class="grow" id="worker-status" role="status">Checking…</span><button id="worker-pin" hidden>Use this chat</button><button id="rename-worker" hidden type="button" title="Edit receiver name" aria-label="Edit receiver name">✎</button></div><section id="self-test" hidden><div class="row"><input id="self-test-prompt" class="grow" placeholder="Optional test message" aria-label="Optional self-test message"><button id="self-test-run" title="Send a real message in this chat and verify its response">Ask test</button></div><small id="self-test-status" role="status"></small><div class="row"><button id="model-test" class="grow">Model test</button><select id="model-test-options" hidden aria-label="Choose model for test"></select></div><small id="model-test-status" role="status"></small><div class="row"><button id="mic-test" class="grow">Mic test</button><button id="mic-test-stop" hidden>Stop</button></div><small id="mic-test-status" role="status"></small><textarea id="mic-test-result" hidden rows="3" readonly aria-label="Test transcript"></textarea></section><div class="row">'+btn('worker-report','copy','Copy diagnostic report','Report')+btn('worker-refresh','refresh','Refresh connection','')+'<button id="keep-awake" type="button" aria-pressed="false" title="Experimental audio keep-awake; may use battery or interrupt other audio">Keep awake</button></div><div class="row" id="audio-mode-row" hidden><small class="grow">Audio session</small><select id="audio-mode" aria-label="Keep-awake audio session"><option value="ambient">Mix (ambient)</option><option value="original">Original</option></select></div></div><nav id="primary" aria-label="Pocket actions">'+btn('mode-notes','notes','Open notes','Notes')+btn('mode-ask','chat','Ask or read answer','Ask')+'</nav><div id="workspace">'+
     '<section id="quote" hidden><div class="row"><small class="grow">Selected passage</small>'+btn('quote-clear','close','Remove selected passage')+'</div><div id="quote-text"></div></section><div id="draft-row"><textarea id="draft" class="grow" rows="2" placeholder="What do you want to know or do?" aria-label="Question or draft"></textarea><div id="note-tools">'+btn('save-note','save','Save note')+'</div></div>'+
-    '<div id="note-context" hidden></div><div id="ask-context">'+btn('ask-snip','crop','Capture region for this question','Crop')+btn('dictate','mic','Start native receiver dictation')+'<button id="copy-context">Copy text</button><button id="copy-ask-images" hidden>Copy images</button></div><div id="attachments" hidden></div><div id="ask-tools"><div class="row"><button id="ask" class="grow">Ask</button>'+'<a id="chat-target" href="https://chatgpt.com/" target="_self" aria-label="Open or set ChatGPT" title="Open or set ChatGPT">'+icon('chat')+'</a>'+'</div><div class="row" id="destination-row"><select id="target-label" class="grow" aria-label="Ask destination"></select><button id="rename-target" type="button" title="Edit receiver name" aria-label="Edit receiver name">✎</button>'+btn('ask-report','copy','Copy diagnostic report','Report')+'</div><div class="row"><button id="model-picker" type="button" class="grow" title="Read native receiver model menu">Model · Current</button><select id="model-options" hidden aria-label="Select native model or thinking level"></select></div><small id="model-status" role="status"></small><small id="dictation-status" role="status"></small><div class="row"><button id="ask-history-toggle" type="button">History</button><button id="client-awake" type="button" aria-pressed="false">Arm ambient audio</button></div><small id="link-health" role="status"></small></div>'+
+    '<div id="note-context" hidden></div><div id="ask-context">'+btn('ask-snip','crop','Capture region for this question','Crop')+btn('dictate','mic','Start native receiver dictation')+'<button id="copy-context">Copy text</button><button id="copy-ask-images" hidden>Copy images</button></div><div id="attachments" hidden></div><div id="ask-tools"><div class="row"><button id="ask" class="grow">Ask</button>'+'<a id="chat-target" href="https://chatgpt.com/" target="_self" aria-label="Open or set ChatGPT" title="Open or set ChatGPT">'+icon('chat')+'</a>'+'</div><div class="row" id="destination-row"><select id="target-label" class="grow" aria-label="Ask destination"></select><button id="rename-target" type="button" title="Edit receiver name" aria-label="Edit receiver name">✎</button>'+btn('ask-report','copy','Copy diagnostic report','Report')+'</div><div class="row"><button id="model-picker" type="button" class="grow" title="Read native receiver model menu">Model · Current</button><select id="model-options" hidden aria-label="Select native model or thinking level"></select></div><small id="model-status" role="status"></small><div class="row"><small id="dictation-status" class="grow" role="status"></small><button id="dictation-reset" hidden title="Dismiss local microphone request after checking receiver">Dismiss</button></div><div class="row"><button id="ask-history-toggle" type="button">History</button><button id="client-awake" type="button" aria-pressed="false">Arm ambient audio</button></div><small id="link-health" role="status"></small></div>'+
     '<section id="handoff" hidden><div class="row"><small class="grow" id="handoff-status"></small><a id="handoff-open" target="_self" aria-label="Open conversation in Safari" title="Open conversation in Safari" hidden>'+icon('arrow')+'</a>'+btn('reply-copy','copy','Copy returned answer')+btn('handoff-clear','trash','Delete question and answer from history')+'</div><button id="worker-send" hidden>Send question</button><details id="worker-recovery" hidden><summary>Manual recovery</summary><pre id="handoff-preview" hidden></pre>'+btn('handoff-copy','copy','Copy prepared question','Copy question')+'<details id="reply-compose" hidden><summary>Return answer manually</summary><textarea id="reply-draft" rows="3" placeholder="Paste the answer from this chat…" aria-label="Answer to return"></textarea><button id="reply-return">Return answer</button></details></details><section id="reply-result" hidden><div id="handoff-reply"></div></section></section>'+
     '<section id="ask-history" hidden><div class="row"><strong class="grow">Recent questions</strong>'+btn('history-refresh','refresh','Refresh recent questions')+btn('history-close','close','Close history')+'</div><small id="history-status"></small><div id="history-list"></div><section id="history-detail" hidden><div class="row"><button id="history-back">Back</button><small id="history-meta" class="grow"></small>'+btn('history-copy','copy','Copy saved answer')+'</div><div id="history-question"></div><div id="history-answer"></div></section></section><div id="notes-list"><div class="row" id="collection-head"><strong id="collection-title" class="grow"></strong></div>'+
     '<div class="row" id="filter-row" hidden><input id="filter" class="grow" placeholder="Find items…" aria-label="Find items"></div><small id="count"></small><div id="list"></div>'+
@@ -1379,7 +1379,7 @@
   $('model-options').addEventListener('change',e=>{if(!e.isTrusted||e.target.value==='')return;const o=modelChoices?.options[Number(e.target.value)];if(o&&modelChoices.target===target)void queueModel('choose',o);});
   function paintModelTest(){
     const out=$('model-test-status'),sel=$('model-test-options'),r=modelTestReceipt;
-    if(!r)return;out.textContent=r.phase==='listed'?'Choose a different native option to test selection.':r.phase==='selected'?'PASS · '+(r.model?.label||r.model?.effort||'selection observed'):r.phase==='uncertain'?'Unconfirmed · '+r.detail:r.phase==='failed'?'FAIL · '+r.detail:'Working…';
+    if(!r)return;out.textContent=r.phase==='listed'?'Choose a different native option to test selection.':r.phase==='selected'?(r.before?.label===r.model?.label&&r.before?.effort===r.model?.effort?'No change · choose a different option.':'PASS · '+(r.model?.label||r.model?.effort||'selection observed')):r.phase==='uncertain'?'Unconfirmed · '+r.detail:r.phase==='failed'?'FAIL · '+r.detail:'Working…';
     if(r.phase==='listed'&&modelTestChoices?.id!==r.id){modelTestChoices={id:r.id,options:r.options||[]};sel.replaceChildren(new Option('Choose…',''),...modelTestChoices.options.map((o,i)=>new Option(o.label+(o.selected?' ✓':''),String(i))));sel.hidden=false;}
     else if(r.phase!=='listed')sel.hidden=true;
   }
@@ -1390,7 +1390,7 @@
     modelTestReceipt={id:c.id,phase:'working',action};paintModelTest();await store.set(MODEL_REQUEST+here,c);await processModelRequest(here);wakeTransport();
   }
   action('model-test',()=>queueModelTest('list'));
-  $('model-test-options').addEventListener('change',e=>{if(!e.isTrusted||e.target.value==='')return;const o=modelTestChoices?.options[Number(e.target.value)];if(o)queueModelTest('choose',o).catch(err=>$('model-test-status').textContent=String(err?.message||err));});
+  $('model-test-options').addEventListener('change',e=>{if(!e.isTrusted||e.target.value==='')return;const o=modelTestChoices?.options[Number(e.target.value)];if(o?.selected){$('model-test-status').textContent='Choose a different option; this one is already active.';return;}if(o)queueModelTest('choose',o).catch(err=>$('model-test-status').textContent=String(err?.message||err));});
   // Native microphone control. Never call getUserMedia independently, inject
   // audio, or send a prompt. A recording is started only by an explicit user
   // action; every command is bound to the chosen receiver and unique session.
@@ -1416,7 +1416,7 @@
     if(run.selfTest){$('mic-test-status').textContent=detail;$('mic-test').setAttribute('aria-pressed',String(['starting','recording','stopping'].includes(phase)));$('mic-test-stop').hidden=!['starting','recording'].includes(phase);}
     wakeTransport();
   }
-  function armMicWatchdog(run){clearTimeout(dictationTimer);dictationTimer=setTimeout(()=>{if(dictationRun===run)void micStop(run,'time limit');},Math.max(0,run.expires-Date.now()));}
+  function armMicWatchdog(run){clearTimeout(dictationTimer);dictationTimer=setTimeout(()=>{if(dictationRun!==run)return;if(!run.stopAt){void micStop(run,'time limit');return;}if(micSnapshot().recording){const cancel=micCancelControl();if(cancel){try{cancel.click();micStage(run,'stopping','Time limit · native cancel clicked; awaiting idle.');}catch(e){micStage(run,'needs-local-stop','Native cancel failed. Stop recording in receiver.');}}else micStage(run,'needs-local-stop','Time limit · recording may remain active. Stop it in receiver.');}},Math.max(0,run.expires-Date.now()));}
   function micRelease(run){if(dictationRun===run){dictationRun=null;clearTimeout(dictationTimer);dictationTimer=null;}wakeTransport();}
   function micPreflight(c){
     if(!automatedChat(chatURL(location.href))||chatURL(location.href)!==c.target||!selectedHere()||modelBusy||autoBusy||activeAsk||dictationRun||streamActive()||nativeModel()?.expanded||!chatEditor()||editorText(chatEditor())||composerAttachments(chatEditor()))return 'Receiver busy, has an existing draft, or is not selected. Nothing recorded.';
@@ -1436,7 +1436,7 @@
     run.stopAt=Date.now();const b=micStopControl();
     if(!b){
       const cancel=reason==='time limit'?micCancelControl():null;
-      if(cancel){cancel.click();micStage(run,'cancelled','Time limit reached; native recording cancelled.');micRelease(run);}
+      if(cancel){try{cancel.click();micStage(run,'stopping','Time limit · native cancel clicked; awaiting idle.');}catch(e){micStage(run,'needs-local-stop','Native cancel failed. Stop recording in receiver.');}}
       else{micStage(run,'needs-local-stop','Native Stop not identified. Open receiver and stop dictation manually.',{reason});}
       return;
     }
@@ -1460,7 +1460,7 @@
       if(!snap.recording&&snap.start&&text&&sameTurn(run.baseline,fingerprint())&&!streamActive()&&!composerAttachments(chatEditor())){
         if(text!==run.transcript){run.transcript=text;run.stableAt=now;return;}
         if(now-run.stableAt<1200)return;
-        if(!run.stopAt&&!run.observed)return;
+        if(!run.observed){micStage(run,'uncertain','Text appeared without verified recording. Native draft preserved.');micRelease(run);return;}
         // Return only the draft generated by the native dictation session.
         // Persist a one-use receipt before clearing this otherwise-empty
         // receiver composer, preserving existing user data on any ambiguity.
@@ -1492,10 +1492,10 @@
     const b=$('dictate'),out=$('dictation-status'),heart=lastHeart?.target===target&&lastHeart.worker===selectedWorker?lastHeart:null,r=heart?.dictationReceipt,p=dictationPending;
     b.disabled=!target||!selectedWorker||(!p&&!heart?.mic?.start);
     b.setAttribute('aria-pressed',String(!!p));b.title=p?'Stop native dictation':'Start native receiver dictation';b.setAttribute('aria-label',b.title);
-    if(p&&r?.id===p.id&&r.sender===instance){
+    $('dictation-reset').hidden=!(p&&(Date.now()>p.expires+15000||r?.id===p.id&&r.phase==='needs-local-stop'));if(p&&r?.id===p.id&&r.sender===instance){
       out.textContent=r.detail;
       if(r.phase==='transcript'&&!p.retrieving){p.retrieving=true;void receiveMicResult(p,r);}
-      else if(['failed','cancelled','uncertain'].includes(r.phase)){dictationPending=null;b.setAttribute('aria-pressed','false');}
+      else if(['failed','cancelled','uncertain'].includes(r.phase)){dictationPending=null;b.setAttribute('aria-pressed','false');$('dictation-reset').hidden=true;}
     }else if(p&&Date.now()>p.expires+30000){out.textContent='Receiver did not confirm microphone state. Open it to verify recording stopped.';}
   }
   async function receiveMicResult(p,r){
@@ -1503,7 +1503,7 @@
       // Append, never overwrite text typed while the microphone was active.
       if(mode==='ask')$('draft').value=[$('draft').value.trim(),v.text].filter(Boolean).join(' ');else drafts.ask=[drafts.ask.trim(),v.text].filter(Boolean).join(' ');
       $('dictation-status').textContent=r.cleared?'Transcript ready · review, edit, then Ask.':'Transcript ready · native draft remains; check receiver before Ask.';
-      await store.del(MIC_RESULT+p.id);dictationPending=null;
+      dictationPending=null;try{await store.del(MIC_RESULT+p.id);}catch(e){linkLog('dictation-cleanup-error',{id:p.id,error:String(e?.message||e).slice(0,120)});}
     }catch(e){p.retrieving=false;$('dictation-status').textContent='Transcript retrieval: '+String(e?.message||e);}
     paintMic();
   }
@@ -1515,7 +1515,8 @@
     try{await store.set(MIC_COMMAND+p.target,p);wakeTransport();}catch(e){dictationPending=null;throw e;}
   }
   action('dictate',clientMic);
-  action('mic-test',()=>{if(!selectedHere()){$('mic-test-status').textContent='Add this tab as a receiver first.';return;}if(dictationRun){void micStop(dictationRun);return;}micTestResult=null;$('mic-test-result').hidden=true;$('mic-test-result').value='';micStart({id:uid(),sender:instance,target:chatURL(location.href),worker:instance,selfTest:true,started:Date.now(),expires:Date.now()+MIC_MAX});});
+  action('dictation-reset',()=>{if(!dictationPending||!confirm('Check that recording is stopped in the receiver before dismissing this request. Dismiss local state?'))return;const p=dictationPending;dictationPending=null;$('dictation-status').textContent='Local request dismissed. Verify the receiver microphone is off.';linkLog('dictation-dismissed',{id:p.id,target:p.target});paintMic();wakeTransport();});
+  action('mic-test',()=>{if(!selectedHere()){$('mic-test-status').textContent='Add this tab as a receiver first.';return;}if(dictationRun){if(dictationRun.selfTest)void micStop(dictationRun);else $('mic-test-status').textContent='Remote dictation is active. Stop from its source.';return;}micTestResult=null;$('mic-test-result').hidden=true;$('mic-test-result').value='';micStart({id:uid(),sender:instance,target:chatURL(location.href),worker:instance,selfTest:true,started:Date.now(),expires:Date.now()+MIC_MAX});});
   action('mic-test-stop',()=>{if(dictationRun?.selfTest)void micStop(dictationRun);});
   function chatObservation(here){
     const editor=chatEditor(),stopping=streamActive();
