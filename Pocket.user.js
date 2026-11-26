@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         AI Pill OS - Pocket
 // @namespace    https://github.com/JadanPoll/AI_Pill_OS
-// @version      0.7.27
+// @version      0.7.28
 // @updateURL    https://raw.githubusercontent.com/JadanPoll/AI_Pill_OS/main/Pocket.user.js
 // @downloadURL  https://raw.githubusercontent.com/JadanPoll/AI_Pill_OS/main/Pocket.user.js
 // @description  Universal Safari pill: collect evidence, keep discoveries, and hand a question to a chosen chat.
@@ -26,7 +26,7 @@
 (() => {
   'use strict';
   if (window.top !== window) return;
-  const VERSION='0.7.27';
+  const VERSION='0.7.28';
   // Report initialization failures without depending on the main UI, storage or a CDN.
   function bootFailure(error,phase){
     const message=String(error?.message||error).slice(0,500);
@@ -80,11 +80,11 @@
   Object.assign(icons,{bookmark:'<path d="M6 3h12v18l-6-4-6 4z"/>',back:'<path d="m15 18-6-6 6-6"/>',trash:'<path d="M3 6h18M9 6V3h6v3M6 6l1 15h10l1-15M10 10v7M14 10v7"/>',settings:'<circle cx="5" cy="12" r="1"/><circle cx="12" cy="12" r="1"/><circle cx="19" cy="12" r="1"/>',arrow:'<path d="M7 17 17 7M7 7h10v10"/>',pin:'<path d="m16 3 5 5-4 2-3 5-2-2-6 6-1-1 6-6-2-2 5-3z"/>',search:'<circle cx="10" cy="10" r="6"/><path d="m14 14 6 6"/>'});
   icons.point='<path d="m4 3 15 9-7 2-3 7z"/>';icons.notes='<rect x="5" y="3" width="14" height="18" rx="2"/><path d="M8 8h8M8 12h8M8 16h5"/>';icons.crop='<path d="M6 3v15h15M3 6h15v15"/>';icons.chat='<path d="M20 11a8 8 0 0 1-8 8H4l2-4a8 8 0 1 1 14-4Z"/><path d="M9 11h6"/>';const icon=k=>'<svg width="21" height="21" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round" stroke-linecap="round" aria-hidden="true">'+icons[k]+'</svg>';
   const btn=(id,k,title,words='')=>'<button id="'+id+'" type="button" aria-label="'+title+'" title="'+title+'">'+icon(k)+(words?' '+words:'')+'</button>';
-  root.innerHTML='<style>:host{all:initial;position:fixed;left:12px;bottom:18px;z-index:2147483647;margin:0;padding:0;border:0;background:transparent;right:auto;top:auto;width:max-content;height:max-content;max-width:none;max-height:none;overflow:visible;color:#172033;font:14px system-ui}*{box-sizing:border-box}[hidden]{display:none!important}button,input,textarea,select{font:inherit;color:inherit}#target-label{min-height:44px;min-width:0;max-width:100%;border:1px solid #cbd5e1;border-radius:8px;background:#fff;padding:5px;font-size:16px}button{min-height:44px;min-width:44px;border:0;border-radius:8px;background:transparent;display:inline-flex;align-items:center;justify-content:center;gap:5px;padding:8px;cursor:pointer}button:disabled{opacity:.35}button:focus-visible,a:focus-visible,summary:focus-visible{outline:2px solid #2563eb}#open[data-storage-error=true]{outline:2px solid #dc2626}#open{font-size:11px;border-radius:22px;background:#172033;color:#fff;box-shadow:0 2px 10px #0004}#panel{width:min(380px,calc(100vw - 24px));max-height:78vh;overflow:auto;background:rgba(255,255,255,.54);backdrop-filter:blur(2px);-webkit-backdrop-filter:blur(1px);border:1px solid #cbd5e1;border-radius:14px;padding:10px;box-shadow:0 4px 20px #0004}.row{display:flex;gap:4px;align-items:center;margin:4px 0}.grow{flex:1;min-width:0}textarea,input{width:100%;border:1px solid #cbd5e1;border-radius:8px;padding:9px;background:#fff;font-size:16px}input{min-height:44px}textarea{resize:vertical}small,#status{font-size:12px;color:#475569;overflow-wrap:anywhere}h3{font-size:16px;margin:0}#list{max-height:30vh;overflow:auto}.entry{display:block;text-align:left;width:100%;border-bottom:1px solid #e2e8f0;border-radius:0;overflow-wrap:anywhere}.entry b,.entry small{display:block}#detail{border-top:1px solid #e2e8f0;margin-top:6px;padding-top:6px}#body,#handoff-preview{white-space:pre-wrap;overflow-wrap:anywhere;max-height:25vh;overflow:auto;background:#f8fafc;padding:8px;font:13px/1.45 ui-monospace,monospace;user-select:text}#ask{background:#172033;color:white}button[aria-pressed=true]{background:#e2e8f0;font-weight:600}#handoff{border:1px solid #cbd5e1;border-radius:8px;padding:5px;margin:6px 0}#handoff-reply{max-height:26vh;overflow:auto;white-space:pre-wrap;overflow-wrap:anywhere;font:14px/1.5 system-ui;background:#f8fafc;padding:8px;border-radius:6px}#reply-draft{margin:6px 0}#handoff-open{color:#1d4ed8;min-height:44px;min-width:44px;display:inline-flex;align-items:center;justify-content:center}#status:empty,#count:empty{display:none}details{border-top:1px solid #e2e8f0;padding:4px 0}summary{cursor:pointer;min-height:44px;display:flex;align-items:center;gap:6px;list-style:none}summary::-webkit-details-marker{display:none}#settings summary{justify-content:flex-end}#settings .settings-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:5px;margin:8px 0}#settings .settings-grid>button,#settings .settings-grid>span{min-width:0;width:100%;font-size:12px}#settings .settings-grid button{border:1px solid #cbd5e1;white-space:normal;overflow-wrap:anywhere;line-height:1.25;text-align:center}#settings .settings-grid>span>button{width:100%}#chat-target{min-height:44px;min-width:44px;border-radius:8px;display:inline-flex;align-items:center;justify-content:center;padding:8px;color:inherit;text-decoration:none;flex:none;-webkit-touch-callout:default}#source-label{font-size:11px}#pin{border:1px solid #cbd5e1}#remove,#clear-tray{color:#991b1b}#chat-target{border:1px solid #cbd5e1}#target-label{display:block;line-height:1.3;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;min-width:0}#handoff-status{line-height:1.4}#handoff[data-answer=true] #handoff-status{font-weight:600;color:#172033;font-size:13px}#handoff .row{margin:0}#target-label:empty{display:none}#destination-row{margin:0}#ask-report{font-size:11px;min-height:32px;padding:4px 6px;color:#475569}#ask-report svg{width:15px;height:15px}#ask{background:rgba(23,32,51,.94)}#draft{background:rgba(255,255,255,.75)}#quote{border-left:3px solid #64748b;padding:4px 8px;margin:4px 0;background:#f1f5f9;border-radius:4px}#quote-text{font-size:12px;white-space:pre-wrap;overflow-wrap:anywhere;max-height:74px;overflow:auto}#quote .row{margin:0}#quote-clear{min-height:44px}#include-row{display:flex;align-items:center;gap:8px;font-size:12px;color:#475569;min-height:34px}#include-tray{width:18px;min-height:18px;height:18px;flex:none}#collection-head{margin-top:6px}#crop-editor{position:fixed;inset:8px;z-index:2147483647;display:flex;flex-direction:column;background:#f8fafc;border:1px solid #94a3b8;border-radius:12px;padding:10px;box-shadow:0 4px 20px #0005}#crop-stage{flex:1;min-height:0;display:flex;align-items:center;justify-content:center;overflow:hidden;background:#e2e8f0;border-radius:8px;position:relative}#crop-image-wrap{position:relative;max-width:100%;max-height:100%;display:flex;align-items:center;justify-content:center;touch-action:none;user-select:none}#crop-image{display:block;max-width:100%;max-height:100%;object-fit:contain;pointer-events:none}#crop-selection{position:absolute;outline:2px solid #2563eb;background:rgba(37,99,235,.12);pointer-events:none;box-shadow:0 0 0 200vmax #0004}#crop-stage:has(#crop-image-wrap:not([hidden])) #crop-empty{display:none}#crop-help{padding:5px 2px}#crop-editor .row{flex-wrap:wrap}#crop-add{background:#172033;color:white}#crop-empty{padding:16px;text-align:center;color:#475569}#primary{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:6px;margin:6px 0}#primary button{flex-direction:column;gap:3px;min-height:66px;border:1px solid #cbd5e1;font-size:13px}#primary svg{width:25px;height:25px}#panel[data-mode=home] #workspace,#panel:not([data-mode=notes]) #note-tools,#panel:not([data-mode=notes]) #note-context,#panel:not([data-mode=ask]) #ask-tools,#panel:not([data-mode=ask]) #handoff,#panel:not([data-mode=notes]) #notes-list,#panel:not([data-mode=ask]) #ask-context{display:none}#note-context,#ask-context{display:flex;flex-wrap:wrap;gap:5px;margin:6px 0}#note-context button,#ask-context button,#note-tools button{border:1px solid #cbd5e1}#attachments{font-size:12px;overflow-wrap:anywhere}#attachments .row{margin:2px 0}#notes-list{margin-top:8px}.note-entry{display:flex;align-items:center;border-bottom:1px solid #e2e8f0;gap:4px}.note-entry .entry{flex:1;min-width:0;border-bottom:0}.note-entry .ask-note{border:1px solid #cbd5e1;flex:none}.note-entry .ask-note svg{width:19px;height:19px}#settings summary{min-height:36px}/* One accent on the visible destination affordance, never layered rings. */[data-link=ready]{box-shadow:inset 0 0 0 2px #16a34a}[data-link=responding]{box-shadow:inset 0 0 0 2px #2563eb}[data-link=checking],[data-link=uncertain]{box-shadow:inset 0 0 0 2px #d97706}[data-link=stale]{box-shadow:inset 0 0 0 2px #94a3b8}[data-link=answer]{box-shadow:inset 0 0 0 2px #16a34a}#worker-status[data-link]{box-shadow:none}#worker-status[data-link=ready]{color:#15803d}#worker-status[data-link=responding]{color:#1d4ed8}#worker-status[data-link=uncertain],#worker-status[data-link=checking]{color:#a16207}#link-health{display:block;margin:4px 0;font-size:12px}#link-health:empty{display:none}#panel[data-chat=true]{width:min(310px,calc(100vw - 24px))}#panel[data-chat=true] #primary,#panel[data-chat=true] #settings,#panel[data-chat=true] #workspace,#panel[data-chat=true] #handoff{display:none}#panel[data-chat=true][data-mode=notes] #workspace,#panel[data-chat=true][data-mode=notes] #settings{display:block}#panel[data-chat=true][data-mode=worker] #handoff{display:block}#panel:not([data-chat=true]) #worker,#panel[data-chat=true][data-mode=notes] #worker{display:none}#panel[data-chat=true] #handoff{border:0;padding:0}#worker-status{font-size:13px}#self-test{border-top:1px solid #e2e8f0;margin-top:8px;padding-top:4px}#self-test input{min-width:0;width:100%}#self-test-status{display:block;font-size:12px;overflow-wrap:anywhere}#self-test-status[data-result=pass]{color:#15803d}#self-test-status[data-result=fail]{color:#b91c1c}#self-test-status:empty{display:none}#self-test-run{border:1px solid #cbd5e1}#worker-pin{background:#172033;color:white}#worker-recovery summary{min-height:36px;font-size:12px}#worker-recovery button{border:1px solid #cbd5e1}#open[data-chat=true]{padding:7px 10px}#panel[data-chat=true] #handoff-reply{display:none}#worker-status{min-height:20px}#worker-report,#keep-awake{border:1px solid #cbd5e1}#keep-awake{font-size:12px}#keep-awake[aria-pressed=true]{color:#15803d;background:#dcfce7}#worker-refresh{margin-left:auto}#worker .row{min-height:44px}#panel-title,#open{touch-action:none;cursor:grab;user-select:none;-webkit-user-select:none}#open{background:rgba(23,32,51,.65)}#panel #draft{background:rgba(255,255,255,.54)}#panel #handoff-reply{background:rgba(248,250,252,.54)}#history-list{max-height:30vh;overflow:auto}#history-answer{white-space:pre-wrap;overflow-wrap:anywhere;max-height:38vh;overflow:auto;background:rgba(248,250,252,.58);padding:8px;border-radius:6px}#history-question{white-space:pre-wrap;overflow-wrap:anywhere;max-height:12vh;overflow:auto}#client-awake[aria-pressed=true]{color:#15803d;background:#dcfce7}#client-awake{font-size:12px}#panel:not([data-mode=ask]) #ask-history{display:none}#panel[data-mode=notes] #attachments{display:none}#panel[data-mode=notes] #settings #import-image,#panel[data-mode=notes] #settings #bitmap-crop,#panel[data-mode=notes] #settings #save{display:none}</style>'+
+  root.innerHTML='<style>:host{all:initial;position:fixed;left:12px;bottom:18px;z-index:2147483647;margin:0;padding:0;border:0;background:transparent;right:auto;top:auto;width:max-content;height:max-content;max-width:none;max-height:none;overflow:visible;color:#172033;font:14px system-ui}*{box-sizing:border-box}[hidden]{display:none!important}button,input,textarea,select{font:inherit;color:inherit}#target-label{min-height:44px;min-width:0;max-width:100%;border:1px solid #cbd5e1;border-radius:8px;background:#fff;padding:5px;font-size:16px}button{min-height:44px;min-width:44px;border:0;border-radius:8px;background:transparent;display:inline-flex;align-items:center;justify-content:center;gap:5px;padding:8px;cursor:pointer}button:disabled{opacity:.35}button:focus-visible,a:focus-visible,summary:focus-visible{outline:2px solid #2563eb}#open[data-storage-error=true]{outline:2px solid #dc2626}#open{font-size:11px;border-radius:22px;background:#172033;color:#fff;box-shadow:0 2px 10px #0004}#panel{width:min(380px,calc(100vw - 24px));max-height:78vh;overflow:auto;background:rgba(255,255,255,.54);backdrop-filter:blur(2px);-webkit-backdrop-filter:blur(1px);border:1px solid #cbd5e1;border-radius:14px;padding:10px;box-shadow:0 4px 20px #0004}.row{display:flex;gap:4px;align-items:center;margin:4px 0}.grow{flex:1;min-width:0}textarea,input{width:100%;border:1px solid #cbd5e1;border-radius:8px;padding:9px;background:#fff;font-size:16px}input{min-height:44px}textarea{resize:vertical}small,#status{font-size:12px;color:#475569;overflow-wrap:anywhere}h3{font-size:16px;margin:0}#list{max-height:30vh;overflow:auto}.entry{display:block;text-align:left;width:100%;border-bottom:1px solid #e2e8f0;border-radius:0;overflow-wrap:anywhere}.entry b,.entry small{display:block}#detail{border-top:1px solid #e2e8f0;margin-top:6px;padding-top:6px}#body,#handoff-preview{white-space:pre-wrap;overflow-wrap:anywhere;max-height:25vh;overflow:auto;background:#f8fafc;padding:8px;font:13px/1.45 ui-monospace,monospace;user-select:text}#ask{background:#172033;color:white}button[aria-pressed=true]{background:#e2e8f0;font-weight:600}#handoff{border:1px solid #cbd5e1;border-radius:8px;padding:5px;margin:6px 0}#handoff-reply{max-height:26vh;overflow:auto;white-space:pre-wrap;overflow-wrap:anywhere;font:14px/1.5 system-ui;background:#f8fafc;padding:8px;border-radius:6px}#reply-draft{margin:6px 0}#handoff-open{color:#1d4ed8;min-height:44px;min-width:44px;display:inline-flex;align-items:center;justify-content:center}#status:empty,#count:empty{display:none}details{border-top:1px solid #e2e8f0;padding:4px 0}summary{cursor:pointer;min-height:44px;display:flex;align-items:center;gap:6px;list-style:none}summary::-webkit-details-marker{display:none}#settings summary{justify-content:flex-end}#settings .settings-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:5px;margin:8px 0}#settings .settings-grid>button,#settings .settings-grid>span{min-width:0;width:100%;font-size:12px}#settings .settings-grid button{border:1px solid #cbd5e1;white-space:normal;overflow-wrap:anywhere;line-height:1.25;text-align:center}#settings .settings-grid>span>button{width:100%}#chat-target{min-height:44px;min-width:44px;border-radius:8px;display:inline-flex;align-items:center;justify-content:center;padding:8px;color:inherit;text-decoration:none;flex:none;-webkit-touch-callout:default}#source-label{font-size:11px}#pin{border:1px solid #cbd5e1}#remove,#clear-tray{color:#991b1b}#chat-target{border:1px solid #cbd5e1}#target-label{display:block;line-height:1.3;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;min-width:0}#handoff-status{line-height:1.4}#handoff[data-answer=true] #handoff-status{font-weight:600;color:#172033;font-size:13px}#handoff .row{margin:0}#target-label:empty{display:none}#destination-row{margin:0}#ask-report{font-size:11px;min-height:32px;padding:4px 6px;color:#475569}#ask-report svg{width:15px;height:15px}#ask{background:rgba(23,32,51,.94)}#draft{background:rgba(255,255,255,.75)}#quote{border-left:3px solid #64748b;padding:4px 8px;margin:4px 0;background:#f1f5f9;border-radius:4px}#quote-text{font-size:12px;white-space:pre-wrap;overflow-wrap:anywhere;max-height:74px;overflow:auto}#quote .row{margin:0}#quote-clear{min-height:44px}#include-row{display:flex;align-items:center;gap:8px;font-size:12px;color:#475569;min-height:34px}#include-tray{width:18px;min-height:18px;height:18px;flex:none}#collection-head{margin-top:6px}#crop-editor{position:fixed;inset:8px;z-index:2147483647;display:flex;flex-direction:column;background:#f8fafc;border:1px solid #94a3b8;border-radius:12px;padding:10px;box-shadow:0 4px 20px #0005}#crop-stage{flex:1;min-height:0;display:flex;align-items:center;justify-content:center;overflow:hidden;background:#e2e8f0;border-radius:8px;position:relative}#crop-image-wrap{position:relative;max-width:100%;max-height:100%;display:flex;align-items:center;justify-content:center;touch-action:none;user-select:none}#crop-image{display:block;max-width:100%;max-height:100%;object-fit:contain;pointer-events:none}#crop-selection{position:absolute;outline:2px solid #2563eb;background:rgba(37,99,235,.12);pointer-events:none;box-shadow:0 0 0 200vmax #0004}#crop-stage:has(#crop-image-wrap:not([hidden])) #crop-empty{display:none}#crop-help{padding:5px 2px}#crop-editor .row{flex-wrap:wrap}#crop-add{background:#172033;color:white}#crop-empty{padding:16px;text-align:center;color:#475569}#primary{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:6px;margin:6px 0}#primary button{flex-direction:column;gap:3px;min-height:66px;border:1px solid #cbd5e1;font-size:13px}#primary svg{width:25px;height:25px}#panel[data-mode=home] #workspace,#panel:not([data-mode=notes]) #note-tools,#panel:not([data-mode=notes]) #note-context,#panel:not([data-mode=ask]) #ask-tools,#panel:not([data-mode=ask]) #handoff,#panel:not([data-mode=notes]) #notes-list,#panel:not([data-mode=ask]) #ask-context{display:none}#note-context,#ask-context{display:flex;flex-wrap:wrap;gap:5px;margin:6px 0}#note-context button,#ask-context button,#note-tools button{border:1px solid #cbd5e1}#attachments{font-size:12px;overflow-wrap:anywhere}#attachments .row{margin:2px 0}#notes-list{margin-top:8px}.note-entry{display:flex;align-items:center;border-bottom:1px solid #e2e8f0;gap:4px}.note-entry .entry{flex:1;min-width:0;border-bottom:0}.note-entry .ask-note{border:1px solid #cbd5e1;flex:none}.note-entry .ask-note svg{width:19px;height:19px}#settings summary{min-height:36px}/* One accent on the visible destination affordance, never layered rings. */[data-link=ready]{box-shadow:inset 0 0 0 2px #16a34a}[data-link=responding]{box-shadow:inset 0 0 0 2px #2563eb}[data-link=checking],[data-link=uncertain]{box-shadow:inset 0 0 0 2px #d97706}[data-link=stale]{box-shadow:inset 0 0 0 2px #94a3b8}[data-link=answer]{box-shadow:inset 0 0 0 2px #16a34a}#worker-status[data-link]{box-shadow:none}#worker-status[data-link=ready]{color:#15803d}#worker-status[data-link=responding]{color:#1d4ed8}#worker-status[data-link=uncertain],#worker-status[data-link=checking]{color:#a16207}#link-health{display:block;margin:4px 0;font-size:12px}#link-health:empty{display:none}#panel[data-chat=true]{width:min(310px,calc(100vw - 24px))}#panel[data-chat=true] #primary,#panel[data-chat=true] #settings,#panel[data-chat=true] #workspace,#panel[data-chat=true] #handoff{display:none}#panel[data-chat=true][data-mode=notes] #workspace,#panel[data-chat=true][data-mode=notes] #settings{display:block}#panel[data-chat=true][data-mode=worker] #handoff{display:block}#panel:not([data-chat=true]) #worker,#panel[data-chat=true][data-mode=notes] #worker{display:none}#panel[data-chat=true] #handoff{border:0;padding:0}#worker-status{font-size:13px}#self-test{border-top:1px solid #e2e8f0;margin-top:8px;padding-top:4px}#self-test input{min-width:0;width:100%}#self-test-status{display:block;font-size:12px;overflow-wrap:anywhere}#self-test-status[data-result=pass]{color:#15803d}#self-test-status[data-result=fail]{color:#b91c1c}#self-test-status:empty{display:none}#self-test-run{border:1px solid #cbd5e1}#worker-pin{background:#172033;color:white}#worker-recovery summary{min-height:36px;font-size:12px}#worker-recovery button{border:1px solid #cbd5e1}#open[data-chat=true]{padding:7px 10px}#panel[data-chat=true] #handoff-reply{display:none}#worker-status{min-height:20px}#worker-report,#keep-awake{border:1px solid #cbd5e1}#keep-awake{font-size:12px}#keep-awake[aria-pressed=true]{color:#15803d;background:#dcfce7}#worker-refresh{margin-left:auto}#worker .row{min-height:44px}#panel-title,#open{touch-action:none;cursor:grab;user-select:none;-webkit-user-select:none}#open{background:rgba(23,32,51,.65)}#panel #draft{background:rgba(255,255,255,.54)}#panel #handoff-reply{background:rgba(248,250,252,.54)}#model-picker{border:1px solid #cbd5e1;min-width:0;overflow-wrap:anywhere;font-size:12px}#model-options{max-width:60%;min-width:0;min-height:44px;border:1px solid #cbd5e1;border-radius:8px;background:rgba(255,255,255,.65);font-size:16px}#model-status:empty{display:none}#history-list{max-height:30vh;overflow:auto}#history-answer{white-space:pre-wrap;overflow-wrap:anywhere;max-height:38vh;overflow:auto;background:rgba(248,250,252,.58);padding:8px;border-radius:6px}#history-question{white-space:pre-wrap;overflow-wrap:anywhere;max-height:12vh;overflow:auto}#client-awake[aria-pressed=true]{color:#15803d;background:#dcfce7}#client-awake{font-size:12px}#panel:not([data-mode=ask]) #ask-history{display:none}#panel[data-mode=notes] #attachments{display:none}#panel[data-mode=notes] #settings #import-image,#panel[data-mode=notes] #settings #bitmap-crop,#panel[data-mode=notes] #settings #save{display:none}</style>'+
     btn('open','pocket','Open AI Pocket','v'+VERSION)+
     '<section id="panel" data-mode="home" hidden><div class="row"><h3 class="grow" id="panel-title">Pocket <small>v'+VERSION+'</small></h3>'+btn('worker-notes','notes','Open Notes', '')+btn('close','close','Close Pocket')+'</div><div id="worker" hidden><div class="row"><span class="grow" id="worker-status" role="status">Checking…</span><button id="worker-pin" hidden>Use this chat</button><button id="rename-worker" hidden type="button" title="Edit receiver name" aria-label="Edit receiver name">✎</button></div><section id="self-test" hidden><div class="row"><input id="self-test-prompt" class="grow" placeholder="Optional test message" aria-label="Optional self-test message"><button id="self-test-run" title="Send a real message in this chat and verify its response">Self-test</button></div><small id="self-test-status" role="status"></small></section><div class="row">'+btn('worker-report','copy','Copy diagnostic report','Report')+btn('worker-refresh','refresh','Refresh connection','')+'<button id="keep-awake" type="button" aria-pressed="false" title="Experimental audio keep-awake; may use battery or interrupt other audio">Keep awake</button></div><div class="row" id="audio-mode-row" hidden><small class="grow">Audio session</small><select id="audio-mode" aria-label="Keep-awake audio session"><option value="ambient">Mix (ambient)</option><option value="original">Original</option></select></div></div><nav id="primary" aria-label="Pocket actions">'+btn('mode-notes','notes','Open notes','Notes')+btn('mode-ask','chat','Ask or read answer','Ask')+'</nav><div id="workspace">'+
     '<section id="quote" hidden><div class="row"><small class="grow">Selected passage</small>'+btn('quote-clear','close','Remove selected passage')+'</div><div id="quote-text"></div></section><textarea id="draft" rows="2" placeholder="What do you want to know or do?" aria-label="Question or draft"></textarea>'+
-    '<div id="note-context" hidden></div><div class="row" id="note-tools"><button id="save-note" class="grow">Save note</button>'+btn('saved-tab','bookmark','Open saved notes')+'</div><div id="ask-context">'+btn('ask-snip','crop','Capture region for this question','Crop')+'<button id="copy-context">Copy text</button><button id="copy-ask-images" hidden>Copy images</button></div><div id="attachments" hidden></div><div id="ask-tools"><div class="row"><button id="ask" class="grow">Ask</button>'+'<a id="chat-target" href="https://chatgpt.com/" target="_self" aria-label="Open or set ChatGPT" title="Open or set ChatGPT">'+icon('chat')+'</a>'+'</div><div class="row" id="destination-row"><select id="target-label" class="grow" aria-label="Ask destination"></select><button id="rename-target" type="button" title="Edit receiver name" aria-label="Edit receiver name">✎</button>'+btn('ask-report','copy','Copy diagnostic report','Report')+'</div><div class="row"><button id="ask-history-toggle" type="button">History</button><button id="client-awake" type="button" aria-pressed="false">Arm ambient audio</button></div><small id="link-health" role="status"></small><label id="include-row" hidden><input id="include-tray" type="checkbox"><span id="include-label">Include collected evidence</span></label></div>'+
+    '<div id="note-context" hidden></div><div class="row" id="note-tools"><button id="save-note" class="grow">Save note</button>'+btn('saved-tab','bookmark','Open saved notes')+'</div><div id="ask-context">'+btn('ask-snip','crop','Capture region for this question','Crop')+'<button id="copy-context">Copy text</button><button id="copy-ask-images" hidden>Copy images</button></div><div id="attachments" hidden></div><div id="ask-tools"><div class="row"><button id="ask" class="grow">Ask</button>'+'<a id="chat-target" href="https://chatgpt.com/" target="_self" aria-label="Open or set ChatGPT" title="Open or set ChatGPT">'+icon('chat')+'</a>'+'</div><div class="row" id="destination-row"><select id="target-label" class="grow" aria-label="Ask destination"></select><button id="rename-target" type="button" title="Edit receiver name" aria-label="Edit receiver name">✎</button>'+btn('ask-report','copy','Copy diagnostic report','Report')+'</div><div class="row"><button id="model-picker" type="button" class="grow" title="Read native receiver model menu">Model · Current</button><select id="model-options" hidden aria-label="Select native model or thinking level"></select></div><small id="model-status" role="status"></small><div class="row"><button id="ask-history-toggle" type="button">History</button><button id="client-awake" type="button" aria-pressed="false">Arm ambient audio</button></div><small id="link-health" role="status"></small><label id="include-row" hidden><input id="include-tray" type="checkbox"><span id="include-label">Include collected evidence</span></label></div>'+
     '<section id="handoff" hidden><div class="row"><small class="grow" id="handoff-status"></small><a id="handoff-open" target="_self" aria-label="Open conversation in Safari" title="Open conversation in Safari" hidden>'+icon('arrow')+'</a>'+btn('reply-copy','copy','Copy returned answer')+btn('handoff-clear','trash','Delete question and answer from history')+'</div><button id="worker-send" hidden>Send question</button><details id="worker-recovery" hidden><summary>Manual recovery</summary><pre id="handoff-preview" hidden></pre>'+btn('handoff-copy','copy','Copy prepared question','Copy question')+'<details id="reply-compose" hidden><summary>Return answer manually</summary><textarea id="reply-draft" rows="3" placeholder="Paste the answer from this chat…" aria-label="Answer to return"></textarea><button id="reply-return">Return answer</button></details></details><section id="reply-result" hidden><div id="handoff-reply"></div></section></section>'+
     '<section id="ask-history" hidden><div class="row"><strong class="grow">Recent questions</strong>'+btn('history-refresh','refresh','Refresh recent questions')+btn('history-close','close','Close history')+'</div><small id="history-status"></small><div id="history-list"></div><section id="history-detail" hidden><div class="row"><button id="history-back">Back</button><small id="history-meta" class="grow"></small>'+btn('history-copy','copy','Copy saved answer')+'</div><div id="history-question"></div><div id="history-answer"></div></section></section><div id="notes-list"><div class="row" id="collection-head">'+btn('tray-tab','back','Return to collected items')+'<strong id="collection-title" class="grow"></strong>'+btn('copy-tray','copy','Copy collected evidence')+'</div>'+
     '<div class="row" id="filter-row" hidden><input id="filter" class="grow" placeholder="Find items…" aria-label="Find items"></div><small id="count"></small><div id="list"></div>'+
@@ -920,7 +920,7 @@
       const sentTo=conversationName(pending.target,pending.chatTitle);
       $('handoff-open').title='Open '+sentTo+' in a Safari tab';
       $('handoff-open').setAttribute('aria-label',$('handoff-open').title);
-      $('handoff-status').textContent=hasReply?(atChat?'Answer returned':'Answer received'):pending.copied?'Question copied · awaiting answer':interrupted?'Submission may have occurred · check chat, do not resend':run?.phase==='uncertain'?'Check chat · '+run.detail:run?.phase==='failed'?'Manual fallback · '+run.detail:run?.phase==='prepared'?'Visual draft prepared · review and send in chat':manual?(expired?'Chat asleep or unavailable · open chat to send':atChat?(canRecoverSend?'Question waiting to be sent':pending.manualReason||'Question needs attention'):pending.manualReason||'Open chat to send'):connectionLost?(run?'Chat connection paused · check selected tab':'Waiting for chat to wake · open chat if needed'):run?.phase==='sent'?'ChatGPT is responding…':run?.phase==='armed'?'Checking submission…':run?.phase==='claimed'?'Sending to ChatGPT…':'Queued for connected chat…';
+      $('handoff-status').textContent=hasReply?(atChat?'Answer returned':'Answer received'):pending.copied?'Question copied · awaiting answer':interrupted?'Submission may have occurred · check chat, do not resend':run?.phase==='uncertain'?'Check chat · '+run.detail:run?.phase==='failed'?'Manual fallback · '+run.detail:run?.phase==='prepared'?(run.detail||'Visual draft prepared · review and send in chat'):manual?(expired?'Chat asleep or unavailable · open chat to send':atChat?(canRecoverSend?'Question waiting to be sent':pending.manualReason||'Question needs attention'):pending.manualReason||'Open chat to send'):connectionLost?(run?'Chat connection paused · check selected tab':'Waiting for chat to wake · open chat if needed'):run?.phase==='sent'?'ChatGPT is responding…':run?.phase==='armed'?'Checking submission…':run?.phase==='claimed'?'Sending to ChatGPT…':'Queued for connected chat…';
       // The selected destination is already shown immediately above the answer.
       // Repeat the title only when this response belongs to a different chat.
       if(hasReply&&!atChat){$('handoff-status').textContent=pending.target===target?'Answer':'Answer · '+sentTo;if(/^Question queued|^Question prepared/.test($('status').textContent))status('');}
@@ -947,6 +947,7 @@
   }
   async function prepareHandoff(){
     if(!store||handoffBusy)return;
+    if(modelPending){status('Wait for the model selection to be confirmed, or open the receiver.');return;}
     const question=$('draft').value.trim(),source=$('source').value.trim(),origin=sourceURL(),passage=quoted,include=$('include-tray').checked,explicit=attachments.slice();
     if(!question){status('Dictate or enter a question first.');return;}
     handoffBusy=true;$('ask').disabled=true;
@@ -967,8 +968,8 @@
       // On iPadOS Safari a suspended tab may miss the heartbeat. Preserve the
       // explicit request, but only a known worker can auto-submit it on resume.
       const binding=await readBinding(dest);
-      const autoWorker=supportsAuto&&!(isGemini(dest)&&hasImages)?(binding?.target===dest?binding.worker:null):null;
-      const manualReason=hasImages?(isGemini(dest)?'Gemini visual evidence requires manual attachment and send':'Open selected ChatGPT to prepare visual evidence'):!supportsAuto?'Choose an existing conversation for automatic Ask':'Open the selected chat to send the queued question';
+      const autoWorker=supportsAuto?(binding?.target===dest?binding.worker:null):null;
+      const manualReason=hasImages?(isGemini(dest)?'Gemini visual draft preparation; review and send in chat':'Open selected ChatGPT to prepare visual evidence'):!supportsAuto?'Choose an existing conversation for automatic Ask':'Open the selected chat to send the queued question';
       const r={id,marker,created:new Date().toISOString(),sourcePage:origin,target:dest,chatTitle:conversationName(dest,heart?.target===dest?heart.title:null),text,...(hasImages?{visuals:visuals.map(v=>({id:v.id,characters:v.data.length,kind:v.data.startsWith('data:image/svg+xml')?'svg':'bitmap'}))}:{}),...(autoWorker?{autoWorker}:{manualReason})};
       if(hasImages){await store.set(VISUAL+id,visuals);const check=await store.get(VISUAL+id);if(!Array.isArray(check)||check.length!==visuals.length||check.some((v,i)=>v.id!==visuals[i].id||v.data!==visuals[i].data)){await store.del(VISUAL+id);throw Error('Visual evidence storage readback failed');}}
       await store.set(HANDOFF+id,r);
@@ -1155,7 +1156,7 @@
     b.setAttribute('aria-pressed',String(playing));
     b.textContent=interrupted&&awakeRequested?'Audio interrupted':playing?'Awake audio on':awakeRequested?(awakeAudio?.paused?'Audio paused':'Starting audio…'):awakeEnabled?'Enable audio':'Keep awake off';
     b.title=awakeError||sessionError||'Near-silent audio; tap to turn off or on. Session: '+(session.type||'unavailable');
-    const client=$('client-awake');client.setAttribute('aria-pressed',String(!chatURL(location.href)&&playing));client.textContent=clientArmed?(playing?'Ambient audio on':awakeRequested?'Ambient paused':'Ambient armed · tap'):'Arm ambient audio';client.title=awakeError||'Keep this source tab awake using ambient audio; tap to arm or disarm';
+    const client=$('client-awake');client.setAttribute('aria-pressed',String(!chatURL(location.href)&&playing));client.textContent=clientArmed?(playing?'Ambient audio on':awakeRequested?'Ambient paused · disarm':'Ambient armed · disarm'):'Arm ambient audio';client.title=awakeError||'Keep this source tab awake using ambient audio; tap to arm or disarm';
     $('audio-mode-row').hidden=!selectedHere();$('audio-mode').title=session.supported?'Requested: '+audioMode+' · effective: '+session.type:'Audio Session API unavailable; original playback';
   }
   function stopAwake(reason='user'){
@@ -1209,7 +1210,7 @@
   document.addEventListener('click',resumeAwakeOnGesture,true);
   document.addEventListener('keydown',resumeAwakeOnGesture,true);
   action('keep-awake',toggleAwake);
-  action('client-awake',()=>{if(chatURL(location.href))return;if(clientArmed&&awakeRequested&&!awakeAudio?.paused){clientArmed=false;stopAwake('client disarmed');}else{clientArmed=true;if(awakeRequested)stopAwake('client restart');startAwake('manual');}try{sessionStorage.setItem('ai-pill-pocket-client-audio.v1',clientArmed?'on':'off');}catch{}paintAwake();});
+  action('client-awake',()=>{if(chatURL(location.href))return;if(clientArmed){clientArmed=false;stopAwake('client disarmed');}else{clientArmed=true;startAwake('manual');}try{sessionStorage.setItem('ai-pill-pocket-client-audio.v1',clientArmed?'on':'off');}catch{}paintAwake();wakeTransport();});
   // Lifecycle observations are distinct from hypotheses. A frozen JS context
   // cannot report itself until it resumes; the reader tab is a second observer.
   // Small local journal, no new GM polling or per-pulse remote writes.
@@ -1286,9 +1287,104 @@
     linkEvents.push({at:Date.now(),event,...detail});if(linkEvents.length>100)linkEvents.shift();saveJournal();
     if(event==='state'||event==='error'||event==='pong')console.info('[Pocket link v'+VERSION+']',event,detail);
   }
+  // Provider controls come from the user's two live DOM exports. Options
+  // are discovered from the actual native popup, not invented from plan names.
+  const MODEL_REQUEST='receiver.model.request.v1.';
+  let modelBusy=false,modelReceipt=null,modelPending=null,modelChoices=null;
+  function nativeModelButton(){
+    const surface=chatSurface();
+    const selector=surface==='gemini'?'input-area-v2 button[data-test-id="bard-mode-menu-button"]':'[data-chatgpt-composer] button[data-composer-navigation-target="reasoning"],button[aria-label="Select ChatGPT model"]';
+    const matches=[...document.querySelectorAll(selector)].filter(b=>b.getClientRects().length&&!b.closest('[hidden],[aria-hidden=true]'));
+    return matches.length===1?matches[0]:null;
+  }
+  function nativeModel(){
+    const b=nativeModelButton();if(!b)return null;
+    const label=normalizeChat(b.innerText||b.textContent).slice(0,100),effort=b.getAttribute('data-selected-reasoning-effort');
+    return {label:label||b.getAttribute('aria-label')?.replace(/^Open mode picker, currently /,'')||null,effort:effort||null,expanded:b.getAttribute('aria-expanded')==='true',disabled:b.disabled||b.getAttribute('aria-disabled')==='true'};
+  }
+  function nativeModelMenu(b){
+    if(!b||b.getAttribute('aria-expanded')!=='true')return null;
+    const controlled=(b.getAttribute('aria-controls')||'').split(/\s+/).filter(Boolean).map(id=>document.getElementById(id)).filter(n=>n?.getClientRects().length);
+    if(controlled.length===1)return controlled[0];
+    const menus=[...document.querySelectorAll('[role=menu],[role=listbox]')].filter(n=>n.getClientRects().length&&!n.closest('[hidden],[aria-hidden=true]'));
+    return menus.length===1?menus[0]:null;
+  }
+  function nativeOptions(menu){
+    if(!menu)return [];
+    const nodes=[...menu.querySelectorAll('[role=menuitemradio],[role=menuitem],[role=option],[role=radio]')].filter(n=>n.getClientRects().length&&!n.closest('[hidden],[aria-hidden=true]')&&!n.disabled&&n.getAttribute('aria-disabled')!=='true'&&!n.hasAttribute('aria-haspopup'));
+    return nodes.map(n=>({n,label:normalizeChat(n.innerText||n.textContent).slice(0,180),role:n.getAttribute('role'),selected:n.getAttribute('aria-checked')==='true'||n.getAttribute('aria-selected')==='true'})).filter(o=>o.label&&!/upgrade|subscription|learn more|manage|settings|buy|sign in/i.test(o.label));
+  }
+  async function openNativeModel(b){
+    if(b.getAttribute('aria-expanded')==='true')return nativeModelMenu(b);
+    // Radix uses pointerdown; Angular menus typically use click.
+    if(chatSurface()!=='gemini')b.dispatchEvent(new PointerEvent('pointerdown',{bubbles:true,cancelable:true,button:0,pointerType:'mouse',isPrimary:true}));
+    await new Promise(r=>setTimeout(r,80));
+    if(b.getAttribute('aria-expanded')!=='true')b.click();
+    for(let i=0;i<15;i++){const menu=nativeModelMenu(b);if(menu)return menu;await new Promise(r=>setTimeout(r,100));}
+    return null;
+  }
+  function closeNativeModel(b,menu){
+    if(!b||b.getAttribute('aria-expanded')!=='true')return;
+    const focus=document.activeElement;const node=menu?.contains(focus)?focus:menu||b;
+    node.dispatchEvent(new KeyboardEvent('keydown',{key:'Escape',code:'Escape',bubbles:true,cancelable:true}));
+    if(b.getAttribute('aria-expanded')==='true')b.click();
+  }
+  async function processModelRequest(dest){
+    if(modelBusy||autoBusy||activeAsk||streamActive())return;
+    const c=await store.get(MODEL_REQUEST+dest);
+    if(!c||c.target!==dest||c.worker!==instance||typeof c.id!=='string'||Date.now()>c.expires||modelReceipt?.id===c.id)return;
+    if(!['list','choose'].includes(c.action)||!await allowedDestination({target:dest}))return;
+    if(autoBusy||activeAsk||streamActive()||editorText(chatEditor())||composerAttachments(chatEditor()))return;
+    modelBusy=true;let b=null,menu=null,opened=false;
+    modelReceipt={id:c.id,sender:c.sender,phase:'working',at:Date.now()};
+    try{
+      b=nativeModelButton();if(!b||b.disabled||b.getAttribute('aria-disabled')==='true')throw Error('Native model control unavailable');
+      if(b.getAttribute('aria-expanded')==='true')throw Error('Close the existing native model menu first');
+      opened=true;menu=await openNativeModel(b);if(!menu)throw Error('Native model menu did not open or could not be identified');
+      const options=nativeOptions(menu);
+      if(c.action==='list'){
+        modelReceipt={id:c.id,sender:c.sender,phase:'listed',at:Date.now(),options:options.map(({label,role,selected})=>({label,role,selected})),model:nativeModel()};
+        if(!options.length)throw Error('No identifiable native model options; capture the open menu');
+      }else{
+        const matches=options.filter(o=>o.label===c.label&&o.role===c.role);
+        if(matches.length!==1)throw Error('Model option missing or ambiguous; reopen picker');
+        if(!await allowedDestination({target:dest})||Date.now()>c.expires||streamActive()||editorText(chatEditor())||composerAttachments(chatEditor()))throw Error('Receiver or composer changed; no selection made');
+        const before=nativeModel();matches[0].n.click();
+        let after=nativeModel();for(let i=0;i<15;i++){await new Promise(r=>setTimeout(r,100));after=nativeModel();if(after&&!after.expanded&&(after.label!==before?.label||after.effort!==before?.effort||matches[0].selected))break;}
+        const changed=!!after&&!after.expanded&&(after.label!==before?.label||after.effort!==before?.effort||matches[0].selected);
+        modelReceipt={id:c.id,sender:c.sender,phase:changed?'selected':'uncertain',at:Date.now(),before,model:after,requested:c.label,detail:changed?'Native selection observed':'Selection not confirmed; inspect receiver'};
+      }
+    }catch(e){modelReceipt={id:c.id,sender:c.sender,phase:'failed',at:Date.now(),detail:String(e?.message||e).slice(0,180),model:nativeModel()};}
+    finally{if(opened)closeNativeModel(b,menu);modelBusy=false;linkLog('model-control',{...modelReceipt});}
+  }
+  function paintModel(){
+    const b=$('model-picker'),sel=$('model-options'),out=$('model-status');
+    const here=chatURL(location.href),heart=lastHeart?.target===target&&lastHeart.worker===selectedWorker?lastHeart:null;
+    const state=heart?.model,receipt=heart?.modelReceipt;
+    b.textContent='Model · '+(state?.label||state?.effort||'Current');b.disabled=!target||!selectedWorker||!state||state.disabled||!!here;
+    if(modelPending&&modelPending.target!==target){modelPending=null;modelChoices=null;sel.hidden=true;out.textContent='';}
+    if(modelPending&&receipt?.id===modelPending.id&&receipt.sender===instance&&receipt.phase!=='working'){
+      modelPending=null;
+      if(receipt.phase==='listed'){
+        modelChoices={target,options:receipt.options||[]};
+        sel.replaceChildren(new Option('Choose…',''),...modelChoices.options.map((o,i)=>new Option(o.label+(o.selected?' ✓':''),String(i))));sel.hidden=false;
+        out.textContent='Choose a native option.';
+      }else{sel.hidden=true;modelChoices=null;out.textContent=receipt.detail||(receipt.phase==='selected'?'Model updated.':'Model selection not confirmed.');}
+    }else if(modelPending&&Date.now()>modelPending.expires){modelPending=null;out.textContent='Receiver did not confirm model control. Open the chat if needed.';}
+    b.disabled=b.disabled||!!modelPending;
+    if(modelChoices?.target!==target){sel.hidden=true;modelChoices=null;}
+  }
+  async function queueModel(action,option){
+    if(!store||!target||!selectedWorker||modelPending)return;
+    const c={id:uid(),sender:instance,target,worker:selectedWorker,action,at:Date.now(),expires:Date.now()+20000,...(option?{label:option.label,role:option.role}:{})};
+    modelPending=c;$('model-status').textContent=action==='list'?'Reading receiver menu…':'Applying native selection…';$('model-options').hidden=true;paintModel();
+    try{await store.set(MODEL_REQUEST+c.target,c);wakeTransport();}catch(e){modelPending=null;$('model-status').textContent=String(e?.message||e);paintModel();}
+  }
+  action('model-picker',()=>queueModel('list'));
+  $('model-options').addEventListener('change',e=>{if(!e.isTrusted||e.target.value==='')return;const o=modelChoices?.options[Number(e.target.value)];if(o&&modelChoices.target===target)void queueModel('choose',o);});
   function chatObservation(here){
     const editor=chatEditor(),stopping=streamActive();
-    return {editor:!!editor,disabled:!!editor&&(editor.disabled===true||editor.getAttribute('aria-disabled')==='true'||editor.getAttribute('contenteditable')==='false'||!!editor.closest('fieldset[disabled]')),stop:stopping,draft:!!editor&&(!!editorText(editor)||composerAttachments(editor)),surface:chatSurface(),userTurns:turns('user').length,assistantTurns:turns('assistant').length,sendControl:!!sendControl(),latestTurnState:latestTurnState(),hidden:document.hidden,visibility:document.visibilityState};
+    return {editor:!!editor,disabled:!!editor&&(editor.disabled===true||editor.getAttribute('aria-disabled')==='true'||editor.getAttribute('contenteditable')==='false'||!!editor.closest('fieldset[disabled]')),stop:stopping,draft:!!editor&&(!!editorText(editor)||composerAttachments(editor)),surface:chatSurface(),userTurns:turns('user').length,assistantTurns:turns('assistant').length,sendControl:!!sendControl(),latestTurnState:latestTurnState(),model:nativeModel(),modelReceipt,hidden:document.hidden,visibility:document.visibilityState};
   }
   function fresh(t,now){return typeof t==='number'&&Number.isFinite(t)&&now-t>=0&&now-t<=LINK_TTL;}
   function classifyLink(now,dest,heart,proof){
@@ -1334,14 +1430,14 @@
     $('chat-target').setAttribute('aria-label',$('chat-target').title);
     // Color carries routine health; explain only states requiring attention.
     setText($('link-health'),!chat&&target&&(state==='uncertain'||state==='stale')?linkDetail:'');
-    $('mode-ask').title='Ask · '+(linkDetail||'No chat selected');
+    $('mode-ask').title='Ask · '+(linkDetail||'No chat selected');paintModel();
   }
   function paintLink(next,detail){
     if(next!==linkState||detail!==linkDetail){linkState=next;linkDetail=detail;linkLog('state',{state:next,detail});}
     renderConnection();
   }
   async function linkTick(){
-    if(!store||linkBusy||(document.hidden&&!chatURL(location.href)))return;
+    if(!store||linkBusy||(document.hidden&&!chatURL(location.href)&&!clientArmed))return;
     linkBusy=true;
     try{
       const selectionRead=targetRead,here=chatURL(location.href),route=await readRouting(here),dest=route.dest;
@@ -1357,6 +1453,7 @@
         if(selectedWorker!==instance){paintLink('off','Same conversation, different receiver tab');return;}
         const ping=await store.get(LINK_PING+dest);
         if(chatURL(location.href)!==dest)return;
+        await processModelRequest(dest);
         const now=Date.now(),ob=chatObservation(here);
         const echo=ping?.target===dest&&typeof ping.id==='string'&&typeof ping.sender==='string'&&ping.sender!==instance&&fresh(ping.at,now)?{id:ping.id,sender:ping.sender,issuedAt:ping.at}:null;
         const title=localChatTitle();
@@ -1369,7 +1466,7 @@
         paintLink(ob.stop?'responding':ob.editor&&!ob.disabled&&!ob.draft?'ready':'uncertain',ob.stop?'Generating an answer':ob.draft?'Unsent draft in chat':ob.editor&&!ob.disabled?'Listening for questions':'Composer unavailable');
         return;
       }
-      if(document.hidden)return;
+      if(document.hidden&&!clientArmed)return;
       if(here){paintLink('off',dest?'Another chat is selected':'Select this chat to receive questions');return;}
       const heart=await store.get(LINK_HEART+dest),now=Date.now();
       lastHeart=heart?.target===dest&&(!selectedWorker||heart.worker===selectedWorker)?heart:null;
@@ -1704,7 +1801,6 @@
   async function startAsk(r){
     let attempted=false;
     try{
-      if(isGemini(r.target)&&r.visuals?.length)return;
       if(Date.now()-Date.parse(r.created)>AUTO_START_TTL||!await allowedDestination(r)||await store.get(ACK+r.id)||await store.get(RUN+r.id)||await store.get(REPLY+r.id))return;
       if(!await ownsRequest(r))return;
       if(!await markRun(r,'claimed','Bound chat tab received request'))return;
@@ -1732,6 +1828,18 @@
         const transfer=new DataTransfer();for(const f of files)transfer.items.add(f);
         const e=chatEditor();e.focus({preventScroll:true});const evt=new ClipboardEvent('paste',{bubbles:true,cancelable:true,composed:true,clipboardData:transfer});
         e.dispatchEvent(evt);testStage(r,'visual-paste-dispatched','PNG files offered to native composer',{files:files.map(f=>({name:f.name,bytes:f.size})),defaultPrevented:evt.defaultPrevented});
+        if(isGemini(r.target)){
+          // Native upload readiness is not established on Gemini. Preserve the
+          // marker and prepared draft, but never auto-send the text alone.
+          activeAsk={r,baseline,expected,started:Date.now(),user:null,seenBusy:false,answer:'',stableAt:0,assistantID:null,assistantNode:null,manualVisual:true,knownUserIds};
+          const until=Date.now()+6000;while(Date.now()<until&&!composerAttachments(chatEditor())&&sameTurn(baseline,fingerprint())&&!turns('user').some(n=>markedTurn(n,r)))await new Promise(resolve=>setTimeout(resolve,200));
+          if(turns('user').some(n=>markedTurn(n,r)))return;
+          const scope=chatEditor()?.closest('input-area-v2');
+          const previews=scope?[...scope.querySelectorAll('img,input[type=file],uploader-file-preview,gem-attachment,.file-preview,.attachment-preview-wrapper,[role=progressbar],[aria-busy=true]')].slice(0,20).map(n=>({tag:n.tagName,classes:String(n.className?.baseVal??n.className??'').slice(0,160),ready:n.tagName==='IMG'?n.complete&&n.naturalWidth>0:null,files:n.files?.length??null})):[];
+          const attached=composerAttachments(chatEditor());testStage(r,'gemini-visual-prepared','Gemini attachment observation; manual Send required',{attached,previews,editorMatches:editorText(chatEditor())===expected});
+          if(!await markRun(r,'prepared',attached?'Gemini attachment detected · review and send':'Gemini image not verified · attach manually, then send'))activeAsk=null;
+          return;
+        }
         const until=Date.now()+12000;while(Date.now()<until&&!composerAttachments(chatEditor())&&sameTurn(baseline,fingerprint()))await new Promise(resolve=>setTimeout(resolve,200));
         if(!composerAttachments(chatEditor())||editorText(chatEditor())!==expected)throw Error('Image attachment not observed. Inspect composer; no send attempted');
         // Native send readiness + decoded attachment previews, stable for
@@ -1857,7 +1965,7 @@
     return false;
   }
   async function autoTick(){
-    if(!store||autoBusy||handoffBusy)return;
+    if(!store||autoBusy||handoffBusy||modelBusy||nativeModel()?.expanded)return;
     const here=chatURL(location.href);
     if(!activeAsk&&!automatedChat(here))return;
     autoBusy=true;
@@ -1871,7 +1979,7 @@
       for(const e of entries){
         if(await store.get(RUN+e.id)||await store.get(ACK+e.id)||await store.get(REPLY+e.id))continue;
         const r=await store.get(HANDOFF+e.id);
-        if(r?.autoWorker!==instance||r.target!==here||r.id!==e.id||(isGemini(here)&&r.visuals?.length)||typeof r.text!=='string'||!r.text||r.text.length>LIMIT||Date.now()-Date.parse(r.created)>AUTO_START_TTL)continue;
+        if(r?.autoWorker!==instance||r.target!==here||r.id!==e.id||typeof r.text!=='string'||!r.text||r.text.length>LIMIT||Date.now()-Date.parse(r.created)>AUTO_START_TTL)continue;
         jobs.push(r);
       }
       jobs.sort((a,b)=>a.created.localeCompare(b.created));
@@ -1891,7 +1999,7 @@
   // wake it immediately, not a claim of persistent background execution.
   async function pollHandoff(){
     if(!store||busy||handoffBusy||pollBusy||selecting||captureRun||cropBusy)return;
-    if(document.hidden&&!selectedHere())return;
+    if(document.hidden&&!selectedHere()&&!clientArmed)return;
     pollBusy=true;try{await refreshHandoff(loadEpoch);}catch(e){linkLog('error',{message:'Mailbox: '+String(e?.message||e).slice(0,180)});}finally{pollBusy=false;}
   }
   let transportTimer=null,transportBusy=false,transportWake=false,nextLink=0,nextPoll=0,nextAuto=0;
@@ -1907,17 +2015,17 @@
     try{
       const now=Date.now(),here=chatURL(location.href),worker=!!here&&here===target&&selectedWorker===instance;
       const active=!!activeAsk||sourceWatch||!!(pending&&!pending.reply);
-      if(document.hidden&&!worker&&!activeAsk)return;
+      if(document.hidden&&!worker&&!activeAsk&&!clientArmed)return;
       // Each lane has its own in-flight guard. A blocked autoTick must
       // not prevent the heartbeat or mailbox from making progress.
       if(now>=nextLink){nextLink=now+(active?2000:LINK_INTERVAL);void linkTick();}
       if((worker||activeAsk)&&now>=nextAuto){nextAuto=now+(activeAsk?1000:2000);void autoTick();}
-      if((!document.hidden||worker)&&now>=nextPoll){nextPoll=now+(active?1000:8000);void pollHandoff();}
+      if((!document.hidden||worker||clientArmed)&&now>=nextPoll){nextPoll=now+(active?1000:8000);void pollHandoff();}
     }finally{
       transportBusy=false;
       const here=chatURL(location.href),worker=!!here&&here===target&&selectedWorker===instance,active=!!activeAsk||sourceWatch||!!(pending&&!pending.reply);
       if(transportWake){transportWake=false;wakeTransport();}
-      else if(!document.hidden||worker||activeAsk)transportTimer=setTimeout(transportTick,active?500:2000);
+      else if(!document.hidden||worker||activeAsk||clientArmed)transportTimer=setTimeout(transportTick,active?500:2000);
     }
   }
   const navigation=performance.getEntriesByType('navigation')[0];
