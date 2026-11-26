@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         AI Pill OS - DevTools and Ask
 // @namespace    https://github.com/JadanPoll/AI_Pill_OS
-// @version      0.4.4
+// @version      0.4.5
 // @description  Inspect, record, export browser evidence; hand it to ChatGPT and run bounded read-only investigation requests.
 // @match        https://*/*
 // @match        http://*/*
@@ -17,7 +17,7 @@
 (() => {
   'use strict';
   if (window.top !== window || document.getElementById('ai-pill-os')) return;
-  const VERSION = '0.4.4', MAX = 100, MAX_REPORT = 100000;
+  const VERSION = '0.4.5', MAX = 100, MAX_REPORT = 100000;
   let host, root, status, preview, question, scope, includeText, planBox, pill;
   let picked = null, selection = '', armed = false, recording = false, observer = null;
   let events = [], dropped = 0, started = 0, lastReport = null, erudaReady = false;
@@ -214,6 +214,54 @@
   function copy(){return copyPrepared(preview.value);}
   // Explicit local clipboard export of the current top-level DOM, not a refetch
   // or a bounded report. Never send it to another site automatically.
+  // Native menus frequently dismiss in document-capture pointer handlers,
+  // before a shadow-root control receives its click. Observe while open,
+  // then copy retained evidence with an ordinary user gesture.
+  let popupCapture=null,lastPopup=null,popupObserver=null,popupTimer=null,popupDeadline=null;
+  const popupSelector='[role="menu"],[role="listbox"],[role="dialog"],[role="tooltip"],[data-state="open"][data-side],[data-radix-popper-content-wrapper],.cdk-overlay-pane,mat-menu-panel,[popover]';
+  function visiblePopup(n){try{return n instanceof Element&&!n.closest('#ai-pill-os,#ai-pill-pocket,#ai-pill-console,#eruda,[hidden],[aria-hidden="true"]')&&n.getClientRects().length>0&&getComputedStyle(n).visibility!=='hidden'&&getComputedStyle(n).display!=='none'&&(!n.hasAttribute('popover')||n.matches(':popover-open'));}catch{return false;}}
+  function popupMarkup(n){
+    const clone=n.cloneNode(true);
+    for(const el of [clone,...clone.querySelectorAll('*')]){
+      if(el.matches('script,style,iframe,object,embed,textarea,input[type=password],input[type=hidden]')){el.remove();continue;}
+      for(const a of [...el.attributes])if(/^on/i.test(a.name)||/token|nonce|secret|authorization|credential/i.test(a.name)||a.name==='value'&&el.matches('input'))el.removeAttribute(a.name);
+    }
+    return clone.outerHTML.slice(0,35000);
+  }
+  function popupSnapshot(){
+    const triggers=[...document.querySelectorAll('[aria-expanded="true"],[data-state="open"][aria-haspopup]')].filter(visiblePopup).filter(n=>n.matches('button,[role="button"],[role="combobox"],[aria-haspopup]')).slice(0,25);
+    const candidates=[...document.querySelectorAll(popupSelector)].filter(visiblePopup);
+    for(const t of triggers)for(const id of (t.getAttribute('aria-controls')||'').split(/\s+/)){const n=document.getElementById(id);if(n&&visiblePopup(n)&&!candidates.includes(n))candidates.push(n);}
+    // Prefer leaf menus over broad portal wrappers so the captured data is
+    // useful and doesn't serialize unrelated conversation content.
+    const menus=candidates.filter(n=>!candidates.some(other=>other!==n&&n.contains(other))).slice(0,10);
+    return {triggers:triggers.map(popupMarkup),menus:menus.map(popupMarkup)};
+  }
+  function stopPopupCapture(){
+    popupObserver?.disconnect();popupObserver=null;clearTimeout(popupTimer);clearTimeout(popupDeadline);popupTimer=popupDeadline=null;document.removeEventListener('pointerdown',popupBeforePointer,true);popupCapture=null;
+    if(root){byId('popup-arm').textContent='Capture popup';byId('popup-copy').disabled=!lastPopup;syncRecord();}
+  }
+  function observePopup(){
+    if(!popupCapture)return;
+    const snap=popupSnapshot(),signature=JSON.stringify(snap);
+    if(!snap.menus.length||signature===popupCapture.baseline||signature===popupCapture.signature)return;
+    popupCapture.signature=signature;
+    lastPopup={schema:1,version:VERSION,at:new Date().toISOString(),page:location.origin+location.pathname,...snap};
+    byId('popup-copy').disabled=false;byId('open').textContent='Popup captured · AI';
+  }
+  function popupBeforePointer(){observePopup();}
+  function armPopupCapture(){
+    if(popupCapture){stopPopupCapture();setStatus(lastPopup?'Popup retained. Copy popup to review.':'Popup capture cancelled.');return;}
+    lastPopup=null;byId('popup-copy').disabled=true;
+    popupCapture={baseline:JSON.stringify(popupSnapshot()),signature:null};
+    byId('popup-arm').textContent='Stop capture';
+    pill.hidden=true;byId('open').hidden=false;byId('open').textContent='Open native popup · AI';
+    popupObserver=new MutationObserver(()=>{if(!popupTimer)popupTimer=setTimeout(()=>{popupTimer=null;observePopup();},80);});
+    popupObserver.observe(document.documentElement,{subtree:true,childList:true,attributes:true,attributeFilter:['aria-expanded','aria-hidden','aria-controls','data-state','hidden','class','style']});
+    document.addEventListener('pointerdown',popupBeforePointer,true);
+    popupDeadline=setTimeout(()=>{stopPopupCapture();setStatus(lastPopup?'Popup retained. Tap Copy popup.':'No new visible popup observed.');},60000);
+  }
+  function copyPopup(){if(!lastPopup){setStatus('Arm Capture popup, then open the native menu.');return;}stopPopupCapture();return copyPrepared(JSON.stringify(lastPopup,null,2),'Captured popup');}
   async function copyHTML() {
     let html;
     try {
@@ -465,7 +513,7 @@
         field('question',2,'Ask about this page…'),
         row(el('select',{id:'scope',class:'grow','aria-label':'Context'},...([['none','URL only'],['selection','Selected text'],['page','Page text'],['report','Diagnostic report']].map(([value,label])=>el('option',{value},label)))),plain('ask','Prepare',{class:'primary'})),
         el('section',{id:'evidence',hidden:true},head(el('small',{},'Review before sharing'),button('copy','copy','Copy evidence','Copy')),field('preview',4,null,{'aria-label':'Evidence preview'}),row(link('https://chatgpt.com/','ChatGPT',{target:'_blank',rel:'noopener noreferrer'}),link('https://gemini.google.com/','Gemini',{target:'_blank',rel:'noopener noreferrer'}))),
-        details('More',row(plain('snapshot','Page report'),plain('direct-inspect','Direct tap inspect'),link('shortcuts://run-shortcut?name=AI%20Pill%20Ask','Run Shortcut')),check('text','Include element text in reports'),details('AI investigation plan',field('plan',3,'{"operations":[{"op":"inspect","selector":"button"}]}'),plain('run','Run read-only plan'))),
+        details('More',row(plain('popup-arm','Capture popup'),plain('popup-copy','Copy popup',{disabled:true})),row(plain('snapshot','Page report'),plain('direct-inspect','Direct tap inspect'),link('shortcuts://run-shortcut?name=AI%20Pill%20Ask','Run Shortcut')),check('text','Include element text in reports'),details('AI investigation plan',field('plan',3,'{"operations":[{"op":"inspect","selector":"button"}]}'),plain('run','Run read-only plan'))),
         el('div',{id:'status',role:'status'},'Ready. Nothing is sent automatically.')
       ),
       el('div',{id:'pointer-box',hidden:true}),el('div',{id:'pointer-cursor',hidden:true}),
@@ -484,11 +532,11 @@
     pill=$('panel');status=$('status');preview=$('preview');question=$('question');scope=$('scope');includeText=$('text');planBox=$('plan');
     const toggle=open=>{pill.hidden=!open;$('open').hidden=open;};
     syncRecord();syncEvidence();
-    $('open').onclick=()=>toggle(true);$('close').onclick=()=>{armed=false;toggle(false)};
+    $('open').onclick=()=>{if(popupCapture){observePopup();stopPopupCapture();setStatus(lastPopup?'Popup retained. Tap More → Copy popup.':'No new popup captured.');}toggle(true);};$('close').onclick=()=>{armed=false;toggle(false)};
     $('inspect').onclick=startPointer;bindPointer();$('direct-inspect').onclick=()=>{armed=true;toggle(false);setStatus('Tap an element to inspect.');$('open').textContent='Cancel inspect · v'+VERSION;};
     $('open').addEventListener('click',()=>{armed=false;syncRecord();});
     $('record').onclick=()=>recording?stop():record();$('snapshot').onclick=()=>show(report());
-    $('copy').onclick=copy;$('copy-html').onclick=e=>{if(e.isTrusted)void copyHTML();};$('ask').onclick=ask;$('run').onclick=runPlan;$('eruda').onclick=devtools;
+    $('popup-arm').onclick=e=>{if(e.isTrusted)armPopupCapture();};$('popup-copy').onclick=e=>{if(e.isTrusted)void copyPopup();};$('copy').onclick=copy;$('copy-html').onclick=e=>{if(e.isTrusted)void copyHTML();};$('ask').onclick=ask;$('run').onclick=runPlan;$('eruda').onclick=devtools;
     $('sources').onclick=openSources;$('dev-sources').onclick=openSources;
     const openConsole=()=>{if(!document.getElementById('ai-pill-console')){setStatus('Install AI_Pill_Console.user.js first, then reload.');return;}document.dispatchEvent(new Event('ai-pill-console-open'));};
     $('console').onclick=openConsole;$('dev-console').onclick=openConsole;
