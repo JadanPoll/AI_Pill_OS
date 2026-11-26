@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         AI Pill OS - Pocket
 // @namespace    https://github.com/JadanPoll/AI_Pill_OS
-// @version      0.7.22
+// @version      0.7.23
 // @updateURL    https://raw.githubusercontent.com/JadanPoll/AI_Pill_OS/main/Pocket.user.js
 // @downloadURL  https://raw.githubusercontent.com/JadanPoll/AI_Pill_OS/main/Pocket.user.js
 // @description  Universal Safari pill: collect evidence, keep discoveries, and hand a question to a chosen chat.
@@ -26,7 +26,7 @@
 (() => {
   'use strict';
   if (window.top !== window) return;
-  const VERSION='0.7.22';
+  const VERSION='0.7.23';
   // Report initialization failures without depending on the main UI, storage or a CDN.
   function bootFailure(error,phase){
     const message=String(error?.message||error).slice(0,500);
@@ -1081,16 +1081,76 @@
   document.addEventListener('click',resumeAwakeOnGesture,true);
   document.addEventListener('keydown',resumeAwakeOnGesture,true);
   action('keep-awake',toggleAwake);
+  // Lifecycle observations are distinct from hypotheses. A frozen JS context
+  // cannot report itself until it resumes; the reader tab is a second observer.
+  // Small local journal, no new GM polling or per-pulse remote writes.
+  const LIFE_KEY='ai-pill-pocket-lifecycle.v1',PULSE_KEY='ai-pill-pocket-watchdog.v1';
+  const freshLife=()=>({schema:1,events:[],counts:{},examples:{},lastSample:null});
+  let life=freshLife(),lifePersistError=null;
+  try{const old=JSON.parse(sessionStorage.getItem(LIFE_KEY)||'null');if(old?.schema===1&&Array.isArray(old.events))life={...freshLife(),...old,events:old.events.slice(-48)};}catch(e){lifePersistError=String(e?.name||'read failed');}
+  const precedingSample=life.lastSample;
+  let lifeWall=Date.now(),lifeMono=performance.now(),lifeSample=null,stallSince=null,mediaStallSince=null,remotePrevious=null,remoteOutage=null,remoteLatest=null;
+  const lifeSupport={freezeHandler:'onfreeze' in document,resumeHandler:'onresume' in document,wasDiscarded:'wasDiscarded' in document,longTask:typeof PerformanceObserver!=='undefined'&&!!PerformanceObserver.supportedEntryTypes?.includes('longtask')};
+  function persistLife(){try{sessionStorage.setItem(LIFE_KEY,JSON.stringify(life));lifePersistError=null;}catch(e){lifePersistError=String(e?.name||'write failed');}}
+  function lifeEvent(kind,evidence={},classification='observed'){
+    const e={at:Date.now(),instance,kind,classification,visibility:document.visibilityState,focused:document.hasFocus(),...evidence};
+    life.counts[kind]=(life.counts[kind]||0)+1;life.events.push(e);if(life.events.length>48)life.events.shift();
+    if(classification!=='observed'||/error|rejection|csp|freeze|resume|discard|stall|runtime|longtask/.test(kind))life.examples[kind]=e;
+    persistLife();return e;
+  }
+  function lifecycleSample(){
+    const a=awakeAudio,now=Date.now();
+    const pending=[...storageOps.active.values()].filter(o=>now-o.at>5000).map(o=>({method:o.method,key:o.key,ageMs:now-o.at}));
+    return {at:now,monotonic:performance.now(),instance,visibility:document.visibilityState,focused:document.hasFocus(),online:navigator.onLine,selected:selectedHere(),pulseSeq:pulseCount,heartbeatSeq:linkSeq,heartbeatAt:lastHeart?.worker===instance?lastHeart.at:null,linkBusy,storage:{completed:storageOps.completed,failed:storageOps.failed,pendingCount:storageOps.active.size,slow:pending.slice(0,5)},media:{requested:awakeRequested,paused:a?.paused??null,readyState:a?.readyState??null,time:a?.currentTime??null,duration:Number.isFinite(a?.duration)?a.duration:null,progressAt:audioProgressAt}};
+  }
+  function observeLifecycle(trigger='pulse'){
+    const now=Date.now(),mono=performance.now(),prev=lifeSample,next=lifecycleSample(),wallGap=now-lifeWall,monoGap=mono-lifeMono;
+    lifeWall=now;lifeMono=mono;lifeSample=next;life.lastSample=next;
+    if(prev&&(wallGap>5000||monoGap>5000)){
+      const clockMismatch=Math.abs(wallGap-monoGap)>3000;
+      const comparable=prev.media.requested&&next.media.requested&&prev.media.time!==null&&next.media.time!==null&&prev.media.duration===next.media.duration;
+      const audioClockChanged=comparable?Math.abs(next.media.time-prev.media.time)>.03:null;
+      // A looping clock may land on the same phase; never equate an
+      // unchanged sample with proof that playback stopped during the gap.
+      lifeEvent(clockMismatch?'clock-discontinuity':'suspected-suspension',{trigger,wallGapMs:wallGap,monotonicGapMs:Math.round(monoGap),before:prev,after:next,audioClockChanged,interpretation:clockMismatch?'Wall and monotonic clocks diverged; sleep or clock adjustment possible.':'JavaScript sampling delayed; throttling, suspension or main-thread blockage possible.'},'inferred');
+    }
+    if(next.storage.slow.length&&!stallSince){stallSince=now;lifeEvent('storage-stall',{pending:next.storage.slow,completed:next.storage.completed},'inferred');}
+    else if(!next.storage.slow.length&&stallSince){lifeEvent('storage-stall-ended',{observedMs:now-stallSince});stallSince=null;}
+    const mediaDelayed=next.media.requested&&!next.media.paused&&next.media.progressAt&&now-next.media.progressAt>8000;
+    if(mediaDelayed&&!mediaStallSince){mediaStallSince=now;lifeEvent('media-clock-stall',{media:next.media},'inferred');}
+    else if(!mediaDelayed&&mediaStallSince){lifeEvent('media-clock-stall-ended',{observedMs:now-mediaStallSince});mediaStallSince=null;}
+    // Preserve the newest sample with the existing local watchdog, including
+    // visibility transitions; the event journal is bounded and separate.
+    persistLife();
+  }
+  function observeRemoteHeart(heart,dest,now){
+    if(remotePrevious&&remotePrevious.target!==dest){remotePrevious=null;remoteOutage=null;remoteLatest=null;}
+    const current=heart?{target:dest,worker:heart.worker,seq:heart.seq,at:heart.at,pulse:heart.watchdog?.seq??null,pulseAt:heart.watchdog?.at??null,lifecycle:heart.lifecycle||null}:null;
+    const stale=!!dest&&(!heart||!fresh(heart.at,now));
+    if(stale&&!remoteOutage&&now-linkStarted>=LINK_TTL){remoteOutage={at:now,target:dest,last:current||remotePrevious};lifeEvent('receiver-heartbeat-missing',{target:dest,last:remoteOutage.last,localPulse:pulseCount},'inferred');}
+    if(current&&!stale){
+      if(remoteOutage){lifeEvent('receiver-heartbeat-restored',{observedOutageMs:now-remoteOutage.at,before:remoteOutage.last,after:current});remoteOutage=null;}
+      if(remotePrevious&&remotePrevious.worker!==current.worker)lifeEvent('receiver-runtime-changed',{before:remotePrevious.worker,after:current.worker});
+      else if(remotePrevious&&current.seq!==remotePrevious.seq&&current.at-remotePrevious.at>LINK_TTL){
+        lifeEvent('receiver-heartbeat-gap',{gapMs:current.at-remotePrevious.at,before:remotePrevious,after:current,pulseDelta:current.pulse!==null&&remotePrevious.pulse!==null?current.pulse-remotePrevious.pulse:null},'inferred');
+      }
+      remotePrevious=current;
+    }
+    remoteLatest={at:now,stale,current,ongoingOutage:remoteOutage};
+  }
+  function lifeCompact(){return {last:lifeSample,latestEvent:life.events.at(-1)||null,latestGap:life.examples['suspected-suspension']||life.examples['clock-discontinuity']||null,storageStall:stallSince,mediaStall:mediaStallSince};}
+  function lifeReport(){return {support:lifeSupport,previousRuntimeSample:precedingSample,current:lifecycleSample(),counts:life.counts,events:life.events,examples:life.examples,remote:remoteLatest,storageStall:stallSince,mediaStall:mediaStallSince,persistenceError:lifePersistError,retention:'48 recent events, cumulative event counts and latest representative evidence per kind; tab session storage'};}
   function pulseSnapshot(){return {seq:pulseCount,at:pulseAt,maxGapMs:pulseMaxGap,gaps:pulseGaps.slice(-8),audio:awakeSnapshot(),storage:storageSnapshot()};}
   function localPulse(){
     const now=Date.now(),gap=now-pulseAt;pulseAt=now;pulseCount++;pulseMaxGap=Math.max(pulseMaxGap,gap);
     if(gap>5000){pulseGaps.push({at:now,gapMs:gap,visibility:document.visibilityState});if(pulseGaps.length>20)pulseGaps.shift();linkLog('scheduler-gap',{gapMs:gap});}
     syncReceiverPresentation();
     if(awakeAudio){const t=awakeAudio.currentTime;if(audioPrev!==null&&Math.abs(t-audioPrev)>.03)audioProgressAt=now;audioPrev=t;}
+    observeLifecycle();
     // Durable lightweight samples even if GM storage stops responding.
-    try{sessionStorage.setItem('ai-pill-pocket-watchdog.v1',JSON.stringify(pulseSnapshot()));}catch{}
+    try{sessionStorage.setItem(PULSE_KEY,JSON.stringify(pulseSnapshot()));}catch{}
   }
-  let priorPulse=null;try{priorPulse=JSON.parse(sessionStorage.getItem('ai-pill-pocket-watchdog.v1')||'null');}catch{}
+  let priorPulse=null;try{priorPulse=JSON.parse(sessionStorage.getItem(PULSE_KEY)||'null');}catch{}
   setInterval(localPulse,2000);
   
   function linkLog(event,detail={}){
@@ -1173,7 +1233,7 @@
         const echo=ping?.target===dest&&typeof ping.id==='string'&&typeof ping.sender==='string'&&ping.sender!==instance&&fresh(ping.at,now)?{id:ping.id,sender:ping.sender,issuedAt:ping.at}:null;
         const title=localChatTitle();
         await rememberTitle(dest,title);
-        const heart={target:dest,title,worker:instance,version:VERSION,seq:++linkSeq,at:now,...ob,echo,watchdog:pulseSnapshot()};
+        const heart={target:dest,title,worker:instance,version:VERSION,seq:++linkSeq,at:now,...ob,echo,watchdog:pulseSnapshot(),lifecycle:lifeCompact()};
         const owner=await store.get(WORKER);if(owner?.target!==dest||owner.worker!==instance)return;
         await store.set(LINK_HEART,heart);
         lastHeart=heart;
@@ -1185,6 +1245,7 @@
       if(here){paintLink('off',dest?'Another chat is selected':'Select this chat to receive questions');return;}
       const heart=await store.get(LINK_HEART),now=Date.now();
       lastHeart=heart?.target===dest&&(!selectedWorker||heart.worker===selectedWorker)?heart:null;
+      observeRemoteHeart(lastHeart,dest,now);
       if(lastHeart?.title&&!/^(ChatGPT|Gemini|Google Gemini|New chat)$/i.test(lastHeart.title))chatTitles.set(dest,cleanChatTitle(lastHeart.title));
       else if(!chatTitles.has(dest))await readTitle(dest);
       if(challenge&&lastHeart&&fresh(lastHeart.at,now)&&lastHeart.echo?.id===challenge.id&&lastHeart.echo.sender===instance&&lastHeart.echo.issuedAt===challenge.at&&lastHeart.at>=challenge.at&&fresh(challenge.at,now)&&lastProof?.id!==challenge.id){
@@ -1213,7 +1274,7 @@
     const timeout=(promise)=>{let timer;return Promise.race([promise,new Promise((_,reject)=>{timer=setTimeout(()=>reject(Error('Diagnostic storage read timed out')),2500);})]).finally(()=>clearTimeout(timer));};
     try{if(here)live={...traceSnapshot(),sendCandidates:sendCandidates().map(b=>({label:b.getAttribute('aria-label'),type:b.type,testid:b.dataset.testid||null,disabled:b.disabled||b.getAttribute('aria-disabled')==='true'}))};}catch(e){live={error:String(e?.message||e).slice(0,200)};}
     try{
-      await timeout(traceWrites);
+      try{await timeout(traceWrites);}catch(e){traceReadError='Pending trace writes: '+String(e?.message||e).slice(0,160);}
       if(store){
         const reads=await timeout(Promise.all([here||selected?store.get(TRACE+(here||selected)):null,request?store.get(REQUEST_TRACE+request.id):null,request?store.get(RUN+request.id):null,request?store.get(REPLY+request.id):null,request?store.get(SEEN+request.id):null,request?store.get(ACK+request.id):null,store.get(HISTORY)]));
         savedTrace=reads[0];requestTrace=reads[1];history=reads[6]||emptyHistory();
@@ -1221,7 +1282,7 @@
       }
     }catch(e){traceReadError=String(e?.message||e).slice(0,200);}
     const exactExecution=request?(executionTrace?.id===request.id?executionTrace:[history?.recent?.find(e=>e.id===request.id),history?.historical?.find(e=>e.id===request.id),requestTrace?.execution,savedTrace?.execution].filter(e=>e?.id===request.id).sort((a,b)=>(b.updated||b.started)-(a.updated||a.started))[0]||null):null;
-    return JSON.stringify({version:VERSION,exportedAt:new Date().toISOString(),reportId:uid(),instance,selectedWorker,target:linkTarget,state:linkState,challenge,lastProof,lastHeart,ageMs:lastHeart?Date.now()-lastHeart.at:null,error:linkError,visibility:document.visibilityState,intervalMs:LINK_INTERVAL,expiryMs:LINK_TTL,mailbox:'metadata index; direct request keys',autoStartExpiryMs:AUTO_START_TTL,events:linkEvents,uiEvents,watchdog:pulseSnapshot(),priorPulse,history,retention:{full:HISTORY_FULL,compact:HISTORY_COMPACT,failureExamples:HISTORY_EXAMPLES,distinctFailureSignatures:HISTORY_SIGNATURES,journal:'per tab, survives ordinary reload; sessionStorage'},live,environment:{surface:here?chatSurface():null,storage:modern?'GM async':legacy?'GM legacy':'unavailable',viewport:[innerWidth,innerHeight],visualViewport:window.visualViewport?[window.visualViewport.width,window.visualViewport.height]:null,hasFocus:document.hasFocus(),clipboard:!!navigator.clipboard,position:dock,navigation:lastNavigation,tabTitle:document.title,overlay:{mode:layerMode,error:layerError,zIndex:getComputedStyle(host).zIndex}},selfTest:lastSelfTest||savedTrace?.selfTest||null,execution:exactExecution||(!request?(executionTrace||savedTrace?.execution||null):null),latestConversationExecution:request&&!exactExecution?(savedTrace?.execution||null):null,traceReadError,traceError,clipboard:lastCopy,request:request?{id:request.id,target:request.target,chatTitle:request.chatTitle||null,created:request.created,worker:request.autoWorker||null,promptCharacters:request.text?.length||0,marker:request.marker||null,visuals:request.visuals||[],seen:request.seen,copied:request.copied,returned:!!request.reply,manualReason:request.manualReason||null,run:request.run,receipts}:null,scope:'Exact request trace when available, recent UI and connection events, live worker DOM and receipt metadata. No custom prompt or answer body. Archive retains recent full executions, compact history, aggregate outcomes and bounded rare failure examples; journal survives ordinary refresh. Latest conversation execution is separate when it belongs to another request.'},null,2);}
+    return JSON.stringify({version:VERSION,exportedAt:new Date().toISOString(),reportId:uid(),instance,selectedWorker,target:linkTarget,state:linkState,challenge,lastProof,lastHeart,ageMs:lastHeart?Date.now()-lastHeart.at:null,error:linkError,visibility:document.visibilityState,intervalMs:LINK_INTERVAL,expiryMs:LINK_TTL,mailbox:'metadata index; direct request keys',autoStartExpiryMs:AUTO_START_TTL,events:linkEvents,uiEvents,watchdog:pulseSnapshot(),priorPulse,lifecycle:lifeReport(),history,retention:{full:HISTORY_FULL,compact:HISTORY_COMPACT,failureExamples:HISTORY_EXAMPLES,distinctFailureSignatures:HISTORY_SIGNATURES,journal:'per tab, survives ordinary reload; sessionStorage'},live,environment:{surface:here?chatSurface():null,storage:modern?'GM async':legacy?'GM legacy':'unavailable',viewport:[innerWidth,innerHeight],visualViewport:window.visualViewport?[window.visualViewport.width,window.visualViewport.height]:null,hasFocus:document.hasFocus(),clipboard:!!navigator.clipboard,position:dock,navigation:lastNavigation,tabTitle:document.title,overlay:{mode:layerMode,error:layerError,zIndex:getComputedStyle(host).zIndex}},selfTest:lastSelfTest||savedTrace?.selfTest||null,execution:exactExecution||(!request?(executionTrace||savedTrace?.execution||null):null),latestConversationExecution:request&&!exactExecution?(savedTrace?.execution||null):null,traceReadError,traceError,clipboard:lastCopy,request:request?{id:request.id,target:request.target,chatTitle:request.chatTitle||null,created:request.created,worker:request.autoWorker||null,promptCharacters:request.text?.length||0,marker:request.marker||null,visuals:request.visuals||[],seen:request.seen,copied:request.copied,returned:!!request.reply,manualReason:request.manualReason||null,run:request.run,receipts}:null,scope:'Exact request trace when available, recent UI and connection events, live worker DOM and receipt metadata. No custom prompt or answer body. Archive retains recent full executions, compact history, aggregate outcomes and bounded rare failure examples; journal survives ordinary refresh. Latest conversation execution is separate when it belongs to another request.'},null,2);}
   action('link-report',copyConnectionReport);
   function extractPocketAnswer(last) {
     if(!last)return '';
@@ -1712,9 +1773,30 @@
       else if(!document.hidden||worker||activeAsk)transportTimer=setTimeout(transportTick,active?500:2000);
     }
   }
-  document.addEventListener('visibilitychange',()=>{linkLog('visibility',{state:document.visibilityState});if(activeAsk)recordObservation(activeAsk,{lifecycle:'visibilitychange'});wakeTransport();});
-  window.addEventListener('pageshow',e=>{linkLog('pageshow',{persisted:e.persisted});if(activeAsk)recordObservation(activeAsk,{lifecycle:'pageshow'});wakeTransport();});
-  window.addEventListener('pagehide',e=>{linkLog('pagehide',{persisted:e.persisted});if(activeAsk)recordObservation(activeAsk,{lifecycle:'pagehide'});localPulse();if(!e.persisted&&awakeRequested)stopAwake('page unloaded');});
+  const navigation=performance.getEntriesByType('navigation')[0];
+  lifeEvent('runtime-start',{navigationType:navigation?.type||null,wasDiscarded:lifeSupport.wasDiscarded?document.wasDiscarded:null,previous:precedingSample?{instance:precedingSample.instance,at:precedingSample.at,visibility:precedingSample.visibility}:null});
+  if(document.wasDiscarded===true)lifeEvent('browser-discard-confirmed');
+  observeLifecycle('startup');
+  function browserLifecycle(kind,extra={}){
+    observeLifecycle(kind);lifeEvent(kind,extra);
+    if(activeAsk)recordObservation(activeAsk,{lifecycle:kind});
+  }
+  document.addEventListener('visibilitychange',()=>{browserLifecycle('visibilitychange');linkLog('visibility',{state:document.visibilityState});wakeTransport();});
+  document.addEventListener('freeze',()=>browserLifecycle('freeze'));
+  document.addEventListener('resume',()=>{browserLifecycle('resume');wakeTransport();});
+  window.addEventListener('pageshow',e=>{browserLifecycle('pageshow',{persisted:e.persisted});linkLog('pageshow',{persisted:e.persisted});wakeTransport();});
+  window.addEventListener('pagehide',e=>{browserLifecycle('pagehide',{persisted:e.persisted});linkLog('pagehide',{persisted:e.persisted});localPulse();if(!e.persisted&&awakeRequested)stopAwake('page unloaded');});
+  for(const kind of ['online','offline','focus','blur'])window.addEventListener(kind,()=>browserLifecycle(kind));
+  // Error metadata only: no prompt text, message bodies, query strings or
+  // stack contents. Existing Console script can provide detailed errors.
+  const errorName=e=>String(e?.name||'Error').replace(/[^a-zA-Z0-9_-]/g,'').slice(0,60);
+  window.addEventListener('error',e=>{
+    if(e.target===window)lifeEvent('javascript-error',{name:errorName(e.error),line:e.lineno||null,column:e.colno||null});
+    else lifeEvent('resource-error',{tag:e.target?.tagName||null});
+  },true);
+  window.addEventListener('unhandledrejection',e=>lifeEvent('unhandled-rejection',{name:errorName(e.reason)}));
+  document.addEventListener('securitypolicyviolation',e=>lifeEvent('csp-violation',{directive:e.effectiveDirective,blockedScheme:String(e.blockedURI||'').split(':')[0].slice(0,32),disposition:e.disposition}));
+  if(lifeSupport.longTask){try{new PerformanceObserver(list=>{const tasks=list.getEntries().filter(e=>e.duration>=500);if(tasks.length)lifeEvent('longtask',{count:tasks.length,maxMs:Math.round(Math.max(...tasks.map(e=>e.duration)))});}).observe({type:'longtask',buffered:true});}catch(e){lifeEvent('observer-error',{name:errorName(e)});}}
   wakeTransport();
   window.addEventListener('popstate',refreshVisible);
   window.addEventListener('pageshow',refreshVisible);
