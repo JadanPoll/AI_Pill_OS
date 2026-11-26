@@ -16,7 +16,7 @@ The ambition is not simply to make clicking faster, put an AI chatbot on every w
 
 Speed of thought is an asymptotic objective, not a latency guarantee. Some thinking benefits from deliberation, unfamiliar knowledge, and productive friction. The point is to remove unnecessary friction, not to eliminate the human's intellectual participation.
 
-## Try the first implementation (v0.1.1)
+## Try the current implementation (v0.2.1)
 
 [Install / view raw AI_Pill.user.js](https://raw.githubusercontent.com/JadanPoll/AI_Pill_OS/main/AI_Pill.user.js) · [Source](AI_Pill.user.js).
 
@@ -35,6 +35,17 @@ Only inspect, controls, sources and resources are allowed, at most eight operati
 **Native inference canary:** create a Shortcut named exactly `AI Pill Ask` with Get Clipboard → Use Model (choose ChatGPT, if available) → Copy to Clipboard → Show Result. Connect your ChatGPT account in Apple Intelligence settings where supported. From the pill prepare and copy a non-sensitive question, then tap Run Shortcut; verify the model answer and manually paste the clipboard result back into Safari or your conversation. If Use Model is absent, check whether the official ChatGPT app exposes a suitable Shortcuts action; otherwise keep browser handoff. This shortcut is a manual setup recipe, not a distributed signed shortcut or a verified callback. No confidential content in the shortcut URL. [Apple documentation](https://support.apple.com/guide/shortcuts/use-apple-intelligence-in-shortcuts-tpg3vrvwmclv/ios) · [ChatGPT account setup](https://help.openai.com/en/articles/10269382-setting-up-chatgpt-with-apple-intelligence).
 
 **First acceptance:** inspect a real problematic control, record one interaction, send evidence to ChatGPT, run a requested read-only follow-up, and use the returned evidence to make a real userscript improvement. On a second public site test the contextual prompt and Eruda. Verify the shortcut independently. If something fails, copy the status/report and note the manager, version and site. JavaScript syntax has been checked; no iPad execution or end-to-end inference has been certified. iSH is deferred.
+
+### Mobile DevTools improvements (v0.2.1)
+
+The first iPad screenshots supplied on November 25 establish that Eruda's Elements and Sources panels actually opened on GitHub. They also establish practical friction: a large opaque panel, difficult small controls, and unformatted source. This is partial target-device evidence, not certification of network capture or the new version.
+
+- **Eruda:** large Opacity, Height, Sources and Close controls appear above the debugger; defaults are 86% opacity and 55% height on fresh settings. Tap to cycle presets. A widened resize hit area supplements Eruda's native control. The duplicate Eruda launcher is hidden; use AI → Eruda to reopen.
+- **Sources:** a separate thumb-oriented source browser, reachable directly from AI or the debugger toolbar. Filter actual discovered script and stylesheet names, select a file, Load, toggle Format, search within a file, step through chunks, and review/copy the relevant excerpt with source identity and character offsets. HTML is a fresh document response, not the live DOM. Pretty-printed positions are not original source line numbers.
+- Fetches are explicit, ordinary permitted browser requests, not privileged DevTools reads. CORS/CSP or authentication may block them. Limit 2 MiB per file, format up to 1 MiB using pinned [JS Beautifier](https://github.com/beautifier/js-beautify) v1.15.4; larger accepted bundles retain raw search. Nothing is uploaded automatically. Review source excerpts for secrets and private information.
+- Upstream source evidence: [Eruda DevTools configuration and resize implementation](https://github.com/liriliri/eruda/blob/v3.4.3/src/DevTools/DevTools.js), [Sources viewer](https://github.com/liriliri/eruda/blob/v3.4.3/src/Sources/Sources.js). v3.4.3 has highlighting but no beautifier in its source viewer and caps raw display at 100,000 characters. Avoid a full Eruda fork; the custom source browser remains separate.
+
+**Acceptance on iPad:** open Eruda on GitHub, cycle opacity/height and close; open Sources, find a JavaScript asset, load it, search for a meaningful term and export a bounded excerpt. Also try Page HTML and Format. If a file cannot be fetched, report the specific error rather than infer the source is inaccessible to every browser tool. New controls and formatter dependencies are not yet target-device tested.
 
 ## Living capability atlas
 
