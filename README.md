@@ -16,25 +16,37 @@ The ambition is not simply to make clicking faster, put an AI chatbot on every w
 
 Speed of thought is an asymptotic objective, not a latency guarantee. Some thinking benefits from deliberation, unfamiliar knowledge, and productive friction. The point is to remove unnecessary friction, not to eliminate the human's intellectual participation.
 
-## Try the current implementation (v0.2.1)
+## Try the current implementation (v0.3.0)
 
 [Install / view raw AI_Pill.user.js](https://raw.githubusercontent.com/JadanPoll/AI_Pill_OS/main/AI_Pill.user.js) · [Source](AI_Pill.user.js).
 
 Install using your Safari userscript manager (on iPad, import or save the .user.js into the manager's scripts folder if the raw link does not trigger installation). Grant access to a public test site, such as Wikipedia or GitHub, and reload. The script matches all HTTP(S) websites; limit site permissions to what you actually use. The manager must support the pinned Eruda @require dependency. It is third-party code; review before allowing on sensitive sites. No new backend or iSH setup.
 
-**DevTools:** tap AI → Developer tools. Inspect arms the next real tap without intentionally activating the target; Report shows element shape, surrounding nodes, script/CSS URLs and resource timing. Record → perform a real operation → Stop captures bounded click/mutation/error/visibility evidence plus resource timing. Eruda opens interactive DevTools (its network visibility depends on execution realm and when initialized). The custom report is not a full network trace. Preview and copy evidence explicitly; no automatic upload. Review URL paths, element IDs, and optional visible text before sending.
+**DevTools:** tap AI; the four primary tools are Inspect, Record, Sources and DevTools. Inspect arms the next real tap without intentionally activating the target; Report shows element shape, surrounding nodes, script/CSS URLs and resource timing. Record → perform a real operation → reopen AI if needed → Stop (same button) captures bounded click/mutation/error/visibility evidence plus resource timing. DevTools opens Eruda (its network visibility depends on execution realm and when initialized). The custom report is not a full network trace. Preview and copy evidence explicitly; no automatic upload. Review URL paths, element IDs, and optional visible text before sending.
 
-**ChatGPT:** enter a question, choose URL only / selected text / page text / diagnostic report, then Prepare prompt → review → Copy → ChatGPT → paste and submit in the desired conversation. Select text before opening the pill; the script retains the last observed selection in this page runtime. Verify the preview matches the intended context. Gemini is also a manual handoff. This uses the existing signed-in application, not an inference API.
+**ChatGPT:** enter a question, choose URL only / selected text / page text / diagnostic report, then Prepare → review → Copy → ChatGPT → paste and submit in the desired conversation. Select text before opening the pill; the script retains the last observed selection in this page runtime. Verify the preview matches the intended context. Gemini is also a manual handoff. This uses the existing signed-in application, not an inference API.
 
-**AI-directed investigation:** paste a JSON object from ChatGPT under Developer tools → AI investigation plan; Run read-only plan → review and copy the resulting evidence. Example:
+**AI-directed investigation:** paste a JSON object from ChatGPT under More → AI investigation plan; Run read-only plan → review and copy the resulting evidence. Example:
 ```json
 {"operations":[{"op":"inspect","selector":"button"},{"op":"sources"},{"op":"resources"}]}
 ```
 Only inspect, controls, sources and resources are allowed, at most eight operations. No arbitrary code, clicks, form submission, credential extraction, or automatic model response retrieval. Review requests and reports before sharing.
 
-**Native inference canary:** create a Shortcut named exactly `AI Pill Ask` with Get Clipboard → Use Model (choose ChatGPT, if available) → Copy to Clipboard → Show Result. Connect your ChatGPT account in Apple Intelligence settings where supported. From the pill prepare and copy a non-sensitive question, then tap Run Shortcut; verify the model answer and manually paste the clipboard result back into Safari or your conversation. If Use Model is absent, check whether the official ChatGPT app exposes a suitable Shortcuts action; otherwise keep browser handoff. This shortcut is a manual setup recipe, not a distributed signed shortcut or a verified callback. No confidential content in the shortcut URL. [Apple documentation](https://support.apple.com/guide/shortcuts/use-apple-intelligence-in-shortcuts-tpg3vrvwmclv/ios) · [ChatGPT account setup](https://help.openai.com/en/articles/10269382-setting-up-chatgpt-with-apple-intelligence).
+**Native inference canary:** create a Shortcut named exactly `AI Pill Ask` with Get Clipboard → Use Model (choose ChatGPT, if available) → Copy to Clipboard → Show Result. Connect your ChatGPT account in Apple Intelligence settings where supported. From the pill prepare and copy a non-sensitive question, then open More → Run Shortcut; verify the model answer and manually paste the clipboard result back into Safari or your conversation. If Use Model is absent, check whether the official ChatGPT app exposes a suitable Shortcuts action; otherwise keep browser handoff. This shortcut is a manual setup recipe, not a distributed signed shortcut or a verified callback. No confidential content in the shortcut URL. [Apple documentation](https://support.apple.com/guide/shortcuts/use-apple-intelligence-in-shortcuts-tpg3vrvwmclv/ios) · [ChatGPT account setup](https://help.openai.com/en/articles/10269382-setting-up-chatgpt-with-apple-intelligence).
 
 **First acceptance:** inspect a real problematic control, record one interaction, send evidence to ChatGPT, run a requested read-only follow-up, and use the returned evidence to make a real userscript improvement. On a second public site test the contextual prompt and Eruda. Verify the shortcut independently. If something fails, copy the status/report and note the manager, version and site. JavaScript syntax has been checked; no iPad execution or end-to-end inference has been certified. iSH is deferred.
+
+### Subtractive interface (v0.3.0)
+
+REM-04.01–04.03: a capability earning its existence does not earn a permanent control. Cold demonstration, forgotten-operation return after a week/month, and expert lazy use are the evaluation criteria. Icons replace words when the symbol is recognizable; uncommon tools retain a short label. Preserve 44px touch targets; do not optimize visual density by shrinking interaction targets.
+
+- Default pill: Inspect, Record/Stop, Sources, DevTools, and contextual question preparation. Recording is one stateful action, with a dot on the closed pill.
+- Evidence review, Copy and provider links appear only after evidence or a prompt is prepared. Review remains explicit.
+- More: Page report, optional element text, read-only AI investigation plan and unverified native Shortcut. No new runtime dependency or automatic inference.
+- Sources: search/copy controls appear after successful load; chunk navigation only when needed. Formatting is default; raw toggle is in Source options. Keep file selection and explicit Load because a fetch is not a mere display operation.
+- Eruda: compact icons for opacity, height, Sources and close; numeric values remain visible. Accessible names and titles retained.
+
+This is a heuristic utility ranking, not measured adoption. After real use, promote repeated actions, demote unused controls, and remove mechanisms only when their cost exceeds their value. Test a real inspect/record/export flow, close/reopen while recording, and load/search/copy a source; no new target-device acceptance yet.
 
 ### Mobile DevTools improvements (v0.2.1)
 
