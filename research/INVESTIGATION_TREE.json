@@ -1,9 +1,9 @@
 {
   "schema": "ai_pill_os.rsm_investigation",
-  "version": 2,
+  "version": 3,
   "updated": "2026-11-25",
   "parent_purpose": "Reduce mechanical distance from human intention to useful realization; preserve agency, context, and recoverability.",
-  "scope": "Safari-first everyday research and engineering. Native capabilities via rare stable Shortcuts; specialist apps only after concrete unmet needs.",
+  "scope": "Safari-first personal computing: direct touch for low-information operations, dictation and AI collaboration for high-information intentions, universal pill plus contextual mini-pills, local working state and context-aware canonical persistence.",
   "method_trace": [
     {
       "decision": "Separate question landscape from selected investigations",
@@ -70,7 +70,28 @@
     "pocket": "https://github.com/JadanPoll/AI_Pill_OS/blob/main/Pocket.user.js",
     "gm_storage": "https://github.com/quoid/userscripts/blob/main/README.md",
     "gm_scope": "https://stackoverflow.com/questions/77011466/how-do-i-access-the-same-json-file-from-two-different-tampermonkey-scripts",
-    "copy_screenshot": "https://www.reddit.com/r/shortcuts/comments/1nn8qc4/"
+    "copy_screenshot": "https://www.reddit.com/r/shortcuts/comments/1nn8qc4/",
+    "labx_bridge": "https://github.com/JadanPoll/LabX/blob/main/hub/labx_bridge.user.js",
+    "labx_contract": "https://github.com/JadanPoll/LabX/blob/main/docs/HUB_ENGINEERING.md",
+    "labx_audit": "https://github.com/JadanPoll/LabX/blob/main/docs/BROWSER_TRANSITION_AUDIT.md",
+    "kami_companion": "https://github.com/JadanPoll/Learning_Visualizations_Taxonomy/blob/main/Kami_Wikipedia.user.js",
+    "kami_canonical": "https://github.com/JadanPoll/Kami_Uploads_RSM_Tree",
+    "fken_structure": "https://github.com/JadanPoll/FKEN_Ecosystem/blob/main/STRUCTURE.md",
+    "fken_thoughts": "https://github.com/JadanPoll/FKEN_Ecosystem/tree/main/Thoughts",
+    "fken_template": "https://github.com/JadanPoll/FKEN_Ecosystem/blob/main/Investigations/RSM_TEMPLATE.json",
+    "gm_listener": "https://www.tampermonkey.net/documentation.php?locale=en&q=GM_values",
+    "gm_manager": "https://github.com/quoid/userscripts/blob/main/README.md",
+    "webkit_lifecycle": "https://webkit.org/blog/8970/how-web-content-can-affect-power-usage/",
+    "broadcast_origin": "https://developer.mozilla.org/en-US/docs/Web/API/Broadcast_Channel_API",
+    "openai_terms": "https://openai.com/policies/terms-of-use/",
+    "google_terms": "https://policies.google.com/terms?hl=en-US",
+    "chatgpt_apps": "https://help.openai.com/en/articles/11487775",
+    "drive_actions": "https://help.openai.com/en/articles/10929079-google-drive-app-and-setup-in-chatgpt",
+    "github_access": "https://help.openai.com/en/articles/11145903-connecting-github-to-chatgpt",
+    "ipad_windows": "https://support.apple.com/en-us/125309",
+    "dictation": "https://support.apple.com/guide/ipad/dictate-text-ipad5d3e5653/ipados",
+    "speech_api": "https://developer.mozilla.org/en-US/docs/Web/API/SpeechRecognition",
+    "clipboard_api": "https://developer.mozilla.org/en-US/docs/Web/API/Clipboard_API"
   },
   "question_tree": [
     {
@@ -86,7 +107,8 @@
       "children": [
         "Q1.1",
         "Q1.2",
-        "Q1.3"
+        "Q1.3",
+        "Q1.4"
       ]
     },
     {
@@ -111,7 +133,8 @@
       "children": [
         "Q2.1",
         "Q2.2",
-        "Q2.3"
+        "Q2.3",
+        "Q2.4"
       ]
     },
     {
@@ -136,7 +159,8 @@
       "children": [
         "Q3.1",
         "Q3.2",
-        "Q3.3"
+        "Q3.3",
+        "Q3.4"
       ]
     },
     {
@@ -165,7 +189,8 @@
         "Q4.4",
         "Q4.5",
         "Q4.6",
-        "Q4.7"
+        "Q4.7",
+        "Q4.8"
       ]
     },
     {
@@ -210,7 +235,9 @@
       "children": [
         "Q5.1",
         "Q5.2",
-        "Q5.3"
+        "Q5.3",
+        "Q5.4",
+        "Q5.5"
       ]
     },
     {
@@ -235,7 +262,8 @@
       "children": [
         "Q6.1",
         "Q6.2",
-        "Q6.3"
+        "Q6.3",
+        "Q6.4"
       ]
     },
     {
@@ -252,6 +280,48 @@
       "id": "Q6.3",
       "parent": "Q6",
       "question": "Which features remain useful after a week/month and which should disappear?"
+    },
+    {
+      "id": "Q1.4",
+      "parent": "Q1",
+      "question": "Which intention is cheaper to express by touch, dictated language or a deterministic command?",
+      "why": "Avoid speech for low-information spatial actions."
+    },
+    {
+      "id": "Q2.4",
+      "parent": "Q2",
+      "question": "Which evidence representations can be captured accurately and transported within Safari's storage and attachment limits?",
+      "why": "Distinguish real pixels, reconstructed DOM, source files and references."
+    },
+    {
+      "id": "Q3.4",
+      "parent": "Q3",
+      "question": "How can an existing selected AI conversation be reached without losing the originating page or mixing work?",
+      "why": "Desired browser-local coordination; not a new runtime."
+    },
+    {
+      "id": "Q4.8",
+      "parent": "Q4",
+      "question": "What authority should a model-directed operation have over a local webpage or canonical knowledge?",
+      "why": "User intent, trusted code and untrusted evidence must be distinct."
+    },
+    {
+      "id": "Q5.4",
+      "parent": "Q5",
+      "question": "Can one same-script storage namespace support recoverable cross-origin task handoff on the actual iPad?",
+      "why": "Decide whether a server is needed."
+    },
+    {
+      "id": "Q5.5",
+      "parent": "Q5",
+      "question": "Which destination owns each kind of information and how can a persistence receipt be verified?",
+      "why": "Prevent parallel knowledge lakes and accidental public disclosure."
+    },
+    {
+      "id": "Q6.4",
+      "parent": "Q6",
+      "question": "How far can manager-native version/update/rollback features eliminate script delivery overhead?",
+      "why": "Do not create a loader until manager limits are observed."
     }
   ],
   "investigations": [
@@ -578,6 +648,163 @@
       "reopen": "Clipboard image cannot paste or trigger captures wrong foreground; use built-in Copy and Delete as fallback.",
       "next": "Create the two-action shortcut, try a harmless screenshot, bind only after verified.",
       "depends_on": []
+    },
+    {
+      "id": "I15",
+      "questions": [
+        "Q5.4",
+        "Q5.2",
+        "Q3.4"
+      ],
+      "status": "highest_priority_device_test",
+      "why": "Certify the browser-local substrate without AI service traffic.",
+      "model": "Same universal script per installation, GM storage with immutable request ID, designated destination, source reference and explicit acknowledgment; notifications are optimization, durable pull on resume is fallback.",
+      "belief": "Tampermonkey documents cross-tab value listeners; quoid Userscripts main README lists asynchronous get/set/list/delete and openInTab but no value-change listener. Installed manager unknown. WebKit explicitly suspends inactive iOS tabs when possible.",
+      "certificate": "GM same-script sharing is plausible and used by Kami, not arbitrary cross-script sharing; BroadcastChannel is same-origin. No reliable hidden-tab execution assumption.",
+      "evidence": [
+        "gm_listener",
+        "gm_manager",
+        "webkit_lifecycle",
+        "broadcast_origin",
+        "kami_companion",
+        "labx_contract"
+      ],
+      "stop": "Two real origins using same installed script exchange one user-authored nonce and payload with acknowledgement; verify while both visible, background, after resume and reload. Show queued/unavailable rather than retry indefinitely. Stop after foreground/resume works; require observed utility before background infrastructure.",
+      "reopen": "Reopen on actual lost state or unacceptable handoff latency.",
+      "next": "Implement transport canary on trusted non-provider pages, not AI service automation. Test manager/version, one pending request, acknowledgement, reload; no secrets.",
+      "depends_on": []
+    },
+    {
+      "id": "I16",
+      "questions": [
+        "Q3.4",
+        "Q5.1",
+        "Q5.2"
+      ],
+      "status": "active_after_bus",
+      "why": "Minimize switching while retaining the correct AI conversation and explicit user control.",
+      "model": "Context packet -> chosen conversation URL -> user reviews/sends; official connected action or supported inference transport for further integration. Optional two visible Safari windows. User-mediated response transfer until approved mechanism exists.",
+      "belief": "Consumer ChatGPT terms restrict automatic/programmatic extraction; Google terms restrict automated access contrary to machine-readable instructions. LabX code contains consumer UI adapters but no live certification; do not port unattended submission/response harvesting. Account plans have limits.",
+      "certificate": "LabX uses task/attempt identity, stale guards, conversation attribution and explicit failure recovery. Its state audit models rather than proves the browser. Safari can display multiple windows; exact existing-tab focus and background wake need testing.",
+      "evidence": [
+        "labx_bridge",
+        "labx_audit",
+        "labx_contract",
+        "openai_terms",
+        "google_terms",
+        "ipad_windows",
+        "gm_manager"
+      ],
+      "stop": "From real Kami/engineering context, open chosen chat and transfer one prepared request without reconstructing it or losing source; preserve request if unsent. No automatic consumer response extraction. If zero-switch essential and not supported, compare an explicitly authorized provider transport only then.",
+      "reopen": "Reopen if switching or manual transfer repeatedly dominates whole workflow and a supported alternative is available.",
+      "next": "Test configured conversation URL, human-reviewed clipboard/paste/send and manual result or supported connected write. Compare two visible windows against switching; avoid duplicate submission.",
+      "depends_on": [
+        "I15"
+      ]
+    },
+    {
+      "id": "I17",
+      "questions": [
+        "Q5.3",
+        "Q5.5",
+        "Q4.8"
+      ],
+      "status": "active_after_bus",
+      "why": "Use existing canonical sources instead of duplicating knowledge in universal storage.",
+      "model": "Working tray -> durable Pocket only if requested -> context-aware destination proposal -> authorized write -> readback receipt. Separate raw user thought from AI synthesis; retain source anchors and canonical IDs.",
+      "belief": "Kami code persists reading state via document anchor with local conflict detection. FKEN README and structure distinguish resource/project/idea/investigation records; Kami repo canonical domain JSON and glossary independent. User's supplied Drive root inspected as dated docs plus a project; no direct Kami folder visible.",
+      "certificate": "ChatGPT connected app actions are capability-specific. GitHub standard connector can be read-only; use available authorized write-capable connector where present, otherwise patch. Current connector inspection establishes access only; no Drive/FKEN/Kami writes in this investigation.",
+      "evidence": [
+        "kami_companion",
+        "kami_canonical",
+        "fken_structure",
+        "fken_thoughts",
+        "fken_template",
+        "chatgpt_apps",
+        "drive_actions",
+        "github_access"
+      ],
+      "stop": "One real thought saved to an explicitly selected existing canonical destination, read back with exact link/path/commit and source. Do not mark saved before verified; if ambiguous keep Pocket. No automatic public writes or cross-site token handling.",
+      "reopen": "Reopen for actual duplicate, missing anchor, concurrent change or wrong destination.",
+      "next": "First use existing ChatGPT authorized actions on request, then add routing hints (not new schemas) after repeated cases. Confirm exact Kami Drive destination when a real write is requested.",
+      "depends_on": [
+        "I15"
+      ]
+    },
+    {
+      "id": "I18",
+      "questions": [
+        "Q1.3",
+        "Q1.4",
+        "Q4.8",
+        "Q2.2"
+      ],
+      "status": "research_sufficient",
+      "why": "Speech is high-value for writing and collaborating, not a substitute for all touch.",
+      "model": "Native dictation in focused text field; direct touch for region/highlight; contextual deterministic site actions with accessible names. Optional Web Speech only after actual dictation problem.",
+      "belief": "Apple dictation exists; Web Speech recognition availability varies. No continuous mic or voice-command parser necessary yet.",
+      "certificate": "Existing Kami mini-pill and universal pill show direct specialized UI precedent; native Voice Control can use named accessible controls.",
+      "evidence": [
+        "dictation",
+        "speech_api",
+        "kami_companion",
+        "atlas",
+        "voice"
+      ],
+      "stop": "One real dictated question from source plus one touch highlight; no additional recognizer unless repeated loss of speed or usability.",
+      "reopen": "Reopen when native dictation or existing Voice Control materially fails.",
+      "next": "Add/verify accessible names on high-use operations; keep voice input user-initiated.",
+      "depends_on": []
+    },
+    {
+      "id": "I19",
+      "questions": [
+        "Q2.1",
+        "Q2.4",
+        "Q5.4"
+      ],
+      "status": "parallel_device_test",
+      "why": "Visual debugging needs several ordered observations; screenshots are not interchangeable with DOM reconstruction.",
+      "model": "Capture rectangle -> ordered tray -> numbered composite or individual files; native actual pixels via screenshot import; DOM-rendered images labeled reconstructed. Text/HTML/JSON/file references share evidence identity and source, not necessarily same binary storage.",
+      "belief": "Clipboard supports PNG on modern browsers with user activation constraints. Cross-origin canvas/frame fidelity and manager large payload limits unresolved.",
+      "certificate": "Existing Copy Screenshot branch remains pixel-accurate fallback; universal tray should not promise privileged tab capture. No binary storage claim until measured.",
+      "evidence": [
+        "clipboard_api",
+        "copy_screenshot",
+        "pocket",
+        "atlas"
+      ],
+      "stop": "Capture three regions of one real UI issue, preserving order and legibility, transfer in one user action where possible. If DOM fails on remote/PDF, use native screenshot import; if large images exceed GM quota, use files/references. No generalized media vault.",
+      "reopen": "Reopen on actual fidelity, attachment or storage failure.",
+      "next": "Prototype crop/import and composite export; test one real GitHub/Kami and opaque canvas case. Keep images local until explicit transfer.",
+      "depends_on": [
+        "I14"
+      ]
+    },
+    {
+      "id": "I20",
+      "questions": [
+        "Q6.2",
+        "Q6.4",
+        "Q6.3"
+      ],
+      "status": "active_device_test",
+      "why": "Every improvement should reach the iPad cheaply and remain recoverable.",
+      "model": "GitHub versioned canonical scripts + manager-native update metadata; one read-only inventory of installed/release version and diagnostics; user-mediated installation/rollback. Universal shell plus site adapters only where reuse pays.",
+      "belief": "quoid README documents @version/@updateURL/@downloadURL and opening extension popup after external edits; exact installed manager/version unknown. No ordinary userscript authority to silently edit other installed scripts.",
+      "certificate": "Existing separate DevTools and Pocket execution scopes should not be merged before grants/realm and actual UI behavior tested. Preserve stable script identity and storage compatibility.",
+      "evidence": [
+        "gm_manager",
+        "atlas",
+        "pill",
+        "pocket"
+      ],
+      "stop": "One real defect fixed and updated, version visible, Pocket records survive, known-good rollback works. Use built-in manager update before custom loader. No arbitrary remote eval, silent update or cross-script privileged message bus.",
+      "reopen": "Reopen only on repeated manager friction; then evaluate native extension or reviewed packaging.",
+      "next": "Check installed manager and version; add native update metadata after confirming behavior; test actual update/rollback with real data.",
+      "depends_on": [
+        "I15"
+      ]
     }
   ],
   "relationships": [
@@ -615,11 +842,40 @@
       "from": "I12",
       "to": "I10",
       "type": "may_justify"
+    },
+    {
+      "from": "I15",
+      "to": "I16",
+      "type": "enables"
+    },
+    {
+      "from": "I15",
+      "to": "I17",
+      "type": "enables"
+    },
+    {
+      "from": "I15",
+      "to": "I20",
+      "type": "enables"
+    },
+    {
+      "from": "I19",
+      "to": "I16",
+      "type": "supports"
+    },
+    {
+      "from": "I17",
+      "to": "I12",
+      "type": "supports"
     }
   ],
   "active_queue": [
-    "I13",
+    "I15",
     "I14",
+    "I19",
+    "I16",
+    "I17",
+    "I20",
     "I12"
   ],
   "conditional_queue": [
@@ -633,13 +889,38 @@
     "I10",
     "I11"
   ],
-  "global_stop": "When cross-site capture/recall and screenshot-to-web-chat work and one real userscript defect is fixed faster, use the Safari-first environment rather than expand infrastructure. Reopen only demonstrated recurring gaps.",
-  "limitations": "Source review and user-relayed prior acceptance only. No new device execution. No exhaustive proof of impossibility; no hardware purchase or new agent backend. Source links may evolve; check installed versions.",
+  "global_stop": "Use the environment after one actual cross-site handoff, one useful multi-region visual debugging flow, one verified source-linked persistence action, and one script update/rollback with retained data. Do not demand unattended AI transport or universal native control before use. Reopen only concrete recurrent friction after a week/month.",
+  "limitations": "Source review and user-relayed prior experiments only. Drive root metadata inspected privately; no private IDs/content copied into public repository. No new device execution, provider automation, data migration or installation. Browser manager/version and support/authorization for any automated inference must be established separately.",
   "trajectory": [
     {
       "date": "2026-11-25",
       "decision": "User explicitly prioritizes portability and rapid browser-based iteration over general agent integration; preserve prior evidence but demote Minis/complex Shortcuts.",
       "method": "RSM-02.07; RSM-04.07; REM-04.01"
+    },
+    {
+      "date": "2026-11-25",
+      "decision": "User resolved functional A–H: one universal pill plus mini-pills; multimodal evidence; tray vs durable memory; existing AI conversations; natural dictation plus direct actions; unified updates; context-aware canonical persistence. Desired same-tab AI collaboration remains an implementation/permission boundary.",
+      "method": "RSM-02.07; RSM-03.01–03.03; REM-04.01"
     }
-  ]
+  ],
+  "functional_intent": {
+    "date": "2026-11-25",
+    "settled": [
+      "One universal pill with contextual mini-pills and independent site-specific design",
+      "Capture selected text, screenshots, documents, media and structured website evidence; use representation suited to question",
+      "Temporary working tray plus explicit durable items; route durable results into existing Kami/FKEN/Drive systems",
+      "Prepare context and navigate directly to selected AI conversation; prefer no context switch where supported",
+      "Speech primarily for dictation and AI collaboration; deterministic commands where genuinely faster; touch for highlighting and spatial operations",
+      "One update interface with version inspection, rollback and copyable diagnostics",
+      "Context-aware routing with explicit requested persistence; preserve canonical ownership"
+    ],
+    "aspiration": "From a reading/engineering tab, speak a question and receive the answer without leaving the work. Background submission and response delivery are desired, not established or authorized via arbitrary consumer UI automation.",
+    "unsettled": [
+      "Browser lifecycle and GM manager support",
+      "Supported model transport for return to source without automatic extraction",
+      "Minimum useful execution authority and persistence receipt",
+      "Capture fidelity and payload limits",
+      "Update and rollback capabilities on installed manager"
+    ]
+  }
 }
