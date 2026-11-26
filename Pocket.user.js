@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         AI Pill OS - Pocket
 // @namespace    https://github.com/JadanPoll/AI_Pill_OS
-// @version      0.7.8
+// @version      0.7.9
 // @updateURL    https://raw.githubusercontent.com/JadanPoll/AI_Pill_OS/main/Pocket.user.js
 // @downloadURL  https://raw.githubusercontent.com/JadanPoll/AI_Pill_OS/main/Pocket.user.js
 // @description  Universal Safari pill: collect evidence, keep discoveries, and hand a question to a chosen chat.
@@ -24,7 +24,7 @@
 (() => {
   'use strict';
   if (window.top !== window) return;
-  const VERSION='0.7.8';
+  const VERSION='0.7.9';
   // Report initialization failures without depending on the main UI, storage or a CDN.
   function bootFailure(error,phase){
     const message=String(error?.message||error).slice(0,500);
@@ -50,7 +50,7 @@
     if(document.getElementById('ai-pill-pocket'))return;
     let phase='storage setup';
     try{
-  const PREFIX='pocket.v1.', TRAY='tray.v1.', HANDOFF='handoff.v1.', ACK='ack.v1.', SEEN='seen.v1.', REPLY='reply.v1.', RUN='run.v1.', TRACE='trace.v1.', MAILBOX='mailbox.v1', TARGET='target.v1', LIMIT=100000, MAX_ITEMS=250;
+  const PREFIX='pocket.v1.', TRAY='tray.v1.', HANDOFF='handoff.v1.', ACK='ack.v1.', SEEN='seen.v1.', REPLY='reply.v1.', RUN='run.v1.', TRACE='trace.v1.', MAILBOX='mailbox.v1', TARGET='target.v1', TITLE='chat.title.v1.', LIMIT=100000, MAX_ITEMS=250;
   const uid=()=>globalThis.crypto?.randomUUID?.()||Date.now().toString(36)+'-'+Math.random().toString(36).slice(2);
   // Deliberately no localStorage fallback: that would appear to work but silently
   // partition the data by site. Only this installed script owns these GM keys.
@@ -70,8 +70,8 @@
     btn('open','pocket','Open AI Pocket','v'+VERSION)+
     '<section id="panel" data-mode="home" hidden><div class="row"><h3 class="grow" id="panel-title">Pocket <small>v'+VERSION+'</small></h3>'+btn('worker-notes','notes','Open Notes', '')+btn('close','close','Close Pocket')+'</div><div id="worker" hidden><div class="row"><span class="grow" id="worker-status" role="status">Checking…</span><button id="worker-pin" hidden>Use this chat</button></div><section id="self-test" hidden><div class="row"><input id="self-test-prompt" class="grow" placeholder="Optional test message" aria-label="Optional self-test message"><button id="self-test-run" title="Send a real message in this chat and verify its response">Self-test</button></div><small id="self-test-status" role="status"></small></section><div class="row">'+btn('worker-report','copy','Copy diagnostic report','Report')+btn('worker-refresh','refresh','Refresh connection','')+'</div></div><nav id="primary" aria-label="Pocket actions">'+btn('mode-notes','notes','Open notes','Notes')+btn('mode-ask','chat','Ask or read answer','Ask')+'</nav><div id="workspace">'+
     '<section id="quote" hidden><div class="row"><small class="grow">Selected passage</small>'+btn('quote-clear','close','Remove selected passage')+'</div><div id="quote-text"></div></section><textarea id="draft" rows="2" placeholder="What do you want to know or do?" aria-label="Question or draft"></textarea>'+
-    '<div id="note-context">'+btn('snip','crop','Drag to capture webpage region','Region')+'<button id="whole-page">Page text</button></div><div class="row" id="note-tools"><button id="save-note" class="grow">Save note</button>'+btn('collect','plus','Collect temporary evidence')+btn('saved-tab','bookmark','Open saved notes')+'</div><div id="ask-context">'+btn('ask-snip','crop','Capture region for this question','Region')+'<button id="ask-page">Page text</button><button id="copy-context">Copy text</button><button id="copy-ask-images" hidden>Copy images</button></div><div id="attachments" hidden></div><div id="ask-tools"><div class="row"><button id="ask" class="grow">Ask</button>'+'<a id="chat-target" href="https://chatgpt.com/" target="_blank" rel="noopener noreferrer" aria-label="Open or set ChatGPT" title="Open or set ChatGPT">'+icon('chat')+'</a>'+'</div><small id="target-label"></small><small id="link-health" role="status"></small><label id="include-row" hidden><input id="include-tray" type="checkbox"><span id="include-label">Include collected evidence</span></label></div>'+
-    '<section id="handoff" hidden><div class="row"><small class="grow" id="handoff-status"></small><a id="handoff-open" target="_blank" rel="noopener noreferrer" aria-label="Open selected chat" title="Open selected chat" hidden>'+icon('arrow')+'</a>'+btn('handoff-clear','close','Dismiss question or answer')+'</div><button id="worker-send" hidden>Send question</button><details id="worker-recovery" hidden><summary>Manual recovery</summary><pre id="handoff-preview" hidden></pre>'+btn('handoff-copy','copy','Copy prepared question','Copy question')+'<details id="reply-compose" hidden><summary>Return answer manually</summary><textarea id="reply-draft" rows="3" placeholder="Paste the answer from this chat…" aria-label="Answer to return"></textarea><button id="reply-return">Return answer</button></details></details><section id="reply-result" hidden><div class="row"><strong class="grow">Answer</strong>'+btn('reply-copy','copy','Copy returned answer')+'</div><div id="handoff-reply"></div></section></section>'+
+    '<div id="note-context">'+btn('snip','crop','Drag to capture webpage region','Region')+'<button id="whole-page">Page text</button></div><div class="row" id="note-tools"><button id="save-note" class="grow">Save note</button>'+btn('collect','plus','Collect temporary evidence')+btn('saved-tab','bookmark','Open saved notes')+'</div><div id="ask-context">'+btn('ask-snip','crop','Capture region for this question','Region')+'<button id="ask-page">Page text</button><button id="copy-context">Copy text</button><button id="copy-ask-images" hidden>Copy images</button></div><div id="attachments" hidden></div><div id="ask-tools"><div class="row"><button id="ask" class="grow">Ask</button>'+'<a id="chat-target" href="https://chatgpt.com/" target="_self" aria-label="Open or set ChatGPT" title="Open or set ChatGPT">'+icon('chat')+'</a>'+'</div><small id="target-label"></small><small id="link-health" role="status"></small><label id="include-row" hidden><input id="include-tray" type="checkbox"><span id="include-label">Include collected evidence</span></label></div>'+
+    '<section id="handoff" hidden><div class="row"><small class="grow" id="handoff-status"></small><a id="handoff-open" target="_self" aria-label="Open conversation in Safari" title="Open conversation in Safari" hidden>'+icon('arrow')+'</a>'+btn('handoff-clear','close','Dismiss question or answer')+'</div><button id="worker-send" hidden>Send question</button><details id="worker-recovery" hidden><summary>Manual recovery</summary><pre id="handoff-preview" hidden></pre>'+btn('handoff-copy','copy','Copy prepared question','Copy question')+'<details id="reply-compose" hidden><summary>Return answer manually</summary><textarea id="reply-draft" rows="3" placeholder="Paste the answer from this chat…" aria-label="Answer to return"></textarea><button id="reply-return">Return answer</button></details></details><section id="reply-result" hidden><div class="row"><strong class="grow">Answer</strong>'+btn('reply-copy','copy','Copy returned answer')+'</div><div id="handoff-reply"></div></section></section>'+
     '<div id="notes-list"><div class="row" id="collection-head">'+btn('tray-tab','back','Return to collected items')+'<strong id="collection-title" class="grow"></strong>'+btn('copy-tray','copy','Copy collected evidence')+'</div>'+
     '<div class="row" id="filter-row" hidden><input id="filter" class="grow" placeholder="Find items…" aria-label="Find items"></div><small id="count"></small><div id="list"></div>'+
     '<section id="detail" hidden><div class="row">'+btn('done','back','Back to items')+'<small class="grow" id="meta"></small>'+btn('copy','copy','Copy selected text')+'</div><pre id="body"></pre><button id="note-ask">Ask about this</button><details><summary>More</summary><div class="row"><button id="copy-record">Copy with source</button><button id="keep">Keep in saved</button>'+btn('remove','trash','Delete item')+'</div></details></section></div>'+
@@ -575,8 +575,16 @@
     return null;
   }
   function trayText(items){return items.map((r,i)=>'['+(i+1)+'] '+(r.source||'No source')+'\n'+r.text+(r.image?' (Image: copy collected images separately)':'')).join('\n\n');}
-  // Use the exact selected conversation URL; ordinary userscripts cannot activate arbitrary existing Safari tabs.
-  function openChat(dest){if(!dest)return;const a=document.createElement('a');a.href=dest;a.target='_blank';a.rel='noopener noreferrer';a.click();}
+  // Script-initiated same-tab navigation avoids the external-link click path
+  // that may dispatch iPadOS universal links to the native ChatGPT app.
+  // A userscript cannot select arbitrary existing Safari tabs.
+  function openChat(dest){const url=chatURL(dest);if(!url)return;if(chatURL(location.href)===url)return;location.assign(url);}
+  const cleanChatTitle=v=>String(v||'').replace(/\s+/g,' ').trim().slice(0,160);
+  function localChatTitle(){return cleanChatTitle(document.title).replace(/\s*[|–—-]\s*(ChatGPT|Google Gemini|Gemini)\s*$/i,'').trim();}
+  const chatTitles=new Map();
+  function conversationName(dest,title){const name=cleanChatTitle(title||chatTitles.get(dest));if(name&&!/^(ChatGPT|Gemini|Google Gemini|New chat)$/i.test(name))return name;if(!dest)return 'Choose a chat';const id=dest.split('/').filter(Boolean).at(-1);return dest==='https://chatgpt.com/'?'New chat':(dest.includes('chatgpt.com')?'ChatGPT':'Gemini')+' · '+id.slice(-8);}
+  async function rememberTitle(dest,title){const name=cleanChatTitle(title);if(!dest||!name||/^(ChatGPT|Gemini|Google Gemini|New chat)$/i.test(name))return;if(chatTitles.get(dest)===name)return;chatTitles.set(dest,name);await store.set(TITLE+dest,name);}
+  async function readTitle(dest){if(!dest||!store)return;const name=cleanChatTitle(await store.get(TITLE+dest));if(name)chatTitles.set(dest,name);renderConnection();}
   function paintTarget(){
     const here=chatURL(location.href),pinned=!!target&&here===target;
     const chat=!!here,wasChat=$('panel').dataset.chat==='true';
@@ -587,15 +595,11 @@
     $('panel-title').firstChild.textContent=chat?'Pocket connection ':'Pocket ';
     renderConnection();
     $('open').setAttribute('data-pinned',String(pinned));$('mode-ask').setAttribute('data-pinned',String(pinned));$('chat-target').setAttribute('data-pinned',String(pinned));
-    const name=target?(target.includes('chatgpt.com')?'ChatGPT':'Gemini'):'ChatGPT';
-    const label=pinned?'Selected '+name+' destination':here?'Use this chat':target?'Open selected '+name:'Open ChatGPT to choose a chat';
-    const link=$('chat-target');link.title=label;link.setAttribute('aria-label',label);
-    // Real navigable anchor: Safari can show its native link preview / Open in New Window menu.
+    const link=$('chat-target');
     if(here)link.removeAttribute('href');else link.href=target||'https://chatgpt.com/';
-    $('target-label').textContent=pinned?'Selected '+name+(target==='https://chatgpt.com/'?' · new chat':''):here?'Tap the chat icon to use this conversation.':'';
     $('pin').hidden=!here||!target||pinned;
   }
-  async function refreshTarget(){if(!store||pinBusy)return;const read=++targetRead,dest=chatURL(await store.get(TARGET));if(read!==targetRead||pinBusy)return;target=dest;paintTarget();}
+  async function refreshTarget(){if(!store||pinBusy)return;const read=++targetRead,dest=chatURL(await store.get(TARGET));if(read!==targetRead||pinBusy)return;target=dest;paintTarget();await readTitle(dest);}
   function chatAction(){
     if(!store){status('Shared storage unavailable.');return;}
     const here=chatURL(location.href);
@@ -611,7 +615,7 @@
     pinBusy=true;++targetRead;renderConnection();
     try{
       await store.set(TARGET,dest);if(await store.get(TARGET)!==dest)throw Error('Chat setting could not be read back');
-      target=dest;linkLog('selection',{selected:true});paintTarget();
+      target=dest;linkLog('selection',{selected:true});await rememberTitle(dest,localChatTitle());paintTarget();
     }finally{pinBusy=false;renderConnection();}
     await refreshHandoff(loadEpoch);wakeTransport();status('This conversation is now the Ask destination.');
   }
@@ -700,14 +704,18 @@
     $('handoff-preview').hidden=!atChat||!fallback||hasReply;
     $('handoff-preview').textContent=atChat?pending.text:'';
     $('handoff-copy').hidden=!atChat||!manual||hasReply;
-    $('handoff-open').hidden=!pending||atChat||hasReply||!(fallback||connectionLost);
+    $('handoff-open').hidden=!pending||atChat||!(hasReply||fallback||connectionLost);
     $('reply-compose').hidden=!atChat||hasReply||!(pending?.copied||interrupted||run?.phase==='uncertain');
     $('reply-result').hidden=!hasReply;
     $('handoff-reply').textContent=hasReply?pending.reply.text:'';
     $('open').setAttribute('data-incoming',String(!!pending&&(atChat?fallback&&!pending.copied&&!hasReply:hasReply)));$('mode-ask').setAttribute('data-incoming',String(!!pending&&(atChat?fallback&&!pending.copied&&!hasReply:hasReply)));
     if(pending){
       $('handoff-open').href=chatURL(pending.target);
+      const sentTo=conversationName(pending.target,pending.chatTitle);
+      $('handoff-open').title='Open '+sentTo+' in Safari';
+      $('handoff-open').setAttribute('aria-label',$('handoff-open').title);
       $('handoff-status').textContent=hasReply?(atChat?'Answer returned':'Answer received'):pending.copied?'Question copied · awaiting answer':interrupted?'Submission may have occurred · check chat, do not resend':run?.phase==='uncertain'?'Check chat · '+run.detail:run?.phase==='failed'?'Manual fallback · '+run.detail:manual?(expired?'Chat asleep or unavailable · open chat to send':atChat?(canRecoverSend?'Question waiting to be sent':pending.manualReason||'Question needs attention'):pending.manualReason||'Open chat to send'):connectionLost?(run?'Chat connection paused · check selected tab':'Waiting for chat to wake · open chat if needed'):run?.phase==='sent'?'ChatGPT is responding…':run?.phase==='armed'?'Checking submission…':run?.phase==='claimed'?'Sending to ChatGPT…':'Queued for connected chat…';
+      if(!atChat)$('handoff-status').textContent+=' · '+sentTo;
     }else $('handoff-open').removeAttribute('href');
   }
   async function returnAnswer(){
@@ -752,7 +760,7 @@
       const autoWorker=isChatGPT&&!hasImages&&!(proved&&heart.draft)?knownWorker:null;
       if(isChatGPT&&!hasImages&&proved&&heart.draft){status('The selected chat has an unsent draft. Finish it, then Ask again. Your question is kept.');return;}
       const manualReason=items.some(v=>v.image)?'Images require manual paste · open chat':!isChatGPT?'Choose an existing ChatGPT conversation for automatic Ask':'Open the selected chat to send the queued question';
-      const id=uid(),r={id,created:new Date().toISOString(),sourcePage:origin,target:dest,text,...(autoWorker?{autoWorker}:{manualReason})};
+      const id=uid(),r={id,created:new Date().toISOString(),sourcePage:origin,target:dest,chatTitle:conversationName(dest,heart?.target===dest?heart.title:null),text,...(autoWorker?{autoWorker}:{manualReason})};
       await store.set(HANDOFF+id,r);
       const check=await store.get(HANDOFF+id);if(check?.id!==id||check.text!==text||check.target!==dest)throw Error('Handoff could not be read back');
       await publishMailbox(r);
@@ -821,7 +829,7 @@
   action('tray-tab',()=>{view='tray';$('filter').value='';hideDetail();render();});action('saved-tab',()=>{view='saved';$('filter').value='';hideDetail();render();});
   action('copy-tray',()=>copyCollection(tray));action('snip',startSnip);action('bitmap-crop',startBitmapCrop);
   action('clear-tray',async()=>{if(!store||busy||!tray.length||!confirm('Clear the current working tray? Saved items and prepared handoffs remain.'))return;const ids=tray.map(r=>r.id);busy=true;try{for(const id of ids)await store.del(TRAY+id);hideDetail();await load();}finally{busy=false;}});
-  action('pin',pinChat);$('chat-target').addEventListener('click',e=>{if(!e.isTrusted){e.preventDefault();return;}if(!$('chat-target').hasAttribute('href')){e.preventDefault();Promise.resolve(chatAction()).catch(err=>status('Error: '+String(err?.message||err).slice(0,250)));}});action('ask',prepareHandoff);action('handoff-copy',copyHandoff);action('handoff-clear',clearHandoff);action('reply-return',returnAnswer);action('reply-copy',()=>{if(pending?.reply)return copyText(pending.reply.text);});
+  action('pin',pinChat);$('chat-target').addEventListener('click',e=>{e.preventDefault();if(e.isTrusted)Promise.resolve(chatAction()).catch(err=>status('Error: '+String(err?.message||err).slice(0,250)));});$('handoff-open').addEventListener('click',e=>{e.preventDefault();if(e.isTrusted&&pending)openChat(pending.target);});action('ask',prepareHandoff);action('handoff-copy',copyHandoff);action('handoff-clear',clearHandoff);action('reply-return',returnAnswer);action('reply-copy',()=>{if(pending?.reply)return copyText(pending.reply.text);});
   $('filter').addEventListener('input',e=>{if(e.isTrusted){hideDetail();render();}});
   action('done',hideDetail);
   action('copy',()=>{if(selected)return selected.image?copyCollection([selected]):copyText(selected.text);});
@@ -873,6 +881,11 @@
     setText($('open').lastChild,chat?' Pocket':' v'+VERSION);
     $('open').title=chat?'Pocket · '+label+(selected&&linkDetail?' · '+linkDetail:''):'Pocket v'+VERSION+' · '+(linkDetail||'No chat selected');
     for(const id of ['open','mode-ask','chat-target'])setAttr($(id),'data-link',state);
+    const name=conversationName(target);
+    setText($('target-label'),chat?'':target?'To: '+name:'Choose a chat');
+    $('target-label').title=name;
+    $('chat-target').title=target?'Open '+name+' in Safari':'Choose a chat';
+    $('chat-target').setAttribute('aria-label',$('chat-target').title);
     setText($('link-health'),chat?'':relevant?linkDetail:'Checking…');
     $('mode-ask').title='Ask · '+(linkDetail||'No chat selected');
   }
@@ -894,7 +907,9 @@
         if(chatURL(location.href)!==dest)return;
         const now=Date.now(),ob=chatObservation(here);
         const echo=ping?.target===dest&&typeof ping.id==='string'&&typeof ping.sender==='string'&&ping.sender!==instance&&fresh(ping.at,now)?{id:ping.id,sender:ping.sender,issuedAt:ping.at}:null;
-        const heart={target:dest,worker:instance,version:VERSION,seq:++linkSeq,at:now,...ob,echo};
+        const title=localChatTitle();
+        await rememberTitle(dest,title);
+        const heart={target:dest,title,worker:instance,version:VERSION,seq:++linkSeq,at:now,...ob,echo};
         await store.set(LINK_HEART,heart);
         lastHeart=heart;
         // Local worker readiness is distinct from remote round-trip proof.
@@ -905,6 +920,8 @@
       if(here){paintLink('off',dest?'Another chat is selected':'Select this chat to receive questions');return;}
       const heart=await store.get(LINK_HEART),now=Date.now();
       lastHeart=heart?.target===dest?heart:null;
+      if(lastHeart?.title&&!/^(ChatGPT|Gemini|Google Gemini|New chat)$/i.test(lastHeart.title))chatTitles.set(dest,cleanChatTitle(lastHeart.title));
+      else if(!chatTitles.has(dest))await readTitle(dest);
       if(challenge&&lastHeart&&fresh(lastHeart.at,now)&&lastHeart.echo?.id===challenge.id&&lastHeart.echo.sender===instance&&lastHeart.echo.issuedAt===challenge.at&&lastHeart.at>=challenge.at&&fresh(challenge.at,now)&&lastProof?.id!==challenge.id){
         lastProof={id:challenge.id,target:dest,worker:lastHeart.worker,at:lastHeart.at,observedAt:now,latencyMs:now-challenge.at,hidden:lastHeart.hidden===true,seq:lastHeart.seq};
         linkLog('pong',{latencyMs:lastProof.latencyMs,hidden:lastProof.hidden,seq:lastProof.seq});
