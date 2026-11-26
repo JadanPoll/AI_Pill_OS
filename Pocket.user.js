@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         AI Pill OS - Pocket
 // @namespace    https://github.com/JadanPoll/AI_Pill_OS
-// @version      0.7.7
+// @version      0.7.8
 // @updateURL    https://raw.githubusercontent.com/JadanPoll/AI_Pill_OS/main/Pocket.user.js
 // @downloadURL  https://raw.githubusercontent.com/JadanPoll/AI_Pill_OS/main/Pocket.user.js
 // @description  Universal Safari pill: collect evidence, keep discoveries, and hand a question to a chosen chat.
@@ -24,7 +24,7 @@
 (() => {
   'use strict';
   if (window.top !== window) return;
-  const VERSION='0.7.7';
+  const VERSION='0.7.8';
   // Report initialization failures without depending on the main UI, storage or a CDN.
   function bootFailure(error,phase){
     const message=String(error?.message||error).slice(0,500);
@@ -76,7 +76,7 @@
     '<div class="row" id="filter-row" hidden><input id="filter" class="grow" placeholder="Find items…" aria-label="Find items"></div><small id="count"></small><div id="list"></div>'+
     '<section id="detail" hidden><div class="row">'+btn('done','back','Back to items')+'<small class="grow" id="meta"></small>'+btn('copy','copy','Copy selected text')+'</div><pre id="body"></pre><button id="note-ask">Ask about this</button><details><summary>More</summary><div class="row"><button id="copy-record">Copy with source</button><button id="keep">Keep in saved</button>'+btn('remove','trash','Delete item')+'</div></details></section></div>'+
     '</div><details id="settings"><summary aria-label="More options">'+icon('settings')+'</summary><label id="source-label" for="source">Source reference</label><input id="source" placeholder="Source URL or reference" aria-label="Source URL or reference"><div class="settings-grid">'+btn('refresh','refresh','Refresh shared storage','Refresh')+'<button id="export">Export saved JSON</button><button id="save">Save draft</button><button id="import-image">Import screenshots</button><button id="bitmap-crop">Crop imported image</button><button id="capture-report">Copy capture report</button><button id="link-report">Copy connection report</button><button id="pin" hidden>Use this chat instead</button><span id="tray-tools">'+btn('clear-tray','trash','Clear working tray','Clear tray')+'</span></div><small>v'+VERSION+' · Local storage · No automatic upload. Avoid secrets.</small></details>'+
-    '<input id="image-files" type="file" accept="image/*" multiple hidden><input id="crop-file" type="file" accept="image/*" hidden><textarea id="fallback" hidden rows="4" readonly aria-label="Manual copy fallback"></textarea><div id="status" role="status"></div><button id="capture-cancel" hidden>Cancel capture</button></section>'+
+    '<input id="image-files" type="file" accept="image/*" multiple hidden><input id="crop-file" type="file" accept="image/*" hidden><textarea id="fallback" hidden rows="4" readonly aria-label="Manual copy fallback"></textarea><button id="fallback-copy" hidden>Copy again</button><div id="status" role="status"></div><button id="capture-cancel" hidden>Cancel capture</button></section>'+
     '<section id="crop-editor" hidden><div class="row"><h3 class="grow">Crop screenshot <small>v'+VERSION+'</small></h3><button id="crop-paste">Paste image</button><button id="crop-choose">Choose image</button>'+btn('crop-close','close','Close screenshot editor')+'</div><div id="crop-stage"><div id="crop-empty">Take a native screenshot, copy it, then tap Paste image. Or choose a saved screenshot.</div><div id="crop-image-wrap" hidden><img id="crop-image" alt="Screenshot to crop" draggable="false"><div id="crop-selection" hidden></div></div></div><small id="crop-help" role="status">No image selected.</small><div class="row"><button id="crop-reset" hidden>Reset crop</button><button id="crop-add" class="grow" disabled>Collect image</button></div></section>';
   // Contain Pocket interactions at the shadow boundary, AFTER native controls
   // and their local handlers receive the event. Never preventDefault here:
@@ -194,13 +194,43 @@
       if(draft.trim()&&$('draft').value===draft)$('draft').value='';else if(!draft.trim()&&quoted===text)setQuote('');view=prefix===TRAY?'tray':'saved';hideDetail();await load();status(prefix===TRAY?'Collected in tray':'Saved to Pocket');
     }finally{busy=false;$('save').disabled=false;$('collect').disabled=false;}
   }
-  async function copyText(t){
-    try{await navigator.clipboard.writeText(t);$('fallback').hidden=true;$('fallback').value='';status('Copied. Paste into the destination.');return true;}
-    catch{
-      // Fallback lets the user explicitly select/copy even when Safari denies clipboard API.
-      $('fallback').hidden=false;$('fallback').value=t;$('fallback').focus();$('fallback').select();status('Clipboard API unavailable. Use native Copy on the selected text.');return false; 
-    }
+  // WebKit requires clipboard.write to begin in the actual tap handler.
+  // For asynchronous sources give ClipboardItem a promise, never await GM
+  // storage before requesting the write (WebKit bug 222262).
+  let clipboardBusy=false,lastCopy=null;
+  async function copyText(value,label='Text'){
+    if(clipboardBusy){status('Copy already in progress.');return false;}
+    clipboardBusy=true;
+    const started=Date.now(),id=uid().slice(0,8),deferred=typeof value==='function';
+    let text='',method=deferred?'ClipboardItem':'writeText';
+    lastCopy={id,started,label,method,phase:'copying'};
+    status('Copying '+label.toLowerCase()+'…');
+    const data=Promise.resolve().then(()=>deferred?value():value).then(v=>{text=String(v);return text;});
+    // Attach a rejection handler immediately even if clipboard is unavailable.
+    data.catch(()=>{});
+    try{
+      if(deferred){
+        if(typeof ClipboardItem==='undefined'||!navigator.clipboard?.write)throw Error('Deferred clipboard unavailable');
+        const blob=data.then(t=>new Blob([t],{type:'text/plain'}));blob.catch(()=>{});
+        await navigator.clipboard.write([new ClipboardItem({'text/plain':blob})]);
+      }else{
+        text=String(value);
+        await navigator.clipboard.writeText(text);
+      }
+      $('fallback').hidden=true;$('fallback').value='';$('fallback-copy').hidden=true;
+      lastCopy={id,started,label,method,phase:'copied',characters:text.length,elapsedMs:Date.now()-started};
+      status('Copied '+label.toLowerCase()+' · '+text.length+' characters');return true;
+    }catch(e){
+      const error=String(e?.message||e).slice(0,200);
+      try{text=await data;}catch(err){lastCopy={id,started,label,method,phase:'failed',error:String(err?.message||err).slice(0,200)};status('Could not prepare '+label.toLowerCase()+': '+lastCopy.error);return false;}
+      lastCopy={id,started,label,method,phase:'failed',error,characters:text.length};
+      // Keep the freshly prepared text available for a second, real tap.
+      $('fallback').hidden=false;$('fallback').value=text;$('fallback-copy').hidden=false;
+      $('fallback').focus();$('fallback').select();
+      status('Not copied · tap Copy again or use native Copy.');return false;
+    }finally{clipboardBusy=false;}
   }
+  action('fallback-copy',()=>copyText($('fallback').value,'Prepared text'));
   // A selected chat is an address, not a privileged API or a promise of background execution.
   async function imageSheet(items){
     const pictures=items.filter(r=>r.image);
@@ -773,7 +803,7 @@
     if(chatURL(location.href)){setMode('worker');await refreshHandoff(loadEpoch);void linkTick();}
     else{setMode('home');await load();if(pending?.reply)setMode('ask');}
   });
-  action('close',()=>{setMode('home');++loadEpoch;hideDetail();$('fallback').hidden=true;$('fallback').value='';records=[];tray=[];pending=null;$('handoff-preview').textContent='';$('handoff-reply').textContent='';$('handoff').hidden=true;$('list').replaceChildren();$('panel').hidden=true;$('open').hidden=false;});
+  action('close',()=>{setMode('home');++loadEpoch;hideDetail();$('fallback').hidden=true;$('fallback').value='';$('fallback-copy').hidden=true;records=[];tray=[];pending=null;$('handoff-preview').textContent='';$('handoff-reply').textContent='';$('handoff').hidden=true;$('list').replaceChildren();$('panel').hidden=true;$('open').hidden=false;});
   for(const id of ['mode-notes','mode-ask'])$(id).addEventListener('pointerdown',e=>{if(e.isTrusted){const text=selection();if(text){setQuote(text);$('source').value=sourceURL();}}});
   action('mode-notes',()=>{view='saved';setMode('notes');});action('mode-ask',()=>setMode('ask'));
   action('worker-notes',async()=>{if(mode==='notes'){setMode('worker');await refreshHandoff(loadEpoch);}else{view='saved';setMode('notes');await load();}});
@@ -894,10 +924,11 @@
     }catch(e){linkError=String(e?.message||e).slice(0,300);paintLink('stale','Chat connection check failed');linkLog('error',{message:linkError});}
     finally{linkBusy=false;}
   }
-  async function copyConnectionReport(){
+  function copyConnectionReport(){return copyText(buildConnectionReport,'Report');}
+  async function buildConnectionReport(){
     const here=chatURL(location.href);let savedTrace=null,traceReadError=null;
     try{await traceWrites;if(store&&(here||target))savedTrace=await store.get(TRACE+(here||target));}catch(e){traceReadError=String(e?.message||e).slice(0,200);}
-    await copyText(JSON.stringify({version:VERSION,instance,target:linkTarget,state:linkState,challenge,lastProof,lastHeart,ageMs:lastHeart?Date.now()-lastHeart.at:null,error:linkError,visibility:document.visibilityState,intervalMs:LINK_INTERVAL,expiryMs:LINK_TTL,mailbox:'metadata index; direct request keys',autoStartExpiryMs:AUTO_START_TTL,events:linkEvents,selfTest:lastSelfTest||savedTrace?.selfTest||null,execution:executionTrace||savedTrace?.execution||null,traceReadError,traceError,request:pending?{id:pending.id,created:pending.created,worker:pending.autoWorker||null,seen:pending.seen,copied:pending.copied,returned:!!pending.reply,manualReason:pending.manualReason||null,run:pending.run}:null,scope:'GM ping/pong and persisted latest execution/self-test stages, DOM observations and receipt evidence. No custom prompt or answer body. A saved trace can predate this tab instance; compare IDs and timestamps.'},null,2));}
+    return JSON.stringify({version:VERSION,exportedAt:new Date().toISOString(),reportId:uid(),instance,target:linkTarget,state:linkState,challenge,lastProof,lastHeart,ageMs:lastHeart?Date.now()-lastHeart.at:null,error:linkError,visibility:document.visibilityState,intervalMs:LINK_INTERVAL,expiryMs:LINK_TTL,mailbox:'metadata index; direct request keys',autoStartExpiryMs:AUTO_START_TTL,events:linkEvents,selfTest:lastSelfTest||savedTrace?.selfTest||null,execution:executionTrace||savedTrace?.execution||null,traceReadError,traceError,clipboard:lastCopy,request:pending?{id:pending.id,created:pending.created,worker:pending.autoWorker||null,seen:pending.seen,copied:pending.copied,returned:!!pending.reply,manualReason:pending.manualReason||null,run:pending.run}:null,scope:'GM ping/pong and persisted latest execution/self-test stages, DOM observations and receipt evidence. No custom prompt or answer body. A saved trace can predate this tab instance; compare IDs and timestamps.'},null,2);}
   action('link-report',copyConnectionReport);
   function extractPocketAnswer(last) {
     if(!last)return '';
