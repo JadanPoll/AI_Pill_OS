@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         AI Pill OS - Pocket
 // @namespace    https://github.com/JadanPoll/AI_Pill_OS
-// @version      0.4.2
+// @version      0.5.0
 // @updateURL    https://raw.githubusercontent.com/JadanPoll/AI_Pill_OS/main/Pocket.user.js
 // @downloadURL  https://raw.githubusercontent.com/JadanPoll/AI_Pill_OS/main/Pocket.user.js
 // @description  Universal Safari pill: collect evidence, keep discoveries, and hand a question to a chosen chat.
@@ -15,13 +15,14 @@
 // @grant        GM_setValue
 // @grant        GM_listValues
 // @grant        GM_deleteValue
+// @require      https://cdn.jsdelivr.net/npm/html2canvas-pro@2.6.4/dist/html2canvas-pro.min.js
 // @run-at       document-idle
 // @noframes
 // ==/UserScript==
 (() => {
   'use strict';
   if (window.top !== window) return;
-  const VERSION='0.4.2';
+  const VERSION='0.5.0';
   // Report initialization failures without depending on the main UI, storage or a CDN.
   function bootFailure(error,phase){
     const message=String(error?.message||error).slice(0,500);
@@ -67,13 +68,13 @@
     btn('open','pocket','Open AI Pocket','v'+VERSION)+
     '<section id="panel" hidden><div class="row"><h3 class="grow">Pocket <small>v'+VERSION+'</small></h3>'+btn('saved-tab','bookmark','Open saved discoveries')+btn('close','close','Close Pocket')+'</div>'+
     '<textarea id="draft" rows="2" placeholder="Ask, or select text to collect…" aria-label="Question or selected text"></textarea>'+
-    '<div class="row">'+btn('collect','plus','Collect in working tray')+btn('snip','crop','Crop screenshot')+'<button id="ask" class="grow">Ask</button>'+btn('chat-target','chat','Open or set ChatGPT')+'</div><small id="target-label"></small>'+
+    '<div class="row">'+btn('collect','plus','Collect in working tray')+btn('snip','crop','Drag to capture webpage region')+'<button id="ask" class="grow">Ask</button>'+btn('chat-target','chat','Open or set ChatGPT')+'</div><small id="target-label"></small>'+
     '<section id="handoff" hidden><div class="row"><small class="grow" id="handoff-status"></small><a id="handoff-open" target="_blank" rel="noopener noreferrer" aria-label="Open selected chat" title="Open selected chat" hidden>'+icon('arrow')+'</a>'+btn('handoff-copy','copy','Copy prepared question')+btn('handoff-clear','close','Dismiss handoff')+'</div><pre id="handoff-preview" hidden></pre></section>'+
     '<div class="row" id="collection-head">'+btn('tray-tab','back','Return to collected items')+'<strong id="collection-title" class="grow"></strong>'+btn('copy-tray','copy','Copy collected evidence')+'</div>'+
     '<div class="row" id="filter-row" hidden><input id="filter" class="grow" placeholder="Find items…" aria-label="Find items"></div><small id="count"></small><div id="list"></div>'+
     '<section id="detail" hidden><div class="row">'+btn('done','back','Back to items')+'<small class="grow" id="meta"></small>'+btn('copy','copy','Copy selected text')+'</div><pre id="body"></pre><details><summary>More</summary><div class="row"><button id="copy-record">Copy with source</button><button id="keep">Keep in saved</button>'+btn('remove','trash','Delete item')+'</div></details></section>'+
-    '<details id="settings"><summary aria-label="More options">'+icon('settings')+'</summary><label id="source-label" for="source">Source reference</label><input id="source" placeholder="Source URL or reference" aria-label="Source URL or reference"><div class="row">'+btn('refresh','refresh','Refresh shared storage')+'<button id="export">Export saved JSON</button><button id="save">Save draft</button><button id="import-image">Import screenshots</button><button id="pin" hidden>Use this chat instead</button><span id="tray-tools">'+btn('clear-tray','trash','Clear working tray')+'</span></div><small>v'+VERSION+' · Local storage · No automatic upload. Avoid secrets.</small></details>'+
-    '<input id="image-files" type="file" accept="image/*" multiple hidden><input id="crop-file" type="file" accept="image/*" hidden><textarea id="fallback" hidden rows="4" readonly aria-label="Manual copy fallback"></textarea><div id="status" role="status"></div></section>'+
+    '<details id="settings"><summary aria-label="More options">'+icon('settings')+'</summary><label id="source-label" for="source">Source reference</label><input id="source" placeholder="Source URL or reference" aria-label="Source URL or reference"><div class="row">'+btn('refresh','refresh','Refresh shared storage')+'<button id="export">Export saved JSON</button><button id="save">Save draft</button><button id="import-image">Import screenshots</button><button id="bitmap-crop">Crop imported image</button><button id="capture-report">Copy capture report</button><button id="pin" hidden>Use this chat instead</button><span id="tray-tools">'+btn('clear-tray','trash','Clear working tray')+'</span></div><small>v'+VERSION+' · Local storage · No automatic upload. Avoid secrets.</small></details>'+
+    '<input id="image-files" type="file" accept="image/*" multiple hidden><input id="crop-file" type="file" accept="image/*" hidden><textarea id="fallback" hidden rows="4" readonly aria-label="Manual copy fallback"></textarea><div id="status" role="status"></div><button id="capture-cancel" hidden>Cancel capture</button></section>'+
     '<section id="crop-editor" hidden><div class="row"><h3 class="grow">Crop screenshot <small>v'+VERSION+'</small></h3><button id="crop-paste">Paste image</button><button id="crop-choose">Choose image</button>'+btn('crop-close','close','Close screenshot editor')+'</div><div id="crop-stage"><div id="crop-empty">Take a native screenshot, copy it, then tap Paste image. Or choose a saved screenshot.</div><div id="crop-image-wrap" hidden><img id="crop-image" alt="Screenshot to crop" draggable="false"><div id="crop-selection" hidden></div></div></div><small id="crop-help" role="status">No image selected.</small><div class="row"><button id="crop-reset" hidden>Reset crop</button><button id="crop-add" class="grow" disabled>Collect image</button></div></section>';
   // Keep native text editing and IME behavior; don't let page hotkeys see our keystrokes.
   for(const type of ['keydown','keypress','keyup'])root.addEventListener(type,e=>{if(e.composedPath().some(el=>el instanceof Element&&el.matches('textarea,input,[contenteditable]')))e.stopPropagation();});
@@ -169,6 +170,133 @@
       await navigator.clipboard.write([new ClipboardItem({'image/png':blob})]);status('Images copied. Paste into chat; Ask includes text evidence separately.');
     }catch(e){try{const b=await blob;const u=URL.createObjectURL(b);const link=document.createElement('a');link.href=u;link.download='pocket-captures.png';link.click();setTimeout(()=>URL.revokeObjectURL(u),30000);status('Image clipboard unavailable; PNG download requested.');}catch(err){status('Image export failed: '+err.message);}}
   }
+  // Restore the exact v0.3.1 renderer. The bitmap editor is a fallback, not the primary interaction.
+  const CAPTURE_KEY='capture.last.v1';
+  let captureRun=null,latestCapture=null,selecting=false;
+  const captureLib=typeof html2canvas==='function'?html2canvas:null;
+  function redactCSS(v){
+    return String(v??'').replace(/url\([^)]*\)/gi,'url([omitted])').slice(0,180);
+  }
+  function startSnip(){
+    if(!store||busy||handoffBusy||cropBusy||captureRun||selecting)return;
+    if(!captureLib){status('Renderer did not load. More → Copy capture report.');latestCapture={version:VERSION,renderer:'html2canvas-pro@2.6.4',stage:'dependency missing'};return;}
+    if(window.visualViewport&&Math.abs(window.visualViewport.scale-1)>0.01){status('Reset page zoom before capturing.');return;}
+    const source=sourceURL(),sx=scrollX,sy=scrollY;
+    selecting=true;host.style.visibility='hidden';
+    const layer=document.createElement('div');layer.id='ai-pocket-snip-overlay';layer.style.cssText='position:fixed;inset:0;z-index:2147483647;touch-action:none;cursor:crosshair;background:rgba(0,0,0,.12);';
+    const outline=document.createElement('div');outline.style.cssText='position:absolute;pointer-events:none;border:2px solid #38bdf8;background:rgba(56,189,248,.12);display:none';
+    const cancelButton=document.createElement('button');cancelButton.textContent='Draw a rectangle · Cancel';cancelButton.style.cssText='position:absolute;top:12px;left:50%;transform:translateX(-50%);padding:12px;border:0;border-radius:8px;background:#172033;color:white;font:14px system-ui;z-index:2';
+    layer.append(outline,cancelButton);document.documentElement.append(layer);
+    let start=null,id=null,ended=false;
+    const clean=()=>{if(ended)return false;ended=true;selecting=false;layer.remove();window.removeEventListener('keydown',key);window.removeEventListener('resize',cancel);host.style.visibility='';return true;};
+    const cancel=()=>clean(),key=e=>{if(e.key==='Escape')cancel();};
+    window.addEventListener('keydown',key);window.addEventListener('resize',cancel);cancelButton.addEventListener('click',cancel);
+    layer.addEventListener('pointerdown',e=>{if(!e.isTrusted||e.target===cancelButton||start)return;e.preventDefault();id=e.pointerId;start=[e.clientX,e.clientY];try{layer.setPointerCapture(id);}catch{}});
+    layer.addEventListener('pointermove',e=>{if(!start||id!==e.pointerId)return;Object.assign(outline.style,{display:'block',left:Math.min(start[0],e.clientX)+'px',top:Math.min(start[1],e.clientY)+'px',width:Math.abs(e.clientX-start[0])+'px',height:Math.abs(e.clientY-start[1])+'px'});});
+    layer.addEventListener('pointercancel',cancel);
+    layer.addEventListener('pointerup',e=>{
+      if(!start||id!==e.pointerId||!clean())return;
+      const x=Math.max(0,Math.min(start[0],e.clientX)),y=Math.max(0,Math.min(start[1],e.clientY)),w=Math.min(innerWidth-x,Math.abs(e.clientX-start[0])),h=Math.min(innerHeight-y,Math.abs(e.clientY-start[1]));
+      if(w<12||h<12){status('Region too small. Draw again.');return;}
+      if(scrollX!==sx||scrollY!==sy){status('Page moved during selection. Draw again.');return;}
+      runCapture({x,y,w,h,sx,sy,source});
+    });
+  }
+  // Trace computed style reads only on cloned documents, not the original page.
+  // No property mutation, no retries, no collection of page text or form values.
+  function traceCloneStyles(run,win){
+    if(!win||typeof win.getComputedStyle!=='function')return;
+    const original=win.getComputedStyle;
+    if(run.wrappers.some(v=>v.win===win))return;
+    const wrapped=function(el,pseudo){
+      const result=original.call(this,el,pseudo);
+      if(!el||el.ownerDocument===document)return result;
+      const tag=String(el.localName||'').slice(0,40);
+      const remember=(prop,value)=>{
+        if(typeof value!=='string'||prop==='content'||prop==='cssText'||/^--/.test(prop))return;
+        const entry={tag,property:prop,value:redactCSS(value),pseudo:pseudo||null};
+        run.report.lastStyles.push(entry);if(run.report.lastStyles.length>18)run.report.lastStyles.shift();
+      };
+      return new Proxy(result,{get(obj,key){
+        const value=Reflect.get(obj,key,obj);
+        if(key==='getPropertyValue')return name=>{const v=value.call(obj,name);remember(String(name),v);return v;};
+        if(typeof value==='function')return value.bind(obj);
+        if(typeof key==='string'&&/^[a-zA-Z][a-zA-Z-]*$/.test(key))remember(key,value);
+        return value;
+      }});
+    };
+    try{win.getComputedStyle=wrapped;if(win.getComputedStyle===wrapped)run.wrappers.push({win,original,wrapped});}catch{}
+  }
+  function recordCapture(run,stage,detail){
+    run.report.stage=stage;
+    const entry={ms:Math.round(performance.now()-run.started),stage,...(detail||{})};
+    run.report.events.push(entry);if(run.report.events.length>80)run.report.events.shift();
+    // Small, local progress checkpoint. Don't queue writes on every resource/progress callback.
+    latestCapture=run.report;
+    if(captureRun===run)status('Capture: '+stage+(detail?.percent!==undefined?' '+detail.percent+'%':'')+' · '+Math.round(entry.ms/1000)+'s');
+  }
+  async function checkpointCapture(run){
+    try{await store.set(CAPTURE_KEY,JSON.parse(JSON.stringify(run.report)));}catch{}
+  }
+  async function validateBitmap(data){
+    if(!/^data:image\/(?:png|jpeg);base64,/i.test(data)||data.length<100)throw Error('Canvas returned empty or invalid image data');
+    const im=new Image();im.src=data;await im.decode();
+    if(!im.naturalWidth||!im.naturalHeight)throw Error('Decoded image has no dimensions');
+    return [im.naturalWidth,im.naturalHeight];
+  }
+  async function runCapture(region){
+    if(captureRun||busy)return;
+    const {x,y,w,h,sx,sy,source}=region,controller=new AbortController();
+    const run={started:performance.now(),controller,wrappers:[],report:{version:VERSION,renderer:'html2canvas-pro@2.6.4',source,time:new Date().toISOString(),viewport:[innerWidth,innerHeight],documentSize:[document.documentElement.scrollWidth,document.documentElement.scrollHeight],region:[x,y,w,h],scroll:[sx,sy],events:[],lastStyles:[],resourceErrors:[]}};
+    captureRun=run;busy=true;$('capture-cancel').hidden=false;
+    let watchdog,clock;
+    try{
+      recordCapture(run,'starting');await checkpointCapture(run);
+      // Yield so Safari can paint the status before the synchronous clone/parse work.
+      await new Promise(resolve=>setTimeout(resolve,50));
+      const ignore=el=>['ai-pill-pocket','ai-pill-os','eruda','ai-pocket-snip-overlay'].includes(el.id);
+      watchdog=setTimeout(()=>{controller.abort();recordCapture(run,'deadline requested');},45000);
+      clock=setInterval(()=>{if(captureRun===run)status('Capture: '+run.report.stage+' · '+Math.round((performance.now()-run.started)/1000)+'s');},1000);
+      const canvas=await captureLib(document.documentElement,{
+        x:sx+x,y:sy+y,width:w,height:h,scrollX:sx,scrollY:sy,windowWidth:innerWidth,windowHeight:innerHeight,
+        scale:Math.min(2,1600/Math.max(w,h)),useCORS:true,allowTaint:false,logging:false,imageTimeout:8000,signal:controller.signal,
+        ignoreElements:ignore,
+        onProgress:(phase,percent)=>recordCapture(run,phase,{percent}),
+        onError:err=>{if(run.report.resourceErrors.length<12)run.report.resourceErrors.push(redactCSS(String(err?.message||err)).replace(/https?:\/\/\S+/g,'[url omitted]'));},
+        onclone:doc=>{
+          recordCapture(run,'clone ready',{elements:doc.getElementsByTagName('*').length});
+          traceCloneStyles(run,doc.defaultView);traceCloneStyles(run,window);
+        }
+      });
+      if(controller.signal.aborted)throw Error('Capture cancelled or exceeded deadline');
+      recordCapture(run,'encoding',{canvas:[canvas.width,canvas.height]});
+      let image=canvas.toDataURL('image/png');
+      if(image.length>2000000)image=canvas.toDataURL('image/jpeg',.9);
+      if(image.length>2000000)throw Error('Region exceeds image storage limit; choose a smaller area');
+      const dimensions=await validateBitmap(image);
+      recordCapture(run,'decoded',{dimensions,characters:image.length});
+      const keys=await store.keys();if(keys.filter(k=>typeof k==='string'&&k.startsWith(TRAY)).length>=30)throw Error('Collection full');
+      const r={id:uid(),created:new Date().toISOString(),source,text:'Webpage region (DOM reconstruction)',image,renderer:'html2canvas-pro@2.6.4',region:[x,y,w,h],storedDimensions:dimensions,elapsedMs:Math.round(performance.now()-run.started)};
+      recordCapture(run,'storage write');await store.set(TRAY+r.id,r);const saved=await store.get(TRAY+r.id);
+      if(saved?.image!==image)throw Error('Image storage readback mismatch');
+      await validateBitmap(saved.image);
+      recordCapture(run,'stored and decoded',{id:r.id});view='tray';hideDetail();await load();
+      status('Collected · '+dimensions.join('×')+' · '+Math.round(r.elapsedMs/1000)+'s');
+    }catch(err){
+      const failedAt=run.report.stage;
+      run.report.error={stage:failedAt,message:redactCSS(String(err?.message||err)),stack:String(err?.stack||'').replace(/https?:\/\/[^\s)]+/g,m=>m.includes('html2canvas-pro')?m:'[url omitted]').slice(0,1800)};
+      recordCapture(run,'failed');status('Capture failed at '+failedAt+' · '+run.report.error.message+' · More → Copy capture report');
+    }finally{
+      clearTimeout(watchdog);clearInterval(clock);
+      for(const {win,original,wrapped} of run.wrappers.reverse())try{if(win.getComputedStyle===wrapped)win.getComputedStyle=original;}catch{}
+      await checkpointCapture(run);captureRun=null;busy=false;$('capture-cancel').hidden=true;
+    }
+  }
+  action('capture-cancel',()=>{if(captureRun){captureRun.controller.abort();status('Cancellation requested.');}});
+  action('capture-report',async()=>{
+    const report=latestCapture||await store?.get(CAPTURE_KEY)||{version:VERSION,rendererLoaded:!!captureLib,stage:'no capture attempted'};
+    await copyText(JSON.stringify(report,null,2));
+  });
   // Native bitmap acquisition is separate from crop geometry. No DOM renderer or network dependency.
   let cropEpoch=0,cropURL=null,cropRect=null,cropDrag=null,cropSource='',cropBusy=false;
   const cropHelp=t=>$('crop-help').textContent=t;
@@ -179,7 +307,7 @@
     ++cropEpoch;resetCrop();$('crop-image').removeAttribute('src');$('crop-image-wrap').hidden=true;$('crop-add').disabled=true;
     if(cropURL){URL.revokeObjectURL(cropURL);cropURL=null;}
   }
-  function startSnip(){
+  function startBitmapCrop(){
     if(!store||busy||handoffBusy||cropBusy)return;
     cropSource=$('source').value.trim()||sourceURL();
     $('panel').hidden=true;$('open').hidden=true;$('crop-editor').hidden=false;
@@ -298,7 +426,7 @@
   $('image-files').addEventListener('change',e=>{if(!e.isTrusted)return;const files=Array.from(e.target.files||[]);e.target.value='';importImages(files);});
   $('draft').addEventListener('paste',e=>{
     if(!e.isTrusted)return;const files=Array.from(e.clipboardData?.files||[]).filter(f=>f.type.startsWith('image/'));
-    if(!files.length)return;e.preventDefault();e.stopPropagation();if(files.length===1){startSnip();if(!$('crop-editor').hidden)loadCropFile(files[0]);}else importImages(files);
+    if(!files.length)return;e.preventDefault();e.stopPropagation();if(files.length===1){startBitmapCrop();if(!$('crop-editor').hidden)loadCropFile(files[0]);}else importImages(files);
   });
   function chatURL(value){
     try{
@@ -404,7 +532,7 @@
   action('close',()=>{++loadEpoch;hideDetail();$('fallback').hidden=true;$('fallback').value='';records=[];tray=[];pending=null;$('handoff-preview').textContent='';$('handoff').hidden=true;$('list').replaceChildren();$('panel').hidden=true;$('open').hidden=false;});
   action('save',()=>save(PREFIX));action('collect',()=>save(TRAY));action('refresh',async()=>{await load();status((modern?'GM async':legacy?'GM legacy':'GM unavailable')+' · '+tray.length+' in tray · '+records.length+' saved');});
   action('tray-tab',()=>{view='tray';$('filter').value='';hideDetail();render();});action('saved-tab',()=>{view='saved';$('filter').value='';hideDetail();render();});
-  action('copy-tray',()=>copyCollection(tray));action('snip',startSnip);
+  action('copy-tray',()=>copyCollection(tray));action('snip',startSnip);action('bitmap-crop',startBitmapCrop);
   action('clear-tray',async()=>{if(!store||busy||!tray.length||!confirm('Clear the current working tray? Saved items and prepared handoffs remain.'))return;const ids=tray.map(r=>r.id);busy=true;try{for(const id of ids)await store.del(TRAY+id);hideDetail();await load();}finally{busy=false;}});
   action('pin',pinChat);action('chat-target',chatAction);action('ask',prepareHandoff);action('handoff-copy',copyHandoff);action('handoff-clear',clearHandoff);
   $('filter').addEventListener('input',e=>{if(e.isTrusted){hideDetail();render();}});
