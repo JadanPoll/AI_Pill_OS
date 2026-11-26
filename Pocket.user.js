@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         AI Pill OS - Pocket
 // @namespace    https://github.com/JadanPoll/AI_Pill_OS
-// @version      0.7.18
+// @version      0.7.19
 // @updateURL    https://raw.githubusercontent.com/JadanPoll/AI_Pill_OS/main/Pocket.user.js
 // @downloadURL  https://raw.githubusercontent.com/JadanPoll/AI_Pill_OS/main/Pocket.user.js
 // @description  Universal Safari pill: collect evidence, keep discoveries, and hand a question to a chosen chat.
@@ -11,6 +11,8 @@
 // @grant        GM.setValue
 // @grant        GM.listValues
 // @grant        GM.deleteValue
+// @grant        GM.openInTab
+// @grant        GM_openInTab
 // @grant        GM_getValue
 // @grant        GM_setValue
 // @grant        GM_listValues
@@ -24,7 +26,7 @@
 (() => {
   'use strict';
   if (window.top !== window) return;
-  const VERSION='0.7.18';
+  const VERSION='0.7.19';
   // Report initialization failures without depending on the main UI, storage or a CDN.
   function bootFailure(error,phase){
     const message=String(error?.message||error).slice(0,500);
@@ -699,10 +701,26 @@
     return null;
   }
   function trayText(items){return items.map((r,i)=>'['+(i+1)+'] '+(r.source||'No source')+'\n'+r.text+(r.image||r.svg?' (Visual evidence accompanies request; review attachment before sending)':'')).join('\n\n');}
-  // Script-initiated same-tab navigation avoids the external-link click path
-  // that may dispatch iPadOS universal links to the native ChatGPT app.
-  // A userscript cannot select arbitrary existing Safari tabs.
-  function openChat(dest){const url=chatURL(dest);if(!url)return;if(chatURL(location.href)===url)return;location.assign(url);}
+  // Userscripts' GM.openInTab delegates to browser.tabs.create in the
+  // extension background. Do not use location.assign or a synthetic anchor:
+  // iPadOS can route those navigations into the installed ChatGPT app.
+  let openingChat=false,lastNavigation=null;
+  async function openChat(dest){
+    const url=chatURL(dest);if(!url||openingChat)return;
+    if(chatURL(location.href)===url){status('Already in this conversation.');return;}
+    const open=typeof GM!=='undefined'&&typeof GM.openInTab==='function'?(u)=>GM.openInTab(u,false):typeof GM_openInTab==='function'?(u)=>GM_openInTab(u,false):null;
+    openingChat=true;lastNavigation={at:Date.now(),target:url,method:open?'GM.openInTab':'copy-link',phase:'starting'};
+    try{
+      if(!open)throw Error('Browser tab API unavailable');
+      const tab=await open(url);lastNavigation={...lastNavigation,phase:'opened',tabId:tab?.id??null,active:tab?.active??null};linkLog('navigation',lastNavigation);
+      status('Opened in Safari · existing receiver remains selected.');
+    }catch(e){
+      lastNavigation={...lastNavigation,phase:'fallback',error:String(e?.message||e).slice(0,180)};linkLog('navigation',lastNavigation);
+      // Never fall back to universal-link navigation. The URL remains
+      // available for native Safari address-bar paste or long-press.
+      $('fallback').value=url;$('fallback').hidden=false;$('fallback-copy').hidden=false;status('Could not open browser tab. Copy link into Safari or switch to the existing chat tab.');
+    }finally{openingChat=false;}
+  }
   const cleanChatTitle=v=>String(v||'').replace(/\s+/g,' ').trim().slice(0,160);
   function localChatTitle(){return cleanChatTitle(document.title).replace(/\s*[|–—-]\s*(ChatGPT|Google Gemini|Gemini)\s*$/i,'').trim();}
   const chatTitles=new Map();
@@ -728,8 +746,8 @@
     const here=chatURL(location.href);
     if(target&&here===target&&selectedWorker===instance){status('This tab is selected.');return;}
     if(here)return pinChat();
-    if(target){openChat(target);return;}
-    openChat('https://chatgpt.com/');
+    if(target)return openChat(target);
+    return openChat('https://chatgpt.com/');
   }
   async function pinChat(){
     if(!store)return;const dest=chatURL(location.href);
@@ -839,7 +857,7 @@
     if(pending){
       $('handoff-open').href=chatURL(pending.target);
       const sentTo=conversationName(pending.target,pending.chatTitle);
-      $('handoff-open').title='Open '+sentTo+' in Safari';
+      $('handoff-open').title='Open '+sentTo+' in a Safari tab';
       $('handoff-open').setAttribute('aria-label',$('handoff-open').title);
       $('handoff-status').textContent=hasReply?(atChat?'Answer returned':'Answer received'):pending.copied?'Question copied · awaiting answer':interrupted?'Submission may have occurred · check chat, do not resend':run?.phase==='uncertain'?'Check chat · '+run.detail:run?.phase==='failed'?'Manual fallback · '+run.detail:run?.phase==='prepared'?'Visual draft prepared · review and send in chat':manual?(expired?'Chat asleep or unavailable · open chat to send':atChat?(canRecoverSend?'Question waiting to be sent':pending.manualReason||'Question needs attention'):pending.manualReason||'Open chat to send'):connectionLost?(run?'Chat connection paused · check selected tab':'Waiting for chat to wake · open chat if needed'):run?.phase==='sent'?'ChatGPT is responding…':run?.phase==='armed'?'Checking submission…':run?.phase==='claimed'?'Sending to ChatGPT…':'Queued for connected chat…';
       // The selected destination is already shown immediately above the answer.
@@ -1163,7 +1181,7 @@
       }
     }catch(e){traceReadError=String(e?.message||e).slice(0,200);}
     const exactExecution=request?(executionTrace?.id===request.id?executionTrace:[history?.recent?.find(e=>e.id===request.id),history?.historical?.find(e=>e.id===request.id),requestTrace?.execution,savedTrace?.execution].filter(e=>e?.id===request.id).sort((a,b)=>(b.updated||b.started)-(a.updated||a.started))[0]||null):null;
-    return JSON.stringify({version:VERSION,exportedAt:new Date().toISOString(),reportId:uid(),instance,selectedWorker,target:linkTarget,state:linkState,challenge,lastProof,lastHeart,ageMs:lastHeart?Date.now()-lastHeart.at:null,error:linkError,visibility:document.visibilityState,intervalMs:LINK_INTERVAL,expiryMs:LINK_TTL,mailbox:'metadata index; direct request keys',autoStartExpiryMs:AUTO_START_TTL,events:linkEvents,uiEvents,watchdog:pulseSnapshot(),priorPulse,history,retention:{full:HISTORY_FULL,compact:HISTORY_COMPACT,failureExamples:HISTORY_EXAMPLES,distinctFailureSignatures:HISTORY_SIGNATURES,journal:'per tab, survives ordinary reload; sessionStorage'},live,environment:{surface:here?chatSurface():null,storage:modern?'GM async':legacy?'GM legacy':'unavailable',viewport:[innerWidth,innerHeight],visualViewport:window.visualViewport?[window.visualViewport.width,window.visualViewport.height]:null,hasFocus:document.hasFocus(),clipboard:!!navigator.clipboard,position:dock,overlay:{mode:layerMode,error:layerError,zIndex:getComputedStyle(host).zIndex}},selfTest:lastSelfTest||savedTrace?.selfTest||null,execution:exactExecution||(!request?(executionTrace||savedTrace?.execution||null):null),latestConversationExecution:request&&!exactExecution?(savedTrace?.execution||null):null,traceReadError,traceError,clipboard:lastCopy,request:request?{id:request.id,target:request.target,chatTitle:request.chatTitle||null,created:request.created,worker:request.autoWorker||null,promptCharacters:request.text?.length||0,visuals:request.visuals||[],seen:request.seen,copied:request.copied,returned:!!request.reply,manualReason:request.manualReason||null,run:request.run,receipts}:null,scope:'Exact request trace when available, recent UI and connection events, live worker DOM and receipt metadata. No custom prompt or answer body. Archive retains recent full executions, compact history, aggregate outcomes and bounded rare failure examples; journal survives ordinary refresh. Latest conversation execution is separate when it belongs to another request.'},null,2);}
+    return JSON.stringify({version:VERSION,exportedAt:new Date().toISOString(),reportId:uid(),instance,selectedWorker,target:linkTarget,state:linkState,challenge,lastProof,lastHeart,ageMs:lastHeart?Date.now()-lastHeart.at:null,error:linkError,visibility:document.visibilityState,intervalMs:LINK_INTERVAL,expiryMs:LINK_TTL,mailbox:'metadata index; direct request keys',autoStartExpiryMs:AUTO_START_TTL,events:linkEvents,uiEvents,watchdog:pulseSnapshot(),priorPulse,history,retention:{full:HISTORY_FULL,compact:HISTORY_COMPACT,failureExamples:HISTORY_EXAMPLES,distinctFailureSignatures:HISTORY_SIGNATURES,journal:'per tab, survives ordinary reload; sessionStorage'},live,environment:{surface:here?chatSurface():null,storage:modern?'GM async':legacy?'GM legacy':'unavailable',viewport:[innerWidth,innerHeight],visualViewport:window.visualViewport?[window.visualViewport.width,window.visualViewport.height]:null,hasFocus:document.hasFocus(),clipboard:!!navigator.clipboard,position:dock,navigation:lastNavigation,overlay:{mode:layerMode,error:layerError,zIndex:getComputedStyle(host).zIndex}},selfTest:lastSelfTest||savedTrace?.selfTest||null,execution:exactExecution||(!request?(executionTrace||savedTrace?.execution||null):null),latestConversationExecution:request&&!exactExecution?(savedTrace?.execution||null):null,traceReadError,traceError,clipboard:lastCopy,request:request?{id:request.id,target:request.target,chatTitle:request.chatTitle||null,created:request.created,worker:request.autoWorker||null,promptCharacters:request.text?.length||0,visuals:request.visuals||[],seen:request.seen,copied:request.copied,returned:!!request.reply,manualReason:request.manualReason||null,run:request.run,receipts}:null,scope:'Exact request trace when available, recent UI and connection events, live worker DOM and receipt metadata. No custom prompt or answer body. Archive retains recent full executions, compact history, aggregate outcomes and bounded rare failure examples; journal survives ordinary refresh. Latest conversation execution is separate when it belongs to another request.'},null,2);}
   action('link-report',copyConnectionReport);
   function extractPocketAnswer(last) {
     if(!last)return '';
