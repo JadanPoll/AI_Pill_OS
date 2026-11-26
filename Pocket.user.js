@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         AI Pill OS - Pocket
 // @namespace    https://github.com/JadanPoll/AI_Pill_OS
-// @version      0.5.1
+// @version      0.5.2
 // @updateURL    https://raw.githubusercontent.com/JadanPoll/AI_Pill_OS/main/Pocket.user.js
 // @downloadURL  https://raw.githubusercontent.com/JadanPoll/AI_Pill_OS/main/Pocket.user.js
 // @description  Universal Safari pill: collect evidence, keep discoveries, and hand a question to a chosen chat.
@@ -15,14 +15,13 @@
 // @grant        GM_setValue
 // @grant        GM_listValues
 // @grant        GM_deleteValue
-// @require      https://cdn.jsdelivr.net/npm/html2canvas-pro@2.6.4/dist/html2canvas-pro.min.js
 // @run-at       document-idle
 // @noframes
 // ==/UserScript==
 (() => {
   'use strict';
   if (window.top !== window) return;
-  const VERSION='0.5.1';
+  const VERSION='0.5.2';
   // Report initialization failures without depending on the main UI, storage or a CDN.
   function bootFailure(error,phase){
     const message=String(error?.message||error).slice(0,500);
@@ -170,16 +169,24 @@
       await navigator.clipboard.write([new ClipboardItem({'image/png':blob})]);status('Images copied. Paste into chat; Ask includes text evidence separately.');
     }catch(e){try{const b=await blob;const u=URL.createObjectURL(b);const link=document.createElement('a');link.href=u;link.download='pocket-captures.png';link.click();setTimeout(()=>URL.revokeObjectURL(u),30000);status('Image clipboard unavailable; PNG download requested.');}catch(err){status('Image export failed: '+err.message);}}
   }
-  // Restore the exact v0.3.1 renderer. The bitmap editor is a fallback, not the primary interaction.
+  // SnapDOM is loaded on demand so renderer failures cannot prevent Pocket startup.
   const CAPTURE_KEY='capture.last.v1';
   let captureRun=null,latestCapture=null,selecting=false;
-  const captureLib=typeof html2canvas==='function'?html2canvas:null;
+  const RENDERER='snapdom@3.8.3', RENDERER_URL='https://cdn.jsdelivr.net/npm/@zumer/snapdom@3.8.3/dist/snapdom.mjs';
+  let captureLib=null,rendererPending=false;
+  async function loadRenderer(){
+    if(captureLib)return captureLib;
+    const module=await import(RENDERER_URL);
+    if(typeof module.snapdom?.toCanvas!=='function')throw Error('SnapDOM module lacks toCanvas');
+    captureLib=module.snapdom;
+    return captureLib;
+  }
   function redactCSS(v){
     return String(v??'').replace(/url\([^)]*\)/gi,'url([omitted])').slice(0,180);
   }
   function startSnip(){
     if(!store||busy||handoffBusy||cropBusy||captureRun||selecting)return;
-    if(!captureLib){status('Renderer did not load. More → Copy capture report.');latestCapture={version:VERSION,renderer:'html2canvas-pro@2.6.4',stage:'dependency missing'};return;}
+    if(rendererPending){status('Previous capture is still running. Reload before trying again.');return;}
     if(window.visualViewport&&Math.abs(window.visualViewport.scale-1)>0.01){status('Reset page zoom before capturing.');return;}
     const source=sourceURL(),sx=scrollX,sy=scrollY;
     selecting=true;host.style.visibility='hidden';
@@ -201,31 +208,6 @@
       if(scrollX!==sx||scrollY!==sy){status('Page moved during selection. Draw again.');return;}
       runCapture({x,y,w,h,sx,sy,source});
     });
-  }
-  // Trace computed style reads only on cloned documents, not the original page.
-  // No property mutation, no retries, no collection of page text or form values.
-  function traceCloneStyles(run,win){
-    if(!win||typeof win.getComputedStyle!=='function')return;
-    const original=win.getComputedStyle;
-    if(run.wrappers.some(v=>v.win===win))return;
-    const wrapped=function(el,pseudo){
-      const result=original.call(this,el,pseudo);
-      if(!el||el.ownerDocument===document)return result;
-      const tag=String(el.localName||'').slice(0,40);
-      const remember=(prop,value)=>{
-        if(typeof value!=='string'||prop==='content'||prop==='cssText'||/^--/.test(prop))return;
-        const entry={tag,property:prop,value:redactCSS(value),pseudo:pseudo||null};
-        run.report.lastStyles.push(entry);if(run.report.lastStyles.length>18)run.report.lastStyles.shift();
-      };
-      return new Proxy(result,{get(obj,key){
-        const value=Reflect.get(obj,key,obj);
-        if(key==='getPropertyValue')return name=>{const v=value.call(obj,name);remember(String(name),v);return v;};
-        if(typeof value==='function')return value.bind(obj);
-        if(typeof key==='string'&&/^[a-zA-Z][a-zA-Z-]*$/.test(key))remember(key,value);
-        return value;
-      }});
-    };
-    try{win.getComputedStyle=wrapped;if(win.getComputedStyle===wrapped)run.wrappers.push({win,original,wrapped});}catch{}
   }
   function recordCapture(run,stage,detail){
     run.report.stage=stage;
@@ -255,27 +237,27 @@
   async function runCapture(region){
     if(captureRun||busy)return;
     const {x,y,w,h,sx,sy,source}=region,controller=new AbortController();
-    const run={started:performance.now(),controller,wrappers:[],report:{version:VERSION,renderer:'html2canvas-pro@2.6.4',source,time:new Date().toISOString(),viewport:[innerWidth,innerHeight],documentSize:[document.documentElement.scrollWidth,document.documentElement.scrollHeight],region:[x,y,w,h],scroll:[sx,sy],events:[],lastStyles:[],resourceErrors:[]}};
+    const run={started:performance.now(),controller,report:{version:VERSION,renderer:RENDERER,source,time:new Date().toISOString(),viewport:[innerWidth,innerHeight],documentSize:[document.documentElement.scrollWidth,document.documentElement.scrollHeight],region:[x,y,w,h],scroll:[sx,sy],events:[],rendererURL:RENDERER_URL}};
     captureRun=run;busy=true;$('capture-cancel').hidden=false;
     let watchdog,clock;
     try{
       recordCapture(run,'starting');await checkpointCapture(run);
       // Yield so Safari can paint the status before the synchronous clone/parse work.
       await new Promise(resolve=>setTimeout(resolve,50));
-      const ignore=el=>['ai-pill-pocket','ai-pill-os','eruda','ai-pocket-snip-overlay'].includes(el.id);
-      watchdog=setTimeout(()=>{run.report.deadlineAt=run.report.stage;controller.abort();status('Capture deadline reached · cancellation requested');void checkpointCapture(run);},45000);
       clock=setInterval(()=>{if(captureRun===run)status('Capture: '+run.report.stage+' · '+Math.round((performance.now()-run.started)/1000)+'s');},1000);
-      const canvas=await captureLib(document.documentElement,{
-        x:sx+x,y:sy+y,width:w,height:h,scrollX:sx,scrollY:sy,windowWidth:innerWidth,windowHeight:innerHeight,
-        scale:Math.min(2,1600/Math.max(w,h)),useCORS:true,allowTaint:false,logging:false,imageTimeout:8000,signal:controller.signal,
-        ignoreElements:ignore,
-        onProgress:(phase,percent)=>{recordCapture(run,phase,{percent});checkpointStage(run,phase);},
-        onError:err=>{if(run.report.resourceErrors.length<12)run.report.resourceErrors.push(redactCSS(String(err?.message||err)).replace(/https?:\/\/\S+/g,'[url omitted]'));},
-        onclone:doc=>{
-          recordCapture(run,'clone ready',{elements:doc.getElementsByTagName('*').length});checkpointStage(run,'clone ready');
-          traceCloneStyles(run,doc.defaultView);traceCloneStyles(run,window);
-        }
-      });
+      recordCapture(run,'loading renderer');await checkpointCapture(run);
+      let loadTimer;
+      try{await Promise.race([loadRenderer(),new Promise((_,reject)=>{loadTimer=setTimeout(()=>reject(Error('Renderer load exceeded 15s')),15000);})]);}
+      finally{clearTimeout(loadTimer);}
+      if(controller.signal.aborted)throw Error('Capture cancelled');
+      recordCapture(run,'rendering clipped region');await checkpointCapture(run);
+      rendererPending=true;
+      const renderWork=Promise.resolve().then(()=>captureLib.toCanvas(document.documentElement,{
+        clip:{x:sx+x,y:sy+y,width:w,height:h},scale:Math.min(2,1600/Math.max(w,h)),dpr:1,cache:'disabled',
+        exclude:['#ai-pill-pocket','#ai-pill-os','#eruda','#ai-pocket-snip-overlay'],embedFonts:'auto'
+      }));
+      renderWork.then(()=>{rendererPending=false;},()=>{rendererPending=false;});
+      const canvas=await Promise.race([renderWork,new Promise((_,reject)=>{watchdog=setTimeout(()=>reject(Error('Renderer exceeded 45s; underlying work may still be running. Reload before retrying.')),45000);})]);
       if(controller.signal.aborted)throw Error('Capture cancelled or exceeded deadline');
       recordCapture(run,'encoding',{canvas:[canvas.width,canvas.height]});
       let image=canvas.toDataURL('image/png');
@@ -284,7 +266,7 @@
       const dimensions=await validateBitmap(image);
       recordCapture(run,'decoded',{dimensions,characters:image.length});
       const keys=await store.keys();if(keys.filter(k=>typeof k==='string'&&k.startsWith(TRAY)).length>=30)throw Error('Collection full');
-      const r={id:uid(),created:new Date().toISOString(),source,text:'Webpage region (DOM reconstruction)',image,renderer:'html2canvas-pro@2.6.4',region:[x,y,w,h],storedDimensions:dimensions,elapsedMs:Math.round(performance.now()-run.started)};
+      const r={id:uid(),created:new Date().toISOString(),source,text:'Webpage region (DOM reconstruction)',image,renderer:RENDERER,region:[x,y,w,h],storedDimensions:dimensions,elapsedMs:Math.round(performance.now()-run.started)};
       recordCapture(run,'storage write');await store.set(TRAY+r.id,r);const saved=await store.get(TRAY+r.id);
       if(saved?.image!==image)throw Error('Image storage readback mismatch');
       await validateBitmap(saved.image);
@@ -292,15 +274,14 @@
       status('Collected · '+dimensions.join('×')+' · '+Math.round(r.elapsedMs/1000)+'s');
     }catch(err){
       const failedAt=run.report.stage;
-      run.report.error={stage:failedAt,message:redactCSS(String(err?.message||err)),stack:String(err?.stack||'').replace(/https?:\/\/[^\s)]+/g,m=>m.includes('html2canvas-pro')?m:'[url omitted]').slice(0,1800)};
+      run.report.error={stage:failedAt,message:redactCSS(String(err?.message||err)),stack:String(err?.stack||'').replace(/https?:\/\/[^\s)]+/g,m=>m.includes('snapdom')?m:'[url omitted]').slice(0,1800)};
       recordCapture(run,'failed');status('Capture failed at '+failedAt+' · '+run.report.error.message+' · More → Copy capture report');
     }finally{
       clearTimeout(watchdog);clearInterval(clock);
-      for(const {win,original,wrapped} of run.wrappers.reverse())try{if(win.getComputedStyle===wrapped)win.getComputedStyle=original;}catch{}
       await checkpointCapture(run);captureRun=null;busy=false;$('capture-cancel').hidden=true;
     }
   }
-  action('capture-cancel',()=>{if(captureRun){captureRun.controller.abort();status('Cancellation requested.');}});
+  action('capture-cancel',()=>{if(captureRun){captureRun.controller.abort();status('Cancellation requested. SnapDOM may finish its current work before returning.');}});
   action('capture-report',async()=>{
     const report=latestCapture||await store?.get(CAPTURE_KEY)||{version:VERSION,rendererLoaded:!!captureLib,stage:'no capture attempted'};
     const images=[...tray,...records].filter(r=>r.image).slice(-12).map(r=>({id:r.id,renderer:r.renderer||null,characters:String(r.image).length,format:String(r.image).split(',')[0].slice(0,50),storedDimensions:r.storedDimensions||null}));
