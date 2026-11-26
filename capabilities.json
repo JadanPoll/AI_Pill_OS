@@ -1,6 +1,6 @@
 {
   "schema": "ai_pill_os.capability_atlas",
-  "version": 5,
+  "version": 6,
   "updated": "2026-11-25",
   "purpose": "Can I operate at the speed of thought? Living design inventory, not a promise of implementation.",
   "design_rules": {
@@ -68,7 +68,15 @@
     "native_model": "https://support.apple.com/guide/shortcuts/use-apple-intelligence-in-shortcuts-tpg3vrvwmclv/ios",
     "eruda_ui": "https://github.com/liriliri/eruda/blob/v3.4.3/src/DevTools/DevTools.js",
     "eruda_sources": "https://github.com/liriliri/eruda/blob/v3.4.3/src/Sources/Sources.js",
-    "beautify": "https://github.com/beautifier/js-beautify"
+    "beautify": "https://github.com/beautifier/js-beautify",
+    "cherri_ipad": "https://apps.apple.com/us/app/cherri-shortcuts/id6823830776",
+    "cherri_sign": "https://cherrilang.org/compiler/signing.html",
+    "shortcut_playground": "https://github.com/viticci/shortcuts-playground-plugin",
+    "native_author": "https://support.apple.com/en-ae/guide/shortcuts/apd84c576f8c/ios",
+    "siri_run": "https://support.apple.com/guide/shortcuts/run-shortcuts-with-siri-apd07c25bb38/ios",
+    "voice_semantic": "https://support.apple.com/guide/ipad/use-voice-control-ipad4b6c9ee4/27/ipados/27",
+    "shortcut_script": "https://scriptable.app/",
+    "shortcut_actions": "https://sindresorhus.com/actions"
   },
   "capabilities": [
     {
@@ -164,7 +172,8 @@
       "why": "Eliminate routine touch interactions without writing an accessibility clone.",
       "mechanisms": [
         "iPad Voice Control named elements, numbered overlays and custom gestures",
-        "Custom command or Vocal Shortcut for named workflows"
+        "Custom command or Vocal Shortcut for named workflows",
+        "Stable Siri-named Shortcuts; AssistiveTouch single/double/long-press and top-level menu; Sound Actions; Vocal Shortcuts; iPadOS 27 semantic Voice Control where supported"
       ],
       "depends_on": [],
       "acceptance": "Navigate an actual Safari page and native app without touch; record which controls fail.",
@@ -172,7 +181,10 @@
       "sources": [
         "voice",
         "voice_ipad",
-        "vocal"
+        "vocal",
+        "assistive",
+        "siri_run",
+        "voice_semantic"
       ],
       "boundary": "Voice Control dictation modes differ from ordinary dictation; availability varies by OS/language; cannot arbitrarily inspect other apps."
     },
@@ -503,20 +515,23 @@
       "why": "The feedback loop from agent commit to running iPad behavior is itself a frequent workflow.",
       "mechanisms": [
         "Git pull or raw .user.js install via Userscripts",
-        "Cherri source-to-Shortcut compilation and supported signing/import"
+        "Cherri source-to-Shortcut compilation and supported signing/import",
+        "Cherri iPad/browser compile/sign/import; Viticci Shortcuts Playground Codex/Claude Code validation and signing; iPadOS 27 Describe a Shortcut on eligible devices"
       ],
-      "depends_on": [
-        "compute.shell"
-      ],
+      "depends_on": [],
       "acceptance": "Update a versioned real script, verify visible version and behavior, roll back; separately prove one Cherri Shortcut imports and runs.",
       "week_later": "One update path and one rollback; no repeated manual block construction when avoidable.",
       "sources": [
         "userscripts",
         "cherri",
         "ish",
-        "microsoft"
+        "microsoft",
+        "cherri_ipad",
+        "cherri_sign",
+        "shortcut_playground",
+        "native_author"
       ],
-      "boundary": "Userscripts popup reload and Shortcut signing may require user gestures; never auto-install unreviewed code."
+      "boundary": "Userscripts popup reload and Shortcut signing may require user gestures; never auto-install unreviewed code. No iSH dependency; native import/signing and permission acceptance remain target-device tests."
     },
     {
       "id": "ambient.curate",
@@ -794,6 +809,38 @@
         "oauth"
       ],
       "boundary": "Requires an eligible device or supported ChatGPT app action; no assumption of installed Shortcut or automatic callback."
+    },
+    {
+      "id": "control.dispatch",
+      "name": "Stable native invocation with replaceable implementation",
+      "family": "control",
+      "priority": "P0",
+      "status": "candidate",
+      "intentions": [
+        "Ask about this",
+        "Save this",
+        "Resume my work"
+      ],
+      "why": "Configure a few gestures/phrases once, then revise the logic behind them without continually rebuilding Shortcuts or retraining accessibility bindings.",
+      "mechanisms": [
+        "Stable named Shortcuts as native boundary; a reviewed local JSON command catalog or Scriptable script for replaceable data/logic; explicit invocation from Siri/Voice Control/AssistiveTouch where action picker supports it",
+        "Keep trusted native actions fixed; add a new Shortcut only for a genuinely new OS capability"
+      ],
+      "depends_on": [
+        "control.native"
+      ],
+      "acceptance": "Preserve screenshot double tap; bind one other trigger to a harmless Shortcut, update its reviewed configuration, rerun without editing the trigger; test a Safari button with accessible name through Voice Control.",
+      "week_later": "Remember no more than a handful of high-value verbs; add triggers only after repeated use. No arbitrary model-generated code execution.",
+      "sources": [
+        "assistive",
+        "voice",
+        "vocal",
+        "siri_run",
+        "shortcut_script",
+        "shortcut_actions",
+        "REM"
+      ],
+      "boundary": "No silent installation, OS-wide arbitrary UI control, or assumption a Shortcut can access the active Safari DOM. AssistiveTouch action picker and native trigger behavior require device verification."
     }
   ],
   "workflows": [
@@ -875,6 +922,7 @@
     }
   ],
   "next_experiments": [
+    "Test native Describe a Shortcut if available; otherwise compile/sign/import one minimal Cherri shortcut. Bind a non-screenshot accessibility trigger once and test a reviewed implementation update without rebinding. Test native Voice Control on AI Pill accessible button names; no new custom voice recognizer.",
     "v0.3.0: cold-demo Inspect/Record/Sources/DevTools; record while closed and stop after reopening; verify contextual Copy and source search; revisit usefulness after a week and a month.",
     "On the same GitHub page test v0.2.1 opacity/height/close, Sources file filter, format HTML/JS, search and review/copy an excerpt; report concrete failure if blocked.",
     "Install AI_Pill.user.js v0.1.1 on iPad; inspect a real site element, record an interaction, copy report to ChatGPT and run a read-only plan. Test Eruda separately. Then test AI Pill Ask Shortcut; defer iSH.",
@@ -915,7 +963,8 @@
     "A collection of specialized userscripts is a legitimate core architecture; standardize only after discovering repeated needs, not to satisfy an abstract framework.",
     "The key acceleration is closing the evidence-to-code loop; DevTools is infrastructure for producing many specialized interfaces, not merely another feature.",
     "A developer tool should optimize time to useful evidence, not reproduce the appearance of desktop F12. Prefer thumb-sized controls and a direct searchable source-to-excerpt workflow.",
-    "A capability earning its existence does not imply its control earns permanent screen space. Familiar icon, contextual appearance, secondary control and removal are distinct choices."
+    "A capability earning its existence does not imply its control earns permanent screen space. Familiar icon, contextual appearance, secondary control and removal are distinct choices.",
+    "Accessibility is an input layer, Shortcuts a native capability layer, and reviewed versioned code/data a replaceable implementation layer. Keep the binding stable while iterating behind it."
   ],
   "site_scripts": {
     "purpose": "A collection of focused personal interface implementations. Existing code remains canonical in its own repository; this is a source index, not duplicate scripts or a universal injected runtime.",
