@@ -982,11 +982,17 @@
   async function finishAsk(a,phase,detail){
     activeAsk=null;await markRun(a.r,phase,detail);
   }
+  async function ownsRequest(r){
+    const current=await store.get(HANDOFF+r.id);
+    return current?.id===r.id&&current.autoWorker===instance&&current.target===r.target&&current.created===r.created;
+  }
   async function startAsk(r){
     let attempted=false;
     try{
       if(Date.now()-Date.parse(r.created)>AUTO_START_TTL||chatURL(location.href)!==r.target||await store.get(TARGET)!==r.target||await store.get(ACK+r.id)||await store.get(RUN+r.id)||await store.get(REPLY+r.id))return;
+      if(!await ownsRequest(r))return;
       if(!await markRun(r,'claimed','Bound chat tab received request'))return;
+      if(!await ownsRequest(r))return;
       const editor=chatEditor();
       if(!editor||editorText(editor)||composerAttachments(editor)||streamActive()){
         await markRun(r,'failed','Chat is busy or contains a draft. No send attempted.');return;
@@ -1002,7 +1008,8 @@
       while(Date.now()<deadline&&!canSend(sendControl()))await new Promise(resolve=>setTimeout(resolve,150));
       if(!canSend(sendControl())||editorText(chatEditor())!==expected||!sameTurn(baseline,fingerprint())){await markRun(r,'failed','Send control or unchanged composer not verified. No send attempted.');return;}
       if(!await markRun(r,'armed','Send attempt recorded; never automatically resend'))return;
-      if(await store.get(TARGET)!==r.target||!(await store.get(HANDOFF+r.id))||await store.get(ACK+r.id)||await store.get(REPLY+r.id)||chatURL(location.href)!==r.target||!canSend(sendControl())||editorText(chatEditor())!==expected||!sameTurn(baseline,fingerprint())){
+      if(!await ownsRequest(r))return;
+      if(await store.get(TARGET)!==r.target||await store.get(ACK+r.id)||await store.get(REPLY+r.id)||chatURL(location.href)!==r.target||!canSend(sendControl())||editorText(chatEditor())!==expected||!sameTurn(baseline,fingerprint())){
         await markRun(r,'failed','Chat changed before send. No send attempted.');return;
       }
       activeAsk={r,baseline,expected,started:Date.now(),user:null,seenBusy:false,answer:'',stableAt:0,assistantID:null,assistantNode:null};
