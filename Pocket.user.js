@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         AI Pill OS - Pocket
 // @namespace    https://github.com/JadanPoll/AI_Pill_OS
-// @version      0.5.3
+// @version      0.5.4
 // @updateURL    https://raw.githubusercontent.com/JadanPoll/AI_Pill_OS/main/Pocket.user.js
 // @downloadURL  https://raw.githubusercontent.com/JadanPoll/AI_Pill_OS/main/Pocket.user.js
 // @description  Universal Safari pill: collect evidence, keep discoveries, and hand a question to a chosen chat.
@@ -15,13 +15,15 @@
 // @grant        GM_setValue
 // @grant        GM_listValues
 // @grant        GM_deleteValue
+// @inject-into  content
+// @require      https://cdn.jsdelivr.net/npm/@zumer/snapdom@3.8.3/dist/snapdom.js
 // @run-at       document-idle
 // @noframes
 // ==/UserScript==
 (() => {
   'use strict';
   if (window.top !== window) return;
-  const VERSION='0.5.3';
+  const VERSION='0.5.4';
   // Report initialization failures without depending on the main UI, storage or a CDN.
   function bootFailure(error,phase){
     const message=String(error?.message||error).slice(0,500);
@@ -118,11 +120,11 @@
       const b=document.createElement('button');b.className='entry';b.type='button';
       const t=document.createElement('b');t.textContent=r.text.replace(/\s+/g,' ').slice(0,105)||'(empty)';
       const m=document.createElement('small');m.textContent=(r.source||'No source').slice(0,130)+' · '+r.created.slice(0,10);
-      if(r.image&&/^data:image\/(?:png|jpeg|webp);base64,/i.test(r.image)){const img=document.createElement('img');img.src=r.image;img.alt='Captured region';img.style.cssText='display:block;max-width:100%;max-height:120px;object-fit:contain;margin:4px 0';b.append(img);}b.append(t,m);b.addEventListener('click',e=>{if(e.isTrusted)show(r);});$('list').append(b);
+      if(r.image&&/^data:image\/(?:png|jpeg|webp);base64,/i.test(r.image)){b.append(bitmapPreview(r.image));}b.append(t,m);b.addEventListener('click',e=>{if(e.isTrusted)show(r);});$('list').append(b);
     }
   }
   function show(r){
-    selected=r;$('detail').hidden=false;$('body').textContent=r.text;if(r.image&&/^data:image\/(?:png|jpeg|webp);base64,/i.test(r.image)){const img=document.createElement('img');img.src=r.image;img.alt='Captured region';img.style.cssText='display:block;max-width:100%;margin-top:6px';$('body').append(img);}$('keep').hidden=view!=='tray';
+    selected=r;$('detail').hidden=false;$('body').textContent=r.text;if(r.image&&/^data:image\/(?:png|jpeg|webp);base64,/i.test(r.image)){$('body').append(bitmapPreview(r.image,true));}$('keep').hidden=view!=='tray';
     $('meta').textContent=(r.source||'No source')+'\n'+r.created;
     $('list').hidden=true;$('detail').scrollIntoView({block:'nearest'});
   }
@@ -154,13 +156,15 @@
   // A selected chat is an address, not a privileged API or a promise of background execution.
   async function imageSheet(items){
     const pictures=items.filter(r=>r.image);
-    const images=await Promise.all(pictures.map(r=>new Promise((resolve,reject)=>{const im=new Image();im.onload=()=>resolve(im);im.onerror=()=>reject(Error('Image decode failed'));im.src=r.image;})));
+    const decoded=await Promise.allSettled(pictures.map(r=>decodeStoredBitmap(r.image)));const images=decoded.filter(v=>v.status==='fulfilled').map(v=>v.value);
+    try{const failed=decoded.find(v=>v.status==='rejected');if(failed)throw Error('Image decode failed: '+String(failed.reason?.message||failed.reason));
     const width=Math.min(1600,Math.max(...images.map(im=>im.width))),sizes=images.map(im=>{const w=Math.min(width,im.width);return [w,Math.round(im.height*w/im.width)];});
     const height=sizes.reduce((n,z)=>n+z[1]+36,0);
     if(height>12000||width*height>16000000)throw Error('Image collection too large; copy fewer images.');
     const c=document.createElement('canvas');c.width=width;c.height=height;const ctx=c.getContext('2d');ctx.fillStyle='white';ctx.fillRect(0,0,width,height);let y=0;
     images.forEach((im,i)=>{ctx.fillStyle='#172033';ctx.font='16px sans-serif';ctx.fillText((items.indexOf(pictures[i])+1)+'. '+pictures[i].source.slice(0,100),8,y+24,width-16);y+=36;ctx.drawImage(im,0,y,...sizes[i]);y+=sizes[i][1];});
-    return new Promise((resolve,reject)=>c.toBlob(b=>b?resolve(b):reject(Error('PNG encoding failed')),'image/png'));
+    return await new Promise((resolve,reject)=>c.toBlob(b=>b?resolve(b):reject(Error('PNG encoding failed')),'image/png'));
+    }finally{images.forEach(im=>im.close?.());}
   }
   async function copyCollection(items){
     if(!items.some(r=>r.image))return copyText(trayText(items));
@@ -169,24 +173,24 @@
       await navigator.clipboard.write([new ClipboardItem({'image/png':blob})]);status('Images copied. Paste into chat; Ask includes text evidence separately.');
     }catch(e){try{const b=await blob;const u=URL.createObjectURL(b);const link=document.createElement('a');link.href=u;link.download='pocket-captures.png';link.click();setTimeout(()=>URL.revokeObjectURL(u),30000);status('Image clipboard unavailable; PNG download requested.');}catch(err){status('Image export failed: '+err.message);}}
   }
-  // SnapDOM is loaded on demand so renderer failures cannot prevent Pocket startup.
+  // SnapDOM classic bundle is downloaded by the userscript manager at installation, not imported by the website.
   const CAPTURE_KEY='capture.last.v1';
   let captureRun=null,latestCapture=null,selecting=false;
   const RENDERER='snapdom@3.8.3', RENDERER_URL='https://cdn.jsdelivr.net/npm/@zumer/snapdom@3.8.3/dist/snapdom.mjs';
+  const CLASSIC_URL=RENDERER_URL.replace('.mjs','.js');
   let captureLib=null,rendererPending=false;
   async function loadRenderer(){
     if(captureLib)return captureLib;
-    const module=await import(RENDERER_URL);
-    if(typeof module.snapdom?.toCanvas!=='function')throw Error('SnapDOM module lacks toCanvas');
-    captureLib=module.snapdom;
-    return captureLib;
+    const lib=window.snapdom;
+    if(typeof lib!=='function'||typeof lib.toCanvas!=='function')throw Error('Manager-provided SnapDOM classic bundle unavailable in content context');
+    captureLib=lib;return lib;
   }
   // Evidence only: same pinned distribution, independent transport probes, no retry or eval.
   const diagnosticURLs=[RENDERER_URL,RENDERER_URL.replace('.mjs','.js'),RENDERER_URL.replace('https://cdn.jsdelivr.net/npm/','https://unpkg.com/'),RENDERER_URL.split('/dist/')[0]+'/package.json'];
   const diagError=e=>({name:e?.name||'',message:String(e?.message||e),stack:String(e?.stack||'').slice(0,4000)});
   function diagURL(v){if(!v)return '';try{const u=new URL(v,location.href);return u.origin+u.pathname;}catch{return String(v).slice(0,180);}}
   function depResources(){return performance.getEntriesByType('resource').filter(e=>/snapdom|jsdelivr|unpkg/.test(e.name)).map(e=>({url:diagURL(e.name),initiatorType:e.initiatorType,startTime:e.startTime,duration:e.duration,fetchStart:e.fetchStart,redirectStart:e.redirectStart,redirectEnd:e.redirectEnd,domainLookupStart:e.domainLookupStart,domainLookupEnd:e.domainLookupEnd,connectStart:e.connectStart,connectEnd:e.connectEnd,secureConnectionStart:e.secureConnectionStart,requestStart:e.requestStart,responseStart:e.responseStart,responseEnd:e.responseEnd,transferSize:e.transferSize,encodedBodySize:e.encodedBodySize,decodedBodySize:e.decodedBodySize,nextHopProtocol:e.nextHopProtocol,responseStatus:e.responseStatus??null}));}
-  function depEnvironment(){return {ua:navigator.userAgent,platform:navigator.platform,secureContext:isSecureContext,origin:location.origin,online:navigator.onLine,visibility:document.visibilityState,devicePixelRatio,viewport:[innerWidth,innerHeight],visualViewport:window.visualViewport?{width:visualViewport.width,height:visualViewport.height,scale:visualViewport.scale,offsetLeft:visualViewport.offsetLeft,offsetTop:visualViewport.offsetTop}:null,features:{fetch:typeof fetch,GM:typeof GM,GM_xmlhttpRequest:typeof GM_xmlhttpRequest,clipboardRead:!!navigator.clipboard?.read,clipboardWrite:!!navigator.clipboard?.write,ClipboardItem:typeof ClipboardItem,cryptoDigest:!!globalThis.crypto?.subtle,foreignObject:typeof SVGForeignObjectElement},cspMeta:[...document.querySelectorAll('meta[http-equiv="Content-Security-Policy" i]')].map(e=>e.content)};}
+  function depEnvironment(){return {ua:navigator.userAgent,platform:navigator.platform,secureContext:isSecureContext,origin:location.origin,online:navigator.onLine,visibility:document.visibilityState,devicePixelRatio,viewport:[innerWidth,innerHeight],visualViewport:window.visualViewport?{width:visualViewport.width,height:visualViewport.height,scale:visualViewport.scale,offsetLeft:visualViewport.offsetLeft,offsetTop:visualViewport.offsetTop}:null,features:{fetch:typeof fetch,snapdomGlobal:typeof window.snapdom,snapdomMethods:Object.keys(window.snapdom||{}),createImageBitmap:typeof createImageBitmap,GM:typeof GM,GM_xmlhttpRequest:typeof GM_xmlhttpRequest,clipboardRead:!!navigator.clipboard?.read,clipboardWrite:!!navigator.clipboard?.write,ClipboardItem:typeof ClipboardItem,cryptoDigest:!!globalThis.crypto?.subtle,foreignObject:typeof SVGForeignObjectElement},cspMeta:[...document.querySelectorAll('meta[http-equiv="Content-Security-Policy" i]')].map(e=>e.content)};}
   async function depFetch(url){
     const start=performance.now(),ac=new AbortController(),timer=setTimeout(()=>ac.abort(),10000);
     try{
@@ -254,20 +258,41 @@
     run.lastCheckpointStage=stage;
     void checkpointCapture(run);
   }
+  async function decodeStoredBitmap(data){
+    const m=/^data:(image\/(?:png|jpeg|webp));base64,([A-Za-z0-9+/=\r\n]+)$/i.exec(data);
+    if(!m||data.length<100)throw Error('Invalid stored bitmap');
+    if(typeof createImageBitmap==='function'){
+      const bytes=atob(m[2]);const array=new Uint8Array(bytes.length);for(let i=0;i<bytes.length;i++)array[i]=bytes.charCodeAt(i);
+      return createImageBitmap(new Blob([array],{type:m[1]}));
+    }
+    const im=new Image();im.src=data;await im.decode();return im;
+  }
   async function validateBitmap(data){
-    if(!/^data:image\/(?:png|jpeg);base64,/i.test(data)||data.length<100)throw Error('Canvas returned empty or invalid image data');
-    const im=new Image();im.src=data;await im.decode();
-    if(!im.naturalWidth||!im.naturalHeight)throw Error('Decoded image has no dimensions');
-    return [im.naturalWidth,im.naturalHeight];
+    const im=await decodeStoredBitmap(data);
+    try{const w=im.naturalWidth||im.width,h=im.naturalHeight||im.height;if(!w||!h)throw Error('Decoded image has no dimensions');return [w,h];}finally{im.close?.();}
+  }
+  function bitmapPreview(data,detail=false){
+    const container=document.createElement('div');
+    container.textContent='Decoding image…';
+    decodeStoredBitmap(data).then(im=>{
+      try{
+        const w=im.naturalWidth||im.width,h=im.naturalHeight||im.height;
+        const scale=Math.min(1,(detail?1000:320)/w,(detail?1600:120)/h);
+        const c=document.createElement('canvas');c.width=Math.max(1,Math.round(w*scale));c.height=Math.max(1,Math.round(h*scale));
+        c.style.cssText='display:block;max-width:100%;height:auto;margin:4px 0';
+        c.setAttribute('aria-label','Captured region '+w+' by '+h);c.getContext('2d').drawImage(im,0,0,c.width,c.height);container.replaceChildren(c);
+      }finally{im.close?.();}
+    }).catch(e=>{container.textContent='Image decode failed: '+String(e.message||e);});
+    return container;
   }
   async function runCapture(region){
     if(captureRun||busy)return;
     const {x,y,w,h,sx,sy,source}=region,controller=new AbortController();
-    const run={started:performance.now(),controller,report:{version:VERSION,renderer:RENDERER,source,time:new Date().toISOString(),viewport:[innerWidth,innerHeight],documentSize:[document.documentElement.scrollWidth,document.documentElement.scrollHeight],region:[x,y,w,h],scroll:[sx,sy],events:[],rendererURL:RENDERER_URL,environment:depEnvironment(),browserEvents:[]}};
+    const run={started:performance.now(),controller,report:{version:VERSION,renderer:RENDERER,source,time:new Date().toISOString(),viewport:[innerWidth,innerHeight],documentSize:[document.documentElement.scrollWidth,document.documentElement.scrollHeight],region:[x,y,w,h],scroll:[sx,sy],events:[],rendererURL:CLASSIC_URL,delivery:'manager @require / content',environment:depEnvironment(),browserEvents:[]}};
     captureRun=run;busy=true;$('capture-cancel').hidden=false;
     let watchdog,clock;
     const browserEvent=(type,detail)=>{if(run.report.browserEvents.length<80)run.report.browserEvents.push({ms:Math.round(performance.now()-run.started),type,...detail});};
-    const csp=e=>browserEvent('CSP',{blockedURI:diagURL(e.blockedURI),effectiveDirective:e.effectiveDirective,violatedDirective:e.violatedDirective,originalPolicy:e.originalPolicy,disposition:e.disposition,statusCode:e.statusCode,sourceFile:diagURL(e.sourceFile),line:e.lineNumber,column:e.columnNumber});
+    const csp=e=>browserEvent('CSP',{blockedURI:diagURL(e.blockedURI),effectiveDirective:e.effectiveDirective,violatedDirective:e.violatedDirective,originalPolicy:String(e.originalPolicy||'').replace(/'nonce-[^']+'/g,"'nonce-[redacted]'"),disposition:e.disposition,statusCode:e.statusCode,sourceFile:diagURL(e.sourceFile),line:e.lineNumber,column:e.columnNumber});
     const resourceError=e=>{const url=e.filename||e.target?.src||e.target?.href||'';if(/snapdom|jsdelivr|unpkg/.test(url))browserEvent('error',{url:diagURL(url),message:e.message||null,line:e.lineno||null,column:e.colno||null,error:e.error?diagError(e.error):null});};
     const rejection=e=>browserEvent('unhandled rejection',{error:diagError(e.reason)});
     document.addEventListener('securitypolicyviolation',csp);window.addEventListener('error',resourceError,true);window.addEventListener('unhandledrejection',rejection);
@@ -283,14 +308,22 @@
       if(controller.signal.aborted)throw Error('Capture cancelled');
       recordCapture(run,'rendering clipped region');await checkpointCapture(run);
       rendererPending=true;
-      const renderWork=Promise.resolve().then(()=>captureLib.toCanvas(document.documentElement,{
+      const renderWork=Promise.resolve().then(async()=>{
+        recordCapture(run,'serializing region');checkpointStage(run,'serializing region');
+        const result=await captureLib(document.documentElement,{
         clip:{x:sx+x,y:sy+y,width:w,height:h},scale:Math.min(2,1600/Math.max(w,h)),dpr:1,cache:'disabled',
         exclude:['#ai-pill-pocket','#ai-pill-os','#eruda','#ai-pocket-snip-overlay'],embedFonts:'auto'
-      }));
+        });
+        if(controller.signal.aborted)throw Error('Capture cancelled');
+        const raw=result.toRaw();run.report.serialized={format:typeof raw==='string'?raw.slice(0,40):typeof raw,characters:typeof raw==='string'?raw.length:null,methods:Object.keys(result)};
+        recordCapture(run,'rasterizing region',run.report.serialized);checkpointStage(run,'rasterizing region');
+        return result.toCanvas();
+      });
       renderWork.then(()=>{rendererPending=false;},()=>{rendererPending=false;});
       const canvas=await Promise.race([renderWork,new Promise((_,reject)=>{watchdog=setTimeout(()=>reject(Error('Renderer exceeded 45s; underlying work may still be running. Reload before retrying.')),45000);})]);
       if(controller.signal.aborted)throw Error('Capture cancelled or exceeded deadline');
-      recordCapture(run,'encoding',{canvas:[canvas.width,canvas.height]});
+      const ctx=canvas.getContext('2d');const samples=[];for(const x of [.1,.5,.9])for(const y of [.1,.5,.9]){try{samples.push(Array.from(ctx.getImageData(Math.min(canvas.width-1,Math.floor(canvas.width*x)),Math.min(canvas.height-1,Math.floor(canvas.height*y)),1,1).data));}catch(e){run.report.pixelError=diagError(e);}}
+      recordCapture(run,'encoding',{canvas:[canvas.width,canvas.height],samples});
       let image=canvas.toDataURL('image/png');
       if(image.length>2000000)image=canvas.toDataURL('image/jpeg',.9);
       if(image.length>2000000)throw Error('Region exceeds image storage limit; choose a smaller area');
@@ -306,7 +339,7 @@
     }catch(err){
       const failedAt=run.report.stage;
       run.report.error={stage:failedAt,message:redactCSS(String(err?.message||err)),stack:String(err?.stack||'').replace(/https?:\/\/[^\s)]+/g,m=>m.includes('snapdom')?m:'[url omitted]').slice(0,1800)};
-      if(failedAt==='loading renderer'){await checkpointCapture(run);try{await probeFailedDependency(run);}catch(e){run.report.diagnosticError=diagError(e);}}
+      if(failedAt==='loading renderer'){run.report.managerBundle={expected:CLASSIC_URL,global:typeof window.snapdom,methods:Object.keys(window.snapdom||{})};await checkpointCapture(run);try{await probeFailedDependency(run);}catch(e){run.report.diagnosticError=diagError(e);}}
       recordCapture(run,'failed');status('Capture failed at '+failedAt+' · '+run.report.error.message+' · More → Copy capture report');
     }finally{
       clearTimeout(watchdog);clearInterval(clock);
@@ -319,7 +352,7 @@
   action('capture-report',async()=>{
     const report=latestCapture||await store?.get(CAPTURE_KEY)||{version:VERSION,rendererLoaded:!!captureLib,stage:'no capture attempted'};
     const images=[...tray,...records].filter(r=>r.image).slice(-12).map(r=>({id:r.id,renderer:r.renderer||null,characters:String(r.image).length,format:String(r.image).split(',')[0].slice(0,50),storedDimensions:r.storedDimensions||null}));
-    const output={...report,rendererLoaded:!!captureLib,storage:modern?'modern GM':legacy?'legacy GM':'unavailable',imageRecords:images,resourceTiming:depResources()};
+    const output={...report,rendererLoaded:!!captureLib,managerBundle:{url:CLASSIC_URL,global:typeof window.snapdom,methods:Object.keys(window.snapdom||{})},storage:modern?'modern GM':legacy?'legacy GM':'unavailable',imageRecords:images,resourceTiming:depResources()};
     await copyText(JSON.stringify(output,null,2));
   });
   // Native bitmap acquisition is separate from crop geometry. No DOM renderer or network dependency.
