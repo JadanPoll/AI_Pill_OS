@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         AI Pill OS - Pocket
 // @namespace    https://github.com/JadanPoll/AI_Pill_OS
-// @version      0.7.39
+// @version      0.7.40
 // @updateURL    https://raw.githubusercontent.com/JadanPoll/AI_Pill_OS/main/Pocket.user.js
 // @downloadURL  https://raw.githubusercontent.com/JadanPoll/AI_Pill_OS/main/Pocket.user.js
 // @description  Universal Safari pill: collect evidence, keep discoveries, and hand a question to a chosen chat.
@@ -26,7 +26,7 @@
 (() => {
   'use strict';
   if (window.top !== window) return;
-  const VERSION='0.7.39';
+  const VERSION='0.7.40';
   // Report initialization failures without depending on the main UI, storage or a CDN.
   function bootFailure(error,phase){
     const message=String(error?.message||error).slice(0,500);
@@ -1517,11 +1517,21 @@
     return [...scope.querySelectorAll('button')].filter(b=>b.getClientRects().length&&!b.closest('[hidden],[aria-hidden=true]')).map(b=>({b,label:b.getAttribute('aria-label')||b.title||'',state:b.getAttribute('data-dictation-button'),pressed:b.getAttribute('aria-pressed'),busy:b.getAttribute('aria-busy'),disabled:b.disabled||b.getAttribute('aria-disabled')==='true'}));
   }
   function micStartControl(){const a=micNodes().filter(n=>!n.disabled&&(n.state==='idle'||(/^Dictate(?:\s*\(|$)/i.test(n.label)&&n.pressed!=='true'&&!n.state)));return a.length===1?a[0].b:null;}
-  function micStopControl(){
-    const a=micNodes().filter(n=>!n.disabled&&(/^(?:Stop (?:dictation|recording)|Finish (?:dictation|recording)|Transcribe(?: audio)?|Confirm dictation|Submit dictation|Done dictating)(?:\s*\(|$)/i.test(n.label)||n.state==='recording'&&/stop|finish|dictat/i.test(n.label)||n.pressed==='true'&&/^Dictate(?:\s*\(|$)/i.test(n.label)));
-    // "Send message" or "Stop generating" is never an eligible control.
-    return a.length===1?a[0].b:null;
+  function micStopCandidates(){
+    const scope=micScope();if(!scope)return [];
+    return [...scope.querySelectorAll('button')].filter(b=>{
+      const label=b.getAttribute('aria-label')||b.title||'',state=b.getAttribute('data-dictation-button');
+      return /^(?:Stop (?:dictation|recording)|Finish (?:dictation|recording)|Transcribe(?: audio)?|Confirm dictation|Submit dictation|Done dictating)(?:\s*\(|$)/i.test(label)||state==='recording'&&/stop|finish|dictat/i.test(label)||b.getAttribute('aria-pressed')==='true'&&/^Dictate(?:\s*\(|$)/i.test(label);
+    }).map(b=>({b,label:b.getAttribute('aria-label')||b.title||'',state:b.getAttribute('data-dictation-button'),busy:b.getAttribute('aria-busy')==='true',disabled:b.matches(':disabled,[aria-disabled=true]'),hidden:!!b.closest('[hidden],[aria-hidden=true],[inert]'),rects:b.getClientRects().length,exact:b.matches('[data-dictation-recording-controls] button[data-dictation-button="dictating"][aria-label="Stop dictation"]')}));
   }
+  function micStopControl(){
+    const a=micStopCandidates().filter(n=>!n.disabled&&!n.hidden&&!n.busy&&(n.rects||document.hidden&&n.exact));
+    // Prefer the exact ChatGPT recording-state control in the live capture.
+    // No Send, generic Stop, or generation control is eligible.
+    const exact=a.filter(n=>n.exact);
+    return exact.length===1?exact[0].b:exact.length>1?null:a.length===1?a[0].b:null;
+  }
+  function stopEvidence(){return {scope:!!micScope(),visibility:document.visibilityState,candidates:micStopCandidates().map(({b,...n})=>n),idle:!!micStartControl()};}
   function micCancelControl(){const a=micNodes().filter(n=>!n.disabled&&/^(?:Cancel|Discard) (?:dictation|recording)(?:\s*\(|$)/i.test(n.label));return a.length===1?a[0].b:null;}
   // Native armed-state HTML captures (2026-11-26): ChatGPT dictating
   // controls coexist with a live, nonempty editor; Gemini exposes Listening
@@ -1623,7 +1633,7 @@
     if(scope!==run.previewScope){run.previewObserver?.disconnect();run.previewScope=scope;if(scope)run.previewObserver.observe(scope,{subtree:true,childList:true,characterData:true,attributes:true,attributeFilter:['aria-label','aria-pressed','data-dictation-button','data-placeholder']});}
     const snap=micSnapshot();
     if(!snap.recording)return;
-    if(!run.observed){run.observed=true;micStage(run,'recording','Recording · live text below when available.');}
+    if(!run.observed){run.observed=true;if(!run.stopAt)micStage(run,'recording','Recording · live text below when available.');}
     // Earlier live DOM showed "Hide live transcription"; if the inverse
     // control exists, enable the user's explicitly requested preview.
     if(!isGemini(run.target)&&!run.liveToggleTried){
@@ -1648,16 +1658,31 @@
     // user's tap, rather than after a shared-storage await.
   }
   async function micStop(run,reason='user'){
-    if(dictationRun!==run||run.stopAt&&(reason!=='user'||dictationReceipt?.phase!=='needs-local-stop'))return;
-    run.stopAt=Date.now();const b=micStopControl();
-    if(!b){
-      const cancel=reason==='time limit'?micCancelControl():null;
-      if(cancel){try{cancel.click();micStage(run,'stopping','Time limit · native cancel clicked; awaiting idle.');}catch(e){micStage(run,'needs-local-stop','Native cancel failed. Stop recording in receiver.');}}
-      else{micStage(run,'needs-local-stop','Native Stop not identified. Open receiver and stop dictation manually.',{reason});}
-      return;
-    }
-    micStage(run,'stopping','Stopping native dictation and awaiting transcript.',{reason});
-    try{b.click();}catch(e){micStage(run,'needs-local-stop','Stop click failed. Open receiver and stop recording.',{error:String(e?.message||e).slice(0,140)});}
+    if(dictationRun!==run||run.stopLooking||run.stopAt&&(reason!=='user'||dictationReceipt?.phase!=='needs-local-stop'))return;
+    if(chatURL(location.href)!==run.target){micStage(run,'needs-local-stop','Receiver changed. Stop recording directly in the native page.');return;}
+    run.stopAt=Date.now();run.stopLooking=true;run.stopClickedAt=null;
+    const deadline=run.stopAt+1800,initial=stopEvidence();
+    try{
+      // The first lookup and click remain synchronous with a local tap.
+      // Retry discovery only, never repeat a successful click automatically.
+      for(;;){
+        if(dictationRun!==run||chatURL(location.href)!==run.target)return;
+        const b=micStopControl();
+        if(b&&b.isConnected){
+          micStage(run,'stopping','Stopping native dictation and awaiting transcript.',{reason,stopEvidence:stopEvidence()});
+          try{b.click();run.stopClickedAt=Date.now();linkLog('dictation-stop-clicked',{id:run.id,reason,lookupMs:run.stopClickedAt-run.stopAt});}
+          catch(e){micStage(run,'needs-local-stop','Stop click failed. Retry or stop recording in receiver.',{error:String(e?.message||e).slice(0,140),stopEvidence:stopEvidence()});}
+          return;
+        }
+        const snap=micSnapshot();
+        if(run.observed&&snap.start&&!snap.recording){micStage(run,'stopping','Native microphone already idle · awaiting transcript.',{reason,stopEvidence:stopEvidence()});return;}
+        if(Date.now()>=deadline)break;
+        await new Promise(resolve=>setTimeout(resolve,100));
+      }
+      const evidence=stopEvidence(),cancel=reason==='time limit'?micCancelControl():null;
+      if(cancel){try{cancel.click();micStage(run,'stopping','Time limit · native cancel clicked; awaiting idle.',{reason,initial,evidence});}catch(e){micStage(run,'needs-local-stop','Native cancel failed. Stop recording in receiver.',{reason,initial,evidence});}}
+      else micStage(run,'needs-local-stop','Native Stop unavailable · retry or stop directly in receiver.',{reason,initial,evidence});
+    }finally{run.stopLooking=false;}
   }
   async function observeMic(){
     const run=dictationRun;if(!run||dictationBusy)return;dictationBusy=true;
@@ -1665,7 +1690,8 @@
       const now=Date.now(),snap=micSnapshot(),same=chatURL(location.href)===run.target;
       if(!same){await clearMicPartial(run);micStage(run,'uncertain','Receiver navigation changed. Check native microphone state.');micRelease(run);return;}
       const sig=JSON.stringify([snap.controls,snap.evidence]);if(sig!==run.lastSignature){run.lastSignature=sig;const change={id:run.id,controls:snap.controls,evidence:snap.evidence,characters:snap.characters,visibility:snap.visibility};linkLog('dictation-controls',change);lifeEvent('dictation-controls',change);}
-      if(snap.recording&&!run.observed){run.observed=true;micStage(run,'recording','Native recording state observed. Speak, then Stop.');}
+      if(snap.recording&&!run.observed){run.observed=true;if(!run.stopAt)micStage(run,'recording','Native recording state observed. Speak, then Stop.');}
+      if(run.stopClickedAt&&now-run.stopClickedAt>5000&&snap.recording&&snap.stop&&dictationReceipt?.phase==='stopping'){micStage(run,'needs-local-stop','Stop clicked but recorder still active. Retry Stop or use native control.',{stopEvidence:stopEvidence()});}
       if(!run.stopAt&&now>=run.expires)await micStop(run,'time limit');
       if(!run.observed&&!run.stopAt&&now-run.started>15000){
         if(snap.start&&!snap.recording){micStage(run,'failed','Recording state not observed. Check microphone permission and activation.');micRelease(run);}
