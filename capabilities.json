@@ -1,6 +1,6 @@
 {
   "schema": "ai_pill_os.capability_atlas",
-  "version": 1,
+  "version": 2,
   "updated": "2026-11-25",
   "purpose": "Can I operate at the speed of thought? Living design inventory, not a promise of implementation.",
   "design_rules": {
@@ -26,7 +26,8 @@
     },
     "maintenance": "Append or refine stable IDs in this canonical file. Consolidate overlapping intentions; change priority with observed use; promote only on actual evidence. Keep rare operations discoverable without placing them on the main surface. Record a concrete failure and decision when abandoning a branch. No telemetry or persistent personal captures in this public repo.",
     "week_review": "After seven days of real use, compare frequency, interactions avoided, interruptions, rediscovery without docs, failures and whether the result advanced a real goal. Review after one month too. No invented scores or usage counts.",
-    "public_privacy": "This public atlas is design metadata only, not a screenshot archive, task log, credential store or personal research inbox."
+    "public_privacy": "This public atlas is design metadata only, not a screenshot archive, task log, credential store or personal research inbox.",
+    "interface_specialization": "Treat site-specific userscripts as independently useful products and first-class execution surfaces, not merely adapters to a universal AI overlay. Optimize the recurring human task distribution, preserve direct deterministic paths, keep original behavior recoverable, and use AI to help design or revise the UI rather than requiring inference for each interaction. Shared primitives must earn their coupling cost."
   },
   "sources": {
     "REM": "https://github.com/JadanPoll/Learning_Visualizations_Taxonomy/blob/main/Navigationals/The_Richer_Engineering_Method.md",
@@ -55,7 +56,12 @@
     "oauth": "https://developers.openai.com/siwc",
     "scriptable": "https://scriptable.app/",
     "cherri": "https://github.com/electrikmilk/cherri",
-    "ambient": "https://github.com/JadanPoll/AI_Pill_OS/blob/main/research/APPLE_SHORTCUTS.md"
+    "ambient": "https://github.com/JadanPoll/AI_Pill_OS/blob/main/research/APPLE_SHORTCUTS.md",
+    "linkedin_ui": "https://github.com/JadanPoll/Learning_Visualizations_Taxonomy/blob/main/LinkedIn_Intuit.user.js",
+    "patent_cards": "https://github.com/JadanPoll/Learning_Visualizations_Taxonomy/blob/main/Patent.Card.user.js",
+    "patent_graph": "https://github.com/JadanPoll/Learning_Visualizations_Taxonomy/blob/main/PatentX.user.js",
+    "youtube_comments": "https://github.com/JadanPoll/Learning_Visualizations_Taxonomy/blob/main/Youtube_Comments.user.js",
+    "grokipedia_fix": "https://github.com/JadanPoll/Learning_Visualizations_Taxonomy/blob/main/Grok_Wikipedia_Correction.user.js"
   },
   "capabilities": [
     {
@@ -586,6 +592,114 @@
         "REM"
       ],
       "boundary": "Never include tokens, full screenshots, private text or secrets by default; no hidden retries."
+    },
+    {
+      "id": "interface.subtract",
+      "name": "Remove what I don't use",
+      "family": "interface",
+      "priority": "P0",
+      "status": "existing_precedent",
+      "intentions": [
+        "Hide distractions",
+        "Show only useful content",
+        "Give me a clean feed"
+      ],
+      "why": "Attention and navigation are scarce. LinkedIn Insight Mode hides status signals, promotions and notification distractions and supports reversible CSS filters. Optimize for the content the user actually seeks, not the platform's engagement goals.",
+      "mechanisms": [
+        "Site-specific CSS and DOM predicates; persistent settings; default clean view; accessible stock-view toggle"
+      ],
+      "depends_on": [],
+      "acceptance": "On actual LinkedIn feed, remove irrelevant chrome without losing useful post links, controls or content; toggle back to stock and reload.",
+      "week_later": "Default view is already useful without configuration; stock view is easy to recover; revisit hidden features only when missed.",
+      "sources": [
+        "linkedin_ui",
+        "REM"
+      ],
+      "boundary": "Existing code inspected, not new iPad acceptance. Selectors can drift; distinguish absent content from a failed selector. Never hide security or consent prompts."
+    },
+    {
+      "id": "interface.relayout",
+      "name": "Reorganize information for rapid scanning",
+      "family": "interface",
+      "priority": "P0",
+      "status": "existing_precedent",
+      "intentions": [
+        "Show this as cards",
+        "Expand here",
+        "Jump to claims",
+        "Show me the relevant results"
+      ],
+      "why": "Reduce scrolling, page transitions and information occlusion. Patent.Card turns result lists into a scannable grid with inline sections; LinkedIn also uses dense grid presentation.",
+      "mechanisms": [
+        "Responsive CSS grid; expandable records; meaningful section tabs; inline detail via permitted page data; preserve link/navigation semantics"
+      ],
+      "depends_on": [],
+      "acceptance": "Find and compare two patents and inspect claims/images without repeated back navigation; compare actual task effort with original layout.",
+      "week_later": "The frequent route is visible on entry; expanded items do not unexpectedly move scroll or hide controls; do not add tabs that serve no recurring task.",
+      "sources": [
+        "patent_cards",
+        "linkedin_ui",
+        "REM"
+      ],
+      "boundary": "Native/internal endpoints can change; use authorized data and honor site policies; no claim of iPad compatibility without a real trial."
+    },
+    {
+      "id": "interface.augment",
+      "name": "Add the missing operations",
+      "family": "interface",
+      "priority": "P1",
+      "status": "existing_precedent",
+      "intentions": [
+        "Connect these passages",
+        "Add a question here",
+        "Show short comments",
+        "Jump to that source"
+      ],
+      "why": "Native sites often omit the user's most valuable operations. PatentX adds visual relations; Kami embeds investigation state; YouTube Comments provides filtered extraction; these change the functional interface, not just appearance.",
+      "mechanisms": [
+        "Site-owned overlays, document/page anchors, local state and existing authorized app capabilities; semantic actions exposed to command router only when useful"
+      ],
+      "depends_on": [
+        "control.dom"
+      ],
+      "acceptance": "Execute an actual reading or discovery workflow using the added operation, persist/recover its result where intended, and verify native operations still work.",
+      "week_later": "Place recurring operations at point of use; rare capabilities stay in a compact menu; do not require AI for simple actions.",
+      "sources": [
+        "patent_graph",
+        "reading",
+        "youtube_comments",
+        "kami"
+      ],
+      "boundary": "Do not automate unauthorized collection or writes. Existing scripts have separate persistence, selectors and permissions; don't centralize without evidence."
+    },
+    {
+      "id": "interface.repair",
+      "name": "Repair friction and preserve native affordances",
+      "family": "interface",
+      "priority": "P1",
+      "status": "existing_precedent",
+      "intentions": [
+        "Make this readable",
+        "Fix equation rendering",
+        "Restore the original",
+        "Why isn't this working?"
+      ],
+      "why": "Small targeted corrections can remove recurring obstacles without rebuilding a site. Grokipedia corrects malformed math with tooltips; existing scripts expose schema/selector failures rather than failing silently.",
+      "mechanisms": [
+        "Reversible transforms; preserve original data and affordances; scope by host/path; visible version and compact diagnostics"
+      ],
+      "depends_on": [
+        "control.recover"
+      ],
+      "acceptance": "On a real malformed math article or changed layout, verify readable corrected output, access to original, and honest error/rollback when the assumption fails.",
+      "week_later": "Corrections are automatic when safe; restore and copy report remain easy to find.",
+      "sources": [
+        "grokipedia_fix",
+        "patent_cards",
+        "youtube_comments",
+        "microsoft"
+      ],
+      "boundary": "No silent corruption or destructive rewriting; don't mistake cosmetic correction for correct source content."
     }
   ],
   "workflows": [
@@ -641,9 +755,22 @@
         "intelligence.ask",
         "ambient.curate"
       ]
+    },
+    {
+      "id": "personal-interface",
+      "example": "Open a critical website -> default to useful content and density -> inspect results inline -> invoke recurring operations directly -> restore original only when necessary",
+      "uses": [
+        "interface.subtract",
+        "interface.relayout",
+        "interface.augment",
+        "interface.repair",
+        "control.dom",
+        "control.recover"
+      ]
     }
   ],
   "next_experiments": [
+    "Choose one heavily used site and compare two or three representative recurring tasks in its stock and specialized UI; preserve existing scripts and validate on iPad Safari before changing defaults.",
     "Preserve existing AssistiveTouch double tap; manually test screenshot+question handoff.",
     "Enable Voice Control and test known native commands; then test dictation to a minimal DOM pill on GitHub/Kami.",
     "Test inference transport separately from browser execution.",
@@ -668,6 +795,82 @@
     "Screenshots are a universal visual context channel; DOM is a semantic context and execution channel. Neither subsumes the other.",
     "The common unit of acceleration is the transition from an encounter to a useful next state, not a shortcut action.",
     "Fast capture and slow reconciliation should be separate; the human should not classify every idea at the instant of discovery.",
-    "A local computation provider can be useful even if iPadOS never permits dependable background execution."
-  ]
+    "A local computation provider can be useful even if iPadOS never permits dependable background execution.",
+    "A website is a source of capabilities and content; its default interface is not necessarily the best way for this person to access them.",
+    "The AI is often more valuable at design time (generating and revising the user's interface) than at runtime (adding inference latency to common operations).",
+    "A collection of specialized userscripts is a legitimate core architecture; standardize only after discovering repeated needs, not to satisfy an abstract framework."
+  ],
+  "site_scripts": {
+    "purpose": "A collection of focused personal interface implementations. Existing code remains canonical in its own repository; this is a source index, not duplicate scripts or a universal injected runtime.",
+    "entries": [
+      {
+        "site": "LinkedIn",
+        "source": "linkedin_ui",
+        "scope": "Feed and surrounding chrome",
+        "operations": [
+          "interface.subtract",
+          "interface.relayout"
+        ],
+        "observed_in_source": "Toggleable CSS filters, card-grid mode, manual loading, selector and mutation handling."
+      },
+      {
+        "site": "Google Patents — search",
+        "source": "patent_cards",
+        "scope": "Search results",
+        "operations": [
+          "interface.subtract",
+          "interface.relayout",
+          "interface.repair"
+        ],
+        "observed_in_source": "Card masonry, inline record sections, separate reading-page responsibility, schema warnings."
+      },
+      {
+        "site": "Google Patents — document",
+        "source": "patent_graph",
+        "scope": "Individual patent",
+        "operations": [
+          "interface.augment"
+        ],
+        "observed_in_source": "Glasp-highlight arrows, central nodes, notes, per-patent graph and route-aware state."
+      },
+      {
+        "site": "Kami / Wikipedia",
+        "source": "reading",
+        "scope": "Reading and investigation",
+        "operations": [
+          "interface.augment",
+          "capture.selection",
+          "persist.annotation",
+          "retrieve.resume"
+        ],
+        "observed_in_source": "Q&A, passages, insights, visualization library, wiki trail, page navigation fallbacks."
+      },
+      {
+        "site": "YouTube",
+        "source": "youtube_comments",
+        "scope": "Watch and Shorts",
+        "operations": [
+          "interface.augment",
+          "interface.repair"
+        ],
+        "observed_in_source": "Comment retrieval/filter/sort, compact card, SPA lifecycle and schema warning."
+      },
+      {
+        "site": "Grokipedia",
+        "source": "grokipedia_fix",
+        "scope": "Article math",
+        "operations": [
+          "interface.repair"
+        ],
+        "observed_in_source": "LaTeX whitespace correction and original-text tooltip."
+      }
+    ],
+    "development_policy": [
+      "One script per coherent site/workflow or reuse an existing script; keep canonical code where it lives. A collection need not become a monolith.",
+      "Start by recording what the user does repeatedly, what they never use, and costly transitions. Subtract first, then reflow or add operations when justified.",
+      "Measure representative real tasks and forgotten-operation return, not CSS complexity or number of supported sites.",
+      "Retain native functionality via reversible modes and clear failure/rollback; no user-facing shared framework unless it improves overall effort.",
+      "Keep optional semantic voice actions separate from the presentation layer. Do not require AI round trips for familiar navigation."
+    ]
+  }
 }
