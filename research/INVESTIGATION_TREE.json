@@ -1,6 +1,6 @@
 {
   "schema": "ai_pill_os.rsm_investigation",
-  "version": 12,
+  "version": 13,
   "updated": "2026-11-25",
   "parent_purpose": "Reduce mechanical distance from human intention to useful realization; preserve agency, context, and recoverability.",
   "scope": "Safari-first personal computing: direct touch for low-information operations, dictation and AI collaboration for high-information intentions, universal pill plus contextual mini-pills, local working state and context-aware canonical persistence.",
@@ -689,11 +689,11 @@
         "Q5.1",
         "Q5.2"
       ],
-      "status": "active_after_bus",
+      "status": "implemented_awaiting_device",
       "why": "Minimize switching while retaining the correct AI conversation and explicit user control.",
-      "model": "Context packet -> chosen conversation URL -> user reviews/sends; official connected action or supported inference transport for further integration. Optional two visible Safari windows. User-mediated response transfer until approved mechanism exists.",
+      "model": "Reuse exact conversation target and existing GM handoff keys; add independent delivery receipt and user-supplied reply keyed by original request ID. Poll only lightweight handoff metadata while source panel or selected chat is visible; no automatic provider submission or response extraction. Preserve explicit manual chat workflow and native companion window option. Transport is a probe, not the final interaction design.",
       "belief": "Consumer ChatGPT terms restrict automatic/programmatic extraction; Google terms restrict automated access contrary to machine-readable instructions. LabX code contains consumer UI adapters but no live certification; do not port unattended submission/response harvesting. Account plans have limits.",
-      "certificate": "LabX uses task/attempt identity, stale guards, conversation attribution and explicit failure recovery. Its state audit models rather than proves the browser. Safari can display multiple windows; exact existing-tab focus and background wake need testing.",
+      "certificate": "LabX uses task/attempt identity, stale guards, conversation attribution and explicit failure recovery. Its state audit models rather than proves the browser. Safari can display multiple windows; exact existing-tab focus and background wake need testing. Pocket 0.5.9 actual handoff functions exercised in four simulated tabs with shared asynchronous storage: request with evidence, exact target, delivery receipt, separate copy receipt, preservation of reply draft during polling, source reply without reload, source reload, unrelated route isolation, dismissal preserving tray/target all passed. 0.5.10 also retains copied active question when additional requests arrive; syntax checked. No actual Safari scheduling or live inference certificate.",
       "evidence": [
         "labx_bridge",
         "labx_audit",
@@ -703,9 +703,9 @@
         "ipad_windows",
         "gm_manager"
       ],
-      "stop": "From real Kami/engineering context, open chosen chat and transfer one prepared request without reconstructing it or losing source; preserve request if unsent. No automatic consumer response extraction. If zero-switch essential and not supported, compare an explicitly authorized provider transport only then.",
+      "stop": "Transport probe passes when real source receives its correlated user-returned reply without reload and no wrong conversation receives it. Long-term zero-switch experience requires a supported inference integration or interactive companion; do not add queues/dashboards merely to improve this transitional workflow.",
       "reopen": "Reopen if switching or manual transfer repeatedly dominates whole workflow and a supported alternative is available.",
-      "next": "Test Pocket v0.5.8 real selected-chat anchor: long-press chat icon, Open in New Window, resize or Enter Slide Over if supported. Test direct typing and submission in actual signed-in ChatGPT window while source stays visible, then reuse that window. No proxy, iframe header modification or automatic submission. Native link preview is a navigation affordance, not a certified interactive chat. If successful, prefer native adjacent conversation over custom inference bridge.",
+      "next": "Use an existing specific chat, not a new-chat homepage. One real question, manually copy/paste/send in companion chat and return the answer through Pocket; source panel should update without reload. If transport works, evaluate supported low-friction inference mechanisms rather than treating manual clipboard relay as the end state.",
       "depends_on": [
         "I15"
       ]
@@ -952,6 +952,11 @@
       "date": "2026-11-25",
       "decision": "Fix crowded Pocket More controls via two-column grid, preserve capture and storage. Expose exact selected chat as actual link for Safari native windowing; investigate persistent mini-chat via OS windows rather than attempting cross-origin frame/security bypass.",
       "method": "REM reuse existing capabilities; RSM discriminating device canary"
+    },
+    {
+      "date": "2026-11-25",
+      "decision": "Apply REM cold-demo and forgotten-operation return tests. Reuse existing request path and extend with delivery receipt and reply; no server, new app, message dashboard, or automated consumer model access. Treat human-mediated relay as transport experiment, not desired final UX.",
+      "method": "REM-02.05; REM-04.03"
     }
   ],
   "functional_intent": {
