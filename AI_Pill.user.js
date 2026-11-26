@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         AI Pill OS - DevTools and Ask
 // @namespace    https://github.com/JadanPoll/AI_Pill_OS
-// @version      0.3.1
+// @version      0.4.0
 // @description  Inspect, record, export browser evidence; hand it to ChatGPT and run bounded read-only investigation requests.
 // @match        https://*/*
 // @match        http://*/*
@@ -16,7 +16,7 @@
 (() => {
   'use strict';
   if (window.top !== window || document.getElementById('ai-pill-os')) return;
-  const VERSION = '0.3.1', MAX = 100, MAX_REPORT = 100000;
+  const VERSION = '0.4.0', MAX = 100, MAX_REPORT = 100000;
   let host, root, status, preview, question, scope, includeText, planBox, pill;
   let picked = null, selection = '', armed = false, recording = false, observer = null;
   let events = [], dropped = 0, started = 0, lastReport = null, erudaReady = false;
@@ -95,6 +95,63 @@
     const text = JSON.stringify(value,null,2);
     if (text.length > MAX_REPORT) { preview.value = ''; syncEvidence(); setStatus('Report too large; narrow the request. Nothing copied.'); return false; }
     preview.value = text; syncEvidence(); setStatus('Report ready. Review, then copy.'); return true;
+  }
+  // Precision inspector: relative touchpad motion, actual hit test, no synthetic page clicks.
+  let precision=null, pointerRAF=0;
+  function pointerTarget(x,y){
+    const skip=el=>el===host||['ai-pill-os','ai-pill-pocket','eruda'].includes(el.id)||!!el.closest('#ai-pill-os,#ai-pill-pocket,#eruda');
+    let el=document.elementsFromPoint(x,y).find(e=>!skip(e))||null;
+    for(let i=0;i<8&&el?.shadowRoot?.elementFromPoint;i++){
+      const child=el.shadowRoot.elementFromPoint(x,y);if(!child||child===el||skip(child))break;el=child;
+    }
+    return el;
+  }
+  function drawPointer(){
+    pointerRAF=0;if(!precision)return;
+    const p=precision,x=Math.max(0,Math.min(innerWidth-1,p.x)),y=Math.max(0,Math.min(innerHeight-1,p.y));p.x=x;p.y=y;
+    const el=pointerTarget(x,y);
+    if(el!==p.base){p.base=el;p.level=0;}
+    let chosen=el;for(let i=0;i<p.level&&chosen?.parentElement;i++)chosen=chosen.parentElement;
+    p.target=chosen;
+    const cursor=byId('pointer-cursor');cursor.style.left=x+'px';cursor.style.top=y+'px';
+    const box=byId('pointer-box');box.hidden=!chosen;
+    if(chosen){const r=chosen.getBoundingClientRect();Object.assign(box.style,{left:r.left+'px',top:r.top+'px',width:r.width+'px',height:r.height+'px'});}
+    byId('pointer-label').textContent=chosen?chosen.localName+(chosen.id?'#'+safe(chosen.id,45):'')+' · '+Math.round(x)+', '+Math.round(y):'No element';
+    byId('pointer-select').disabled=!chosen;
+    byId('pointer-parent').disabled=!chosen?.parentElement;
+  }
+  function queuePointer(){if(!pointerRAF)pointerRAF=requestAnimationFrame(drawPointer);}
+  function endPointer(openPanel=true){
+    if(!precision)return;
+    precision=null;cancelAnimationFrame(pointerRAF);pointerRAF=0;
+    for(const id of ['pointer-panel','pointer-cursor','pointer-box'])byId(id).hidden=true;
+    window.removeEventListener('resize',queuePointer);window.removeEventListener('scroll',queuePointer,true);
+    window.removeEventListener('keydown',pointerKey,true);
+    pill.hidden=!openPanel;byId('open').hidden=openPanel;syncRecord();
+  }
+  function pointerKey(e){if(precision&&e.key==='Escape'){e.preventDefault();e.stopPropagation();endPointer();}}
+  function startPointer(){
+    if(precision)return;
+    armed=false;pill.hidden=true;byId('open').hidden=true;
+    precision={x:innerWidth/2,y:innerHeight/2,base:null,target:null,level:0,drag:null};
+    byId('pointer-panel').hidden=false;byId('pointer-cursor').hidden=false;
+    window.addEventListener('resize',queuePointer);window.addEventListener('scroll',queuePointer,true);
+    window.addEventListener('keydown',pointerKey,true);
+    drawPointer();
+  }
+  function bindPointer(){
+    const pad=byId('pointer-pad');
+    pad.addEventListener('pointerdown',e=>{if(!precision||!e.isTrusted||precision.drag)return;e.preventDefault();e.stopPropagation();precision.drag={id:e.pointerId,x:e.clientX,y:e.clientY};pad.setPointerCapture(e.pointerId);});
+    pad.addEventListener('pointermove',e=>{const d=precision?.drag;if(!d||d.id!==e.pointerId)return;e.preventDefault();e.stopPropagation();const dx=e.clientX-d.x,dy=e.clientY-d.y;
+      // Slow motion for precision, accelerated long sweeps. No page scrolling.
+      const gain=Math.hypot(dx,dy)>12?1.35:0.65;
+      precision.x=Math.max(0,Math.min(innerWidth-1,precision.x+dx*gain));precision.y=Math.max(0,Math.min(innerHeight-1,precision.y+dy*gain));d.x=e.clientX;d.y=e.clientY;queuePointer();
+    });
+    const release=e=>{if(precision?.drag?.id===e.pointerId)precision.drag=null;};
+    for(const type of ['pointerup','pointercancel','lostpointercapture'])pad.addEventListener(type,release);
+    byId('pointer-parent').onclick=()=>{if(precision){precision.level++;drawPointer();}};
+    byId('pointer-close').onclick=()=>endPointer();
+    byId('pointer-select').onclick=()=>{if(!precision)return;drawPointer();const el=precision.target;if(!el?.isConnected)return;endPointer();picked=el;show(report());};
   }
   function onClick(e) {
     if (own(e)) return;
@@ -367,24 +424,26 @@
     host=document.createElement('div');host.id='ai-pill-os';
     root=host.attachShadow({mode:'open'});
     root.innerHTML='<style>'+
-      ':host{all:initial;position:fixed;right:12px;bottom:18px;z-index:2147483646;font:14px system-ui;color:#172033}*{box-sizing:border-box}button,a,select,textarea,input{font:inherit;color:inherit}button,a{border:1px solid #cbd5e1;background:white;border-radius:8px;padding:9px 11px;cursor:pointer;text-decoration:none;display:inline-flex;align-items:center;justify-content:center;min-height:44px}button:active{background:#e2e8f0}button:disabled{opacity:.35}button svg{flex:none}.icon-btn{min-width:44px;gap:5px;padding:7px}.icon-btn span{font-size:12px}#open{border-radius:24px;background:#172033;color:white;box-shadow:0 2px 12px #0004}#panel,#source-panel{background:#fff;border:1px solid #cbd5e1;border-radius:14px;box-shadow:0 4px 20px #0003;padding:10px;width:min(420px,calc(100vw - 28px));max-height:78vh;overflow:auto}[hidden]{display:none!important}#dev-bar{position:fixed;right:12px;z-index:2147483647;display:flex;gap:4px;padding:4px;background:#f8fafc;border:1px solid #94a3b8;border-radius:10px;box-shadow:0 2px 12px #0004;max-width:calc(100vw - 24px)}#source-panel{width:min(900px,calc(100vw - 28px));max-height:83vh}#source-panel input[type=text],select{min-height:44px;min-width:0;padding:8px;border:1px solid #cbd5e1;border-radius:6px}#source-code{font:14px/1.55 ui-monospace,monospace;white-space:pre-wrap;overflow-wrap:anywhere;max-height:48vh;overflow:auto;background:#f8fafc;border:1px solid #cbd5e1;border-radius:6px;padding:10px;color:#172033;user-select:text;margin:6px 0}#source-status,#source-position,#source-count,#status{font-size:12px;color:#475569;overflow-wrap:anywhere}.row{display:flex;gap:5px;flex-wrap:wrap;align-items:center;margin:6px 0}.head{justify-content:space-between;margin-top:0}.grow{flex:1;min-width:0}textarea{display:block;width:100%;border:1px solid #cbd5e1;border-radius:8px;padding:8px;resize:vertical;background:white}label{display:block;margin:5px 0}summary{cursor:pointer;padding:8px 0;color:#475569}small{color:#475569;font-weight:400}h3{margin:0;font-size:15px}.active-record{color:#b91c1c;border-color:#b91c1c}.main-actions{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:4px;margin:7px 0}.main-actions button{flex-direction:column;min-width:0;padding:6px 2px}.main-actions span{font-size:11px}.primary{background:#172033;color:white}details{border-top:1px solid #e2e8f0}#evidence{border-top:1px solid #e2e8f0;padding-top:6px}'+
+      ':host{all:initial;position:fixed;right:12px;bottom:18px;z-index:2147483646;font:14px system-ui;color:#172033}*{box-sizing:border-box}button,a,select,textarea,input{font:inherit;color:inherit}button,a{border:1px solid #cbd5e1;background:white;border-radius:8px;padding:9px 11px;cursor:pointer;text-decoration:none;display:inline-flex;align-items:center;justify-content:center;min-height:44px}button:active{background:#e2e8f0}button:disabled{opacity:.35}button svg{flex:none}.icon-btn{min-width:44px;gap:5px;padding:7px}.icon-btn span{font-size:12px}#open{border-radius:24px;background:#172033;color:white;box-shadow:0 2px 12px #0004}#panel,#source-panel{background:rgba(255,255,255,.86);backdrop-filter:blur(3px);-webkit-backdrop-filter:blur(3px);border:1px solid #cbd5e1;border-radius:14px;box-shadow:0 4px 20px #0003;padding:10px;width:min(420px,calc(100vw - 28px));max-height:78vh;overflow:auto}[hidden]{display:none!important}#dev-bar{position:fixed;right:12px;z-index:2147483647;display:flex;gap:4px;padding:4px;background:#f8fafc;border:1px solid #94a3b8;border-radius:10px;box-shadow:0 2px 12px #0004;max-width:calc(100vw - 24px)}#source-panel{width:min(900px,calc(100vw - 28px));max-height:83vh}#source-panel input[type=text],select{min-height:44px;min-width:0;padding:8px;border:1px solid #cbd5e1;border-radius:6px}#source-code{font:14px/1.55 ui-monospace,monospace;white-space:pre-wrap;overflow-wrap:anywhere;max-height:48vh;overflow:auto;background:#f8fafc;border:1px solid #cbd5e1;border-radius:6px;padding:10px;color:#172033;user-select:text;margin:6px 0}#source-status,#source-position,#source-count,#status{font-size:12px;color:#475569;overflow-wrap:anywhere}.row{display:flex;gap:5px;flex-wrap:wrap;align-items:center;margin:6px 0}.head{justify-content:space-between;margin-top:0}.grow{flex:1;min-width:0}textarea{display:block;width:100%;border:1px solid #cbd5e1;border-radius:8px;padding:8px;resize:vertical;background:white}label{display:block;margin:5px 0}summary{cursor:pointer;padding:8px 0;color:#475569}small{color:#475569;font-weight:400}h3{margin:0;font-size:15px}.active-record{color:#b91c1c;border-color:#b91c1c}.main-actions{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:4px;margin:7px 0}.main-actions button{flex-direction:column;min-width:0;padding:6px 2px}.main-actions span{font-size:11px}.primary{background:#172033;color:white}details{border-top:1px solid #e2e8f0}#evidence{border-top:1px solid #e2e8f0;padding-top:6px}#pointer-panel{position:fixed;right:12px;bottom:18px;width:min(280px,calc(100vw - 24px));background:rgba(255,255,255,.86);backdrop-filter:blur(3px);border:1px solid #94a3b8;border-radius:12px;padding:8px;box-shadow:0 3px 14px #0003}#pointer-pad{height:110px;touch-action:none;user-select:none;background:rgba(226,232,240,.68);border:1px dashed #94a3b8;border-radius:9px;display:grid;place-items:center;color:#475569;font-size:13px}#pointer-cursor{position:fixed;width:22px;height:22px;border:2px solid #fff;border-radius:50%;transform:translate(-50%,-50%);background:rgba(37,99,235,.65);box-shadow:0 0 0 1px #1d4ed8;pointer-events:none;z-index:2147483647}#pointer-cursor:after{content:"+";position:absolute;inset:0;display:grid;place-items:center;color:#fff;font-weight:bold}#pointer-box{position:fixed;outline:2px solid #2563eb;background:rgba(59,130,246,.08);pointer-events:none;z-index:2147483646}#pointer-label{font-size:12px;overflow-wrap:anywhere}'+
       '</style><button id="open" aria-label="Open AI Pill">AI v'+VERSION+'</button>'+
       '<section id="panel" hidden><div class="row head"><h3>AI Pill <small>v'+VERSION+'</small></h3>'+button('close','close','Close')+'</div>'+
       '<div class="main-actions">'+button('inspect','inspect','Inspect element','Inspect')+button('record','record','Record interaction','Record')+button('sources','file','Browse sources','Sources')+button('eruda','code','Open Eruda debugger','DevTools')+'</div>'+
       '<textarea id="question" rows="2" placeholder="Ask about this page…"></textarea><div class="row"><select id="scope" class="grow" aria-label="Context"><option value="none">URL only</option><option value="selection">Selected text</option><option value="page">Page text</option><option value="report">Diagnostic report</option></select><button id="ask" class="primary">Prepare</button></div>'+
       '<section id="evidence" hidden><div class="row head"><small>Review before sharing</small>'+button('copy','copy','Copy evidence','Copy')+'</div><textarea id="preview" rows="4" aria-label="Evidence preview"></textarea><div class="row"><a href="https://chatgpt.com/" target="_blank" rel="noopener noreferrer">ChatGPT</a><a href="https://gemini.google.com/" target="_blank" rel="noopener noreferrer">Gemini</a></div></section>'+
-      '<details><summary>More</summary><div class="row"><button id="snapshot">Page report</button><a href="shortcuts://run-shortcut?name=AI%20Pill%20Ask">Run Shortcut</a></div><label><input id="text" type="checkbox"> Include element text in reports</label><details><summary>AI investigation plan</summary><textarea id="plan" rows="3" placeholder=\'{"operations":[{"op":"inspect","selector":"button"}]}\'></textarea><button id="run">Run read-only plan</button></details></details>'+
+      '<details><summary>More</summary><div class="row"><button id="snapshot">Page report</button><button id="direct-inspect">Direct tap inspect</button><a href="shortcuts://run-shortcut?name=AI%20Pill%20Ask">Run Shortcut</a></div><label><input id="text" type="checkbox"> Include element text in reports</label><details><summary>AI investigation plan</summary><textarea id="plan" rows="3" placeholder=\'{"operations":[{"op":"inspect","selector":"button"}]}\'></textarea><button id="run">Run read-only plan</button></details></details>'+
       '<div id="status" role="status">Ready. Nothing is sent automatically.</div></section>'+
+      '<div id="pointer-box" hidden></div><div id="pointer-cursor" hidden></div><section id="pointer-panel" hidden><div class="row head"><small>Inspect · v'+VERSION+'</small>'+button('pointer-close','close','Cancel precision inspection')+'</div><div id="pointer-pad" aria-label="Relative pointer trackpad">Drag to move pointer</div><div class="row"><small id="pointer-label" class="grow"></small></div><div class="row"><button id="pointer-parent" title="Select parent element">Parent ↑</button><button id="pointer-select" class="primary grow">Inspect</button></div></section>'+
       '<div id="dev-bar" hidden>'+button('dev-alpha','opacity','Opacity')+button('dev-size','height','Panel height')+button('dev-sources','file','Sources')+button('dev-close','close','Close debugger')+'</div>'+
       '<section id="source-panel" hidden><div class="row head">'+button('source-close','back','Back to AI Pill')+'<h3 class="grow">Sources <small>v'+VERSION+'</small></h3>'+button('source-refresh','refresh','Refresh file list')+'</div><div class="row"><input id="source-filter" class="grow" type="text" placeholder="Filter files…" aria-label="Filter filenames"><span id="source-count"></span></div><div class="row"><select id="source-select" class="grow" aria-label="Source file"></select><button id="source-load" class="primary">Load</button></div>'+
       '<div id="source-reading" hidden><div class="row"><input id="source-find" class="grow" type="text" placeholder="Find in file…" aria-label="Find in file">'+button('find-prev','back','Previous match')+button('find-next','next','Next match')+button('source-copy','copy','Review and copy excerpt')+'</div><div id="source-position"></div><pre id="source-code"></pre><div class="row" id="source-chunks">'+button('source-prev','back','Previous chunk','Chunk')+button('source-next','next','Next chunk','Chunk')+'</div><details><summary>Source options</summary><label><input id="source-pretty" type="checkbox" checked> Format source</label></details></div><div id="source-status" role="status">Choose a file. No automatic fetch or upload.</div></section>';
+    for(const type of ['keydown','keypress','keyup'])root.addEventListener(type,e=>{if(e.composedPath().some(el=>el instanceof Element&&el.matches('textarea,input,[contenteditable]')))e.stopPropagation();});
     document.documentElement.append(host);
     const $=id=>root.getElementById(id);
     pill=$('panel');status=$('status');preview=$('preview');question=$('question');scope=$('scope');includeText=$('text');planBox=$('plan');
     const toggle=open=>{pill.hidden=!open;$('open').hidden=open;};
     syncRecord();syncEvidence();
     $('open').onclick=()=>toggle(true);$('close').onclick=()=>{armed=false;toggle(false)};
-    $('inspect').onclick=()=>{armed=true;toggle(false);setStatus('Tap an element to inspect.');$('open').textContent='Cancel inspect · v'+VERSION;};
+    $('inspect').onclick=startPointer;bindPointer();$('direct-inspect').onclick=()=>{armed=true;toggle(false);setStatus('Tap an element to inspect.');$('open').textContent='Cancel inspect · v'+VERSION;};
     $('open').addEventListener('click',()=>{armed=false;syncRecord();});
     $('record').onclick=()=>recording?stop():record();$('snapshot').onclick=()=>show(report());
     $('copy').onclick=copy;$('ask').onclick=ask;$('run').onclick=runPlan;$('eruda').onclick=devtools;
