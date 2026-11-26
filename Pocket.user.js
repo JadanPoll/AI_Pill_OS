@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         AI Pill OS - Pocket
 // @namespace    https://github.com/JadanPoll/AI_Pill_OS
-// @version      0.4.0
+// @version      0.4.1
 // @updateURL    https://raw.githubusercontent.com/JadanPoll/AI_Pill_OS/main/Pocket.user.js
 // @downloadURL  https://raw.githubusercontent.com/JadanPoll/AI_Pill_OS/main/Pocket.user.js
 // @description  Universal Safari pill: collect evidence, keep discoveries, and hand a question to a chosen chat.
@@ -21,7 +21,7 @@
 (() => {
   'use strict';
   if (window.top !== window || document.getElementById('ai-pill-pocket')) return;
-  const VERSION='0.4.0', PREFIX='pocket.v1.', TRAY='tray.v1.', HANDOFF='handoff.v1.', ACK='ack.v1.', TARGET='target.v1', LIMIT=100000, MAX_ITEMS=250;
+  const VERSION='0.4.1', PREFIX='pocket.v1.', TRAY='tray.v1.', HANDOFF='handoff.v1.', ACK='ack.v1.', TARGET='target.v1', LIMIT=100000, MAX_ITEMS=250;
   const uid=()=>globalThis.crypto?.randomUUID?.()||Date.now().toString(36)+'-'+Math.random().toString(36).slice(2);
   // Deliberately no localStorage fallback: that would appear to work but silently
   // partition the data by site. Only this installed script owns these GM keys.
@@ -90,11 +90,11 @@
       const b=document.createElement('button');b.className='entry';b.type='button';
       const t=document.createElement('b');t.textContent=r.text.replace(/\s+/g,' ').slice(0,105)||'(empty)';
       const m=document.createElement('small');m.textContent=(r.source||'No source').slice(0,130)+' · '+r.created.slice(0,10);
-      if(r.image){const img=document.createElement('img');img.src=r.image;img.alt='Captured region';img.style.cssText='display:block;max-width:100%;max-height:120px;object-fit:contain;margin:4px 0';b.append(img);}b.append(t,m);b.addEventListener('click',e=>{if(e.isTrusted)show(r);});$('list').append(b);
+      if(r.image&&/^data:image\/(?:png|jpeg|webp);base64,/i.test(r.image)){const img=document.createElement('img');img.src=r.image;img.alt='Captured region';img.style.cssText='display:block;max-width:100%;max-height:120px;object-fit:contain;margin:4px 0';b.append(img);}b.append(t,m);b.addEventListener('click',e=>{if(e.isTrusted)show(r);});$('list').append(b);
     }
   }
   function show(r){
-    selected=r;$('detail').hidden=false;$('body').textContent=r.text;if(r.image){const img=document.createElement('img');img.src=r.image;img.alt='Captured region';img.style.cssText='display:block;max-width:100%;margin-top:6px';$('body').append(img);}$('keep').hidden=view!=='tray';
+    selected=r;$('detail').hidden=false;$('body').textContent=r.text;if(r.image&&/^data:image\/(?:png|jpeg|webp);base64,/i.test(r.image)){const img=document.createElement('img');img.src=r.image;img.alt='Captured region';img.style.cssText='display:block;max-width:100%;margin-top:6px';$('body').append(img);}$('keep').hidden=view!=='tray';
     $('meta').textContent=(r.source||'No source')+'\n'+r.created;
     $('list').hidden=true;$('detail').scrollIntoView({block:'nearest'});
   }
@@ -162,7 +162,7 @@
     releaseCropImage();$('crop-editor').hidden=true;$('panel').hidden=false;$('open').hidden=true;
   }
   async function loadCropFile(file){
-    if(!file||cropBusy)return;
+    if(!file||cropBusy||$('crop-editor').hidden)return;
     if(!file.type.startsWith('image/')||file.size>25000000){cropHelp('Choose an image under 25 MB.');return;}
     releaseCropImage();const epoch=cropEpoch;
     cropURL=URL.createObjectURL(file);const im=$('crop-image');im.src=cropURL;
@@ -207,15 +207,17 @@
   window.addEventListener('resize',fitCrop);
   async function pasteCrop(){
     if(!navigator.clipboard?.read){cropHelp('Image clipboard access unavailable. Choose a saved screenshot instead.');return;}
+    const epoch=cropEpoch;
     try{
       const items=await navigator.clipboard.read();
-      for(const item of items){const type=item.types.find(t=>t.startsWith('image/'));if(type){await loadCropFile(await item.getType(type));return;}}
+      if(epoch!==cropEpoch||$('crop-editor').hidden)return;
+      for(const item of items){const type=item.types.find(t=>t.startsWith('image/'));if(type){const blob=await item.getType(type);if(epoch===cropEpoch&&!$('crop-editor').hidden)await loadCropFile(blob);return;}}
       cropHelp('No image in clipboard. Copy a screenshot first.');
     }catch(e){cropHelp('Clipboard unavailable: '+String(e.message||e)+'. Choose image instead.');}
   }
   async function collectCrop(){
     if(!store||cropBusy||busy||handoffBusy)return;
-    const im=$('crop-image');if(!im.naturalWidth||!im.naturalHeight)return;
+    const im=$('crop-image');if(!im.naturalWidth||!im.naturalHeight||cropDrag||$('crop-image-wrap').hidden)return;
     const [x,y,X,Y]=cropRect||[0,0,1,1];
     const sx=Math.floor(x*im.naturalWidth),sy=Math.floor(y*im.naturalHeight),w=Math.min(im.naturalWidth-sx,Math.ceil(X*im.naturalWidth)-sx),h=Math.min(im.naturalHeight-sy,Math.ceil(Y*im.naturalHeight)-sy);
     if(w<1||h<1)return;
