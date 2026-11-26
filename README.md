@@ -1,6 +1,6 @@
 # AI Pill OS
 
-> Can I operate at the speed of thought?
+> [Can I operate at the speed of thought?](Can_I_Operate_At_The_Speed_Of_Thought.md)
 
 AI Pill OS is an attempt to asymptotically collapse the distance between human intention and its realization. The human should spend more time thinking, exploring, deciding, and creating, and less time translating those intentions into the mechanical operations of software.
 
