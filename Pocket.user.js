@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         AI Pill OS - Pocket
 // @namespace    https://github.com/JadanPoll/AI_Pill_OS
-// @version      0.7.34
+// @version      0.7.35
 // @updateURL    https://raw.githubusercontent.com/JadanPoll/AI_Pill_OS/main/Pocket.user.js
 // @downloadURL  https://raw.githubusercontent.com/JadanPoll/AI_Pill_OS/main/Pocket.user.js
 // @description  Universal Safari pill: collect evidence, keep discoveries, and hand a question to a chosen chat.
@@ -26,7 +26,7 @@
 (() => {
   'use strict';
   if (window.top !== window) return;
-  const VERSION='0.7.34';
+  const VERSION='0.7.35';
   // Report initialization failures without depending on the main UI, storage or a CDN.
   function bootFailure(error,phase){
     const message=String(error?.message||error).slice(0,500);
@@ -1417,11 +1417,11 @@
     return false;
   }
   async function processModelRequest(dest){
-    if(modelBusy||autoBusy||activeAsk||dictationRun||streamActive())return;
+    if(modelBusy||autoBusy||activeAsk||dictationRun||micSnapshot().recording||streamActive())return;
     const c=await store.get(MODEL_REQUEST+dest);
     if(!c||c.target!==dest||c.worker!==instance||typeof c.id!=='string'||Date.now()>c.expires||modelReceipt?.id===c.id)return;
     if(!['list','choose'].includes(c.action)||!await allowedDestination({target:dest}))return;
-    if(autoBusy||activeAsk||dictationRun||streamActive()||editorText(chatEditor())||composerAttachments(chatEditor()))return;
+    if(autoBusy||activeAsk||dictationRun||micSnapshot().recording||streamActive()||editorText(chatEditor())||composerAttachments(chatEditor()))return;
     modelBusy=true;let b=null,menu=null,opened=false;
     modelReceipt={id:c.id,sender:c.sender,phase:'working',at:Date.now()};
     try{
@@ -1436,7 +1436,7 @@
         const matches=options.filter(o=>o.role===c.role&&o.value===c.value&&o.label===c.label);
         if(matches.length!==1)throw Error('Model option missing or ambiguous; reopen picker');
         const before=nativeModel(),o=matches[0],beforeMenu=modelMenuEvidence(menu);
-        const stillAllowed=async()=>Date.now()<=c.expires&&await allowedDestination({target:dest})&&!streamActive()&&!editorText(chatEditor())&&!composerAttachments(chatEditor())&&!dictationRun;
+        const stillAllowed=async()=>Date.now()<=c.expires&&await allowedDestination({target:dest})&&!streamActive()&&!editorText(chatEditor())&&!composerAttachments(chatEditor())&&!dictationRun&&!micSnapshot().recording;
         if(!await stillAllowed())throw Error('Receiver or composer changed; no selection made');
         const verified=o.selected||await activateModelOption(b,menu,o,stillAllowed);
         const after=nativeModel(),live=nativeModelMenu(nativeModelButton());
@@ -1478,7 +1478,7 @@
   }
   async function queueModelTest(action,option){
     const here=chatURL(location.href);if(!store||!selectedHere()||!here){$('model-test-status').textContent='Add this tab as a receiver first.';return;}
-    if(modelBusy||autoBusy||activeAsk||dictationRun||streamActive()||editorText(chatEditor())||composerAttachments(chatEditor())){$('model-test-status').textContent='Finish the active operation or draft first.';return;}
+    if(modelBusy||autoBusy||activeAsk||dictationRun||micSnapshot().recording||streamActive()||editorText(chatEditor())||composerAttachments(chatEditor())){$('model-test-status').textContent='Finish the active operation or draft first.';return;}
     const c={id:uid(),sender:instance,target:here,worker:instance,action,selfTest:true,at:Date.now(),expires:Date.now()+20000,...(option?{label:option.label,role:option.role,value:option.value}:{})};
     modelTestReceipt={id:c.id,phase:'working',action};paintModelTest();await store.set(MODEL_REQUEST+here,c);await processModelRequest(here);wakeTransport();
   }
@@ -1490,8 +1490,9 @@
   const MIC_COMMAND='receiver.mic.command.v1.',MIC_RESULT='receiver.mic.result.v1.';
   const MIC_MAX=90000;
   let dictationRun=null,dictationReceipt=null,dictationPending=null,dictationBusy=false,micTestResult=null,micLastCommand=null,dictationTimer=null;
+  function micScope(){return chatSurface()==='gemini'?document.querySelector('input-area-v2'):document.querySelector('[data-chatgpt-composer]')||chatEditor()?.closest('form');}
   function micNodes(){
-    const gem=chatSurface()==='gemini',scope=gem?document.querySelector('input-area-v2'):document.querySelector('[data-chatgpt-composer]')||chatEditor()?.closest('form');
+    const scope=micScope();
     if(!scope)return [];
     return [...scope.querySelectorAll('button')].filter(b=>b.getClientRects().length&&!b.closest('[hidden],[aria-hidden=true]')).map(b=>({b,label:b.getAttribute('aria-label')||b.title||'',state:b.getAttribute('data-dictation-button'),pressed:b.getAttribute('aria-pressed'),busy:b.getAttribute('aria-busy'),disabled:b.disabled||b.getAttribute('aria-disabled')==='true'}));
   }
@@ -1502,7 +1503,24 @@
     return a.length===1?a[0].b:null;
   }
   function micCancelControl(){const a=micNodes().filter(n=>!n.disabled&&/^(?:Cancel|Discard) (?:dictation|recording)(?:\s*\(|$)/i.test(n.label));return a.length===1?a[0].b:null;}
-  function micSnapshot(){const nodes=micNodes();return {start:!!micStartControl(),stop:!!micStopControl(),cancel:!!micCancelControl(),recording:nodes.some(n=>n.state==='recording'||n.pressed==='true'&&/^Dictate/i.test(n.label)||/^(?:Stop|Finish|Cancel|Discard) (?:dictation|recording)/i.test(n.label)),controls:nodes.filter(n=>n.state||/dictat|record|microphone|transcrib/i.test(n.label)).map(({label,state,pressed,busy,disabled})=>({label,state,pressed,busy,disabled})),editor:!!chatEditor(),characters:editorText(chatEditor()).length,visibility:document.visibilityState,activation:navigator.userActivation?.isActive??null,session:audioSessionInfo()};}
+  // Native armed-state HTML captures (2026-11-26): ChatGPT dictating
+  // controls coexist with a live, nonempty editor; Gemini exposes Listening
+  // and a waveform even when its editor is empty. Send may coexist with
+  // recording on both providers and must never be used as Stop.
+  function micSnapshot(){
+    const nodes=micNodes(),scope=micScope(),editor=chatEditor();
+    const visible=sel=>!!scope&&[...scope.querySelectorAll(sel)].some(n=>n.getClientRects().length&&!n.closest('[hidden],[aria-hidden=true]:not(canvas)'));
+    const evidence={
+      dictating: nodes.some(n=>n.state==='dictating'||n.state==='recording'),
+      recordingControls:visible('[data-dictation-recording-controls]'),
+      listening:visible('[contenteditable=true][data-placeholder="Listening"]'),
+      waveform:visible('canvas[data-mode=waveform],canvas[data-test-id=butterfly-wave-canvas]'),
+      liveTranscription:nodes.some(n=>n.label==='Hide live transcription'&&n.pressed==='true'),
+      nativeStop:nodes.some(n=>/^(?:Stop|Finish|Cancel|Discard) (?:dictation|recording)/i.test(n.label)||n.pressed==='true'&&/^Dictate/i.test(n.label))
+    };
+    const recording=Object.values(evidence).some(Boolean);
+    return {start:!!micStartControl(),stop:!!micStopControl(),cancel:!!micCancelControl(),recording,evidence,controls:nodes.filter(n=>n.state||/dictat|record|microphone|transcrib/i.test(n.label)).map(({label,state,pressed,busy,disabled})=>({label,state,pressed,busy,disabled})),editor:!!editor,characters:editorText(editor).length,visibility:document.visibilityState,activation:navigator.userActivation?.isActive??null,session:audioSessionInfo()};
+  }
   function micStage(run,phase,detail,extra={}){
     const r={id:run.id,sender:run.sender,target:run.target,worker:instance,selfTest:!!run.selfTest,phase,detail,at:Date.now(),started:run.started,expires:run.expires,snapshot:micSnapshot(),...extra};
     dictationReceipt=r;linkLog('dictation',{...r});lifeEvent('dictation-'+phase,r);
@@ -1559,7 +1577,7 @@
     try{
       const now=Date.now(),snap=micSnapshot(),same=chatURL(location.href)===run.target;
       if(!same){micStage(run,'uncertain','Receiver navigation changed. Check native microphone state.');micRelease(run);return;}
-      const sig=JSON.stringify(snap.controls);if(sig!==run.lastSignature){run.lastSignature=sig;linkLog('dictation-controls',{id:run.id,controls:snap.controls,visibility:snap.visibility});lifeEvent('dictation-controls',{id:run.id,controls:snap.controls,visibility:snap.visibility});}
+      const sig=JSON.stringify([snap.controls,snap.evidence]);if(sig!==run.lastSignature){run.lastSignature=sig;const change={id:run.id,controls:snap.controls,evidence:snap.evidence,characters:snap.characters,visibility:snap.visibility};linkLog('dictation-controls',change);lifeEvent('dictation-controls',change);}
       if(snap.recording&&!run.observed){run.observed=true;micStage(run,'recording','Native recording state observed. Speak, then Stop.');}
       if(!run.stopAt&&now>=run.expires)await micStop(run,'time limit');
       if(!run.observed&&!run.stopAt&&now-run.started>15000){
