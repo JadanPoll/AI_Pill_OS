@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         AI Pill OS - Pocket
 // @namespace    https://github.com/JadanPoll/AI_Pill_OS
-// @version      0.6.2
+// @version      0.6.3
 // @updateURL    https://raw.githubusercontent.com/JadanPoll/AI_Pill_OS/main/Pocket.user.js
 // @downloadURL  https://raw.githubusercontent.com/JadanPoll/AI_Pill_OS/main/Pocket.user.js
 // @description  Universal Safari pill: collect evidence, keep discoveries, and hand a question to a chosen chat.
@@ -24,7 +24,7 @@
 (() => {
   'use strict';
   if (window.top !== window) return;
-  const VERSION='0.6.2';
+  const VERSION='0.6.3';
   // Report initialization failures without depending on the main UI, storage or a CDN.
   function bootFailure(error,phase){
     const message=String(error?.message||error).slice(0,500);
@@ -688,7 +688,7 @@
   // version and observed state. This probe never submits a prompt or reads replies.
   const LINK_PING='link.ping.v1',LINK_HEART='link.heart.v1',LINK_INTERVAL=3000,LINK_TTL=15000;
   const instance=uid();
-  let linkBusy=false,linkTarget=null,challenge=null,lastProof=null,lastHeart=null,linkState='off',linkError=null,linkSeq=0,lastChallengeAt=0;
+  let linkBusy=false,linkTarget=null,challenge=null,lastProof=null,lastHeart=null,linkState='off',linkError=null,linkSeq=0,lastChallengeAt=0,linkStarted=0;
   const linkEvents=[];
   function linkLog(event,detail={}){
     linkEvents.push({at:Date.now(),event,...detail});if(linkEvents.length>100)linkEvents.shift();
@@ -704,8 +704,8 @@
   function fresh(t,now){return typeof t==='number'&&Number.isFinite(t)&&now-t>=0&&now-t<=LINK_TTL;}
   function classifyLink(now,dest,heart,proof){
     if(!dest)return 'off';
-    if(!heart||heart.target!==dest||!fresh(heart.at,now))return challenge&&fresh(challenge.at,now)?'checking':'stale';
-    if(!proof||proof.target!==dest||proof.worker!==heart.worker||!fresh(proof.at,now))return 'checking';
+    if(!heart||heart.target!==dest||!fresh(heart.at,now))return now-linkStarted<LINK_TTL?'checking':'stale';
+    if(!proof||proof.target!==dest||proof.worker!==heart.worker||!fresh(proof.at,now)||(heart.hidden&&!proof.hidden))return 'checking';
     if(heart.stop)return 'responding';
     if(heart.editor&&!heart.disabled)return 'ready';
     return 'uncertain';
@@ -717,11 +717,11 @@
     $('mode-ask').title='Ask · '+detail;
   }
   async function linkTick(){
-    if(!store||linkBusy)return;
+    if(!store||linkBusy||(document.hidden&&!chatURL(location.href)))return;
     linkBusy=true;
     try{
       const dest=chatURL(await store.get(TARGET)),here=chatURL(location.href);
-      if(dest!==linkTarget){linkTarget=dest;challenge=null;lastProof=null;lastHeart=null;lastChallengeAt=0;linkLog('destination changed',{selected:!!dest});}
+      if(dest!==linkTarget){linkTarget=dest;challenge=null;lastProof=null;lastHeart=null;lastChallengeAt=0;linkStarted=Date.now();linkLog('destination changed',{selected:!!dest});}
       if(target!==dest){target=dest;paintTarget();}
       if(!dest){paintLink('off','No chat selected');return;}
       if(here===dest){
@@ -752,7 +752,7 @@
       const hidden=lastHeart?.hidden?'background':'visible';
       const age=lastHeart?Math.max(0,Math.round((now-lastHeart.at)/1000)):null;
       const proof=lastProof?.hidden?'background round trip':'round trip';
-      const detail=state==='ready'?'Connected · '+hidden+' · '+proof:state==='responding'?'Chat responding · '+hidden:state==='uncertain'?'Connected · editor not confirmed':state==='stale'?'Chat heartbeat stale or unavailable':age===null?'Checking chat connection…':'Checking round trip · heartbeat '+age+'s ago';
+      const detail=state==='ready'?'Connected · '+hidden+' · '+proof:state==='responding'?'Chat responding · '+hidden:state==='uncertain'?'Connected · editor not confirmed':state==='stale'?'Chat heartbeat stale or unavailable':age===null?'Checking chat connection…':'Round trip unconfirmed · heartbeat '+age+'s ago';
       paintLink(state,detail);
       linkError=null;
     }catch(e){linkError=String(e?.message||e).slice(0,300);paintLink('stale','Chat connection check failed');linkLog('error',{message:linkError});}
