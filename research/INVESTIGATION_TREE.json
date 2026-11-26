@@ -1,6 +1,6 @@
 {
   "schema": "ai_pill_os.rsm_investigation",
-  "version": 6,
+  "version": 7,
   "updated": "2026-11-25",
   "parent_purpose": "Reduce mechanical distance from human intention to useful realization; preserve agency, context, and recoverability.",
   "scope": "Safari-first personal computing: direct touch for low-information operations, dictation and AI collaboration for high-information intentions, universal pill plus contextual mini-pills, local working state and context-aware canonical persistence.",
@@ -768,11 +768,11 @@
         "Q2.4",
         "Q5.4"
       ],
-      "status": "implemented_awaiting_device",
+      "status": "active_debugging",
       "why": "Visual debugging needs several ordered observations; screenshots are not interchangeable with DOM reconstruction.",
-      "model": "Native screenshot bitmap input → normalized rectangle → Canvas drawImage crop → local collection → composite PNG. Acquisition separate; no external DOM reconstruction.",
+      "model": "Restore v0.3.1 html2canvas-pro 2.6.4 direct drag workflow at user's explicit direction; investigate clone, parse, resource preload, render, encode and GM persistence separately. Keep bitmap editor as optional fallback. Do not substitute another renderer.",
       "belief": "Clipboard supports PNG on modern browsers with user activation constraints. Cross-origin canvas/frame fidelity and manager large payload limits unresolved.",
-      "certificate": "Existing Copy Screenshot branch remains pixel-accurate fallback; universal tray should not promise privileged tab capture. No binary storage claim until measured. Ordered text tray implemented in Pocket v0.2.1; rectangle/image capture remains open. Safari screenshots show html2canvas-pro parsing failure on ChatGPT and unfinished Grokipedia capture; source inspection of SnapDOM core.clip.test.js and type declarations establishes page-coordinate region clipping and offscreen culling, not device fidelity. User reported v0.3.2 launcher missing, triggering stop of renderer trials. v0.4.1 removes all @require dependencies and passes eight mocked startup/crop lifecycle and coordinate checks. Real Safari clipboard, file picker, pixels and layout remain untested.",
+      "certificate": "Existing Copy Screenshot branch remains pixel-accurate fallback; universal tray should not promise privileged tab capture. No binary storage claim until measured. Ordered text tray implemented in Pocket v0.2.1; rectangle/image capture remains open. Safari screenshots show html2canvas-pro parsing failure on ChatGPT and unfinished Grokipedia capture; source inspection of SnapDOM core.clip.test.js and type declarations establishes page-coordinate region clipping and offscreen culling, not device fidelity. User reported v0.3.2 launcher missing, triggering stop of renderer trials. v0.4.1 removes all @require dependencies and passes eight mocked startup/crop lifecycle and coordinate checks. Real Safari clipboard, file picker, pixels and layout remain untested. User screenshot of v0.4.2 shows restored launcher and crop editor plus a retained DOM reconstruction record with missing/broken thumbnail. This is evidence of stored record, not successful bitmap. v0.5.1 restores known prior renderer and includes phase checkpoints, last clone CSS property reads, bounded resource failures, cancellation request, and pre/post-write image decode. Mock pipeline success/parser/empty-canvas checks passed; actual renderer not exercised.",
       "evidence": [
         "clipboard_api",
         "copy_screenshot",
@@ -784,9 +784,9 @@
         "safari_capture_mdn",
         "webkit_clipboard"
       ],
-      "stop": "Verify launcher and old data, then paste or choose native screenshot, collect two crops from one bitmap, copy composite into chat. No further DOM renderer experiments. Reopen pixel acquisition only if a supported, usable browser capture interface is identified.",
+      "stop": "Repeat the actual Grokipedia and ChatGPT regions; gather capture report identifying obstructing phase or CSS property, then make evidence-directed fix and repeat. Stop on two legible, correctly cropped images with verified storage and composite paste. No blind renderer substitutions. If capture never initializes, restore dependency-free v0.4.2 and diagnose @require separately.",
       "reopen": "Reopen on actual fidelity, attachment or storage failure.",
-      "next": "Install v0.4.1 and execute actual native screenshot-to-crop-to-chat flow; use file selection if clipboard unavailable.",
+      "next": "Install v0.5.1; one actual crop on each site; copy capture report from More for each failure. Verify image visually if success. If browser freezes, reopen and copy latest durable milestone; asynchronous cancellation cannot interrupt blocked main thread.",
       "depends_on": [
         "I14"
       ]
@@ -921,6 +921,11 @@
       "date": "2026-11-25",
       "decision": "Stop renderer substitution after reported missing UI; factorize bitmap acquisition from cropping; no mandatory renderer dependency.",
       "method": "REM-01.04; REM-02.05; RSM-04.07"
+    },
+    {
+      "date": "2026-11-25",
+      "decision": "User explicitly reopened direct drag reconstruction branch; retained record warrants discriminating capture/storage/render evidence, not assuming successful screenshot. Restore same renderer and instrument rather than switching libraries.",
+      "method": "RSM-04.07; REM-04.02"
     }
   ],
   "functional_intent": {
