@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         AI Pill OS - Pocket
 // @namespace    https://github.com/JadanPoll/AI_Pill_OS
-// @version      0.7.15
+// @version      0.7.16
 // @updateURL    https://raw.githubusercontent.com/JadanPoll/AI_Pill_OS/main/Pocket.user.js
 // @downloadURL  https://raw.githubusercontent.com/JadanPoll/AI_Pill_OS/main/Pocket.user.js
 // @description  Universal Safari pill: collect evidence, keep discoveries, and hand a question to a chosen chat.
@@ -24,7 +24,7 @@
 (() => {
   'use strict';
   if (window.top !== window) return;
-  const VERSION='0.7.15';
+  const VERSION='0.7.16';
   // Report initialization failures without depending on the main UI, storage or a CDN.
   function bootFailure(error,phase){
     const message=String(error?.message||error).slice(0,500);
@@ -50,7 +50,7 @@
     if(document.getElementById('ai-pill-pocket'))return;
     let phase='storage setup';
     try{
-  const PREFIX='pocket.v1.', TRAY='tray.v1.', HANDOFF='handoff.v1.', ACK='ack.v1.', SEEN='seen.v1.', REPLY='reply.v1.', RUN='run.v1.', TRACE='trace.v1.', REQUEST_TRACE='request.trace.v1.', HISTORY='telemetry.history.v1', JOURNAL='telemetry.journal.v1.', MAILBOX='mailbox.v1', TARGET='target.v1', TITLE='chat.title.v1.', LIMIT=100000, MAX_ITEMS=250;
+  const PREFIX='pocket.v1.', TRAY='tray.v1.', HANDOFF='handoff.v1.', ACK='ack.v1.', SEEN='seen.v1.', REPLY='reply.v1.', RUN='run.v1.', TRACE='trace.v1.', REQUEST_TRACE='request.trace.v1.', VISUAL='request.visual.v1.', HISTORY='telemetry.history.v1', JOURNAL='telemetry.journal.v1.', MAILBOX='mailbox.v1', TARGET='target.v1', TITLE='chat.title.v1.', LIMIT=100000, MAX_ITEMS=250;
   const uid=()=>globalThis.crypto?.randomUUID?.()||Date.now().toString(36)+'-'+Math.random().toString(36).slice(2);
   // Deliberately no localStorage fallback: that would appear to work but silently
   // partition the data by site. Only this installed script owns these GM keys.
@@ -157,7 +157,7 @@
   function attach(r){if(!r||attachments.some(v=>attachedKey(v)===attachedKey(r)))return;attachments.push(r);paintAttachments();}
   function paintAttachments(){
     const el=$('attachments');el.replaceChildren();el.hidden=!attachments.length;$('copy-ask-images').hidden=!attachments.some(r=>r.image)&&!($('include-tray').checked&&tray.some(r=>r.image));
-    for(const r of attachments){const row=document.createElement('div');row.className='row';const label=document.createElement('span');label.className='grow';label.textContent=(r.image?'Image · ':'Note · ')+r.text.slice(0,85);const b=document.createElement('button');b.type='button';b.textContent='×';b.setAttribute('aria-label','Remove context');b.addEventListener('click',e=>{if(e.isTrusted){attachments=attachments.filter(v=>v.id!==r.id);paintAttachments();}});row.append(label,b);el.append(row);}
+    for(const r of attachments){const row=document.createElement('div');row.className='row';const label=document.createElement('span');label.className='grow';label.textContent=(r.image||r.svg?'Image · ':'Note · ')+r.text.slice(0,85);const b=document.createElement('button');b.type='button';b.textContent='×';b.setAttribute('aria-label','Remove context');b.addEventListener('click',e=>{if(e.isTrusted){attachments=attachments.filter(v=>v.id!==r.id);paintAttachments();}});row.append(label,b);el.append(row);}
   }
   function setMode(next){
     if(next!==mode){if(mode==='notes'||mode==='ask')drafts[mode]=$('draft').value;if(next==='notes'||next==='ask')$('draft').value=drafts[next];}
@@ -455,7 +455,7 @@
     let regionText='';try{regionText=regionEvidence(region);}catch(e){run.report.regionExtractionError=diagError(e);}
     run.report.regionTextCharacters=regionText.length;
     captureRun=run;busy=true;$('capture-cancel').hidden=false;
-    let watchdog,clock;
+    let watchdog,clock,serializedSVG=null;
     const browserEvent=(type,detail)=>{if(run.report.browserEvents.length<80)run.report.browserEvents.push({ms:Math.round(performance.now()-run.started),type,...detail});};
     const csp=e=>browserEvent('CSP',{blockedURI:diagURL(e.blockedURI),effectiveDirective:e.effectiveDirective,violatedDirective:e.violatedDirective,originalPolicy:String(e.originalPolicy||'').replace(/'nonce-[^']+'/g,"'nonce-[redacted]'"),disposition:e.disposition,statusCode:e.statusCode,sourceFile:diagURL(e.sourceFile),line:e.lineNumber,column:e.columnNumber});
     const resourceError=e=>{const url=e.filename||e.target?.src||e.target?.href||'';if(/snapdom|jsdelivr|unpkg/.test(url))browserEvent('error',{url:diagURL(url),message:e.message||null,line:e.lineno||null,column:e.colno||null,error:e.error?diagError(e.error):null});};
@@ -480,7 +480,7 @@
         exclude:['#ai-pill-pocket','#ai-pill-os','#eruda','#ai-pocket-snip-overlay'],embedFonts:'auto'
         });
         if(controller.signal.aborted)throw Error('Capture cancelled');
-        const raw=result.toRaw();run.report.serialized={format:typeof raw==='string'?raw.slice(0,40):typeof raw,characters:typeof raw==='string'?raw.length:null,methods:Object.keys(result)};
+        const raw=result.toRaw();if(typeof raw==='string'&&raw.startsWith('data:image/svg+xml')&&raw.length<=2000000)serializedSVG=raw;run.report.serialized={format:typeof raw==='string'?raw.slice(0,40):typeof raw,characters:typeof raw==='string'?raw.length:null,methods:Object.keys(result)};
         recordCapture(run,'rasterizing region',run.report.serialized);checkpointStage(run,'rasterizing region');
         try{return await result.toCanvas();}catch(e){
           run.report.rasterizationError=diagError(e);
@@ -518,13 +518,13 @@
       run.report.error={stage:failedAt,message:redactCSS(String(err?.message||err)),stack:String(err?.stack||'').replace(/https?:\/\/[^\s)]+/g,m=>m.includes('snapdom')?m:'[url omitted]').slice(0,1800)};
       if(failedAt==='loading renderer'){run.report.bundle={present:BUNDLE_PRESENT,expected:CLASSIC_URL,global:typeof window.snapdom,methods:Object.keys(window.snapdom||{})};await checkpointCapture(run);}
       recordCapture(run,'failed');
-      if(!controller.signal.aborted&&regionText){
+      if(!controller.signal.aborted&&(regionText||serializedSVG)){
         try{
-          const r={id:uid(),created:new Date().toISOString(),source,text:'Webpage region (rendered text and references; not a screenshot)\n'+regionText,region:[x,y,w,h],renderer:'region-text'};
-          await store.set(TRAY+r.id,r);const check=await store.get(TRAY+r.id);if(check?.text!==r.text)throw Error('Region context readback failed');
-          run.report.fallback={kind:'region-text',characters:regionText.length,id:r.id};recordCapture(run,'text fallback stored');
+          const r={id:uid(),created:new Date().toISOString(),source,text:(serializedSVG?'Webpage region (deferred visual reconstruction; text context below)':'Webpage region (rendered text and references; not a screenshot)')+'\n'+regionText,region:[x,y,w,h],renderer:serializedSVG?'deferred-svg':'region-text',...(serializedSVG?{svg:serializedSVG}:{})};
+          await store.set(TRAY+r.id,r);const check=await store.get(TRAY+r.id);if(check?.text!==r.text||check.svg!==r.svg)throw Error('Region context readback failed');
+          run.report.fallback={kind:serializedSVG?'deferred-svg':'region-text',characters:regionText.length,svgCharacters:serializedSVG?.length||0,id:r.id};recordCapture(run,serializedSVG?'deferred visual stored':'text fallback stored');
           if(mode==='notes'||mode==='ask')attach(r);view='tray';hideDetail();await load();
-          status('Image capture blocked · region text collected instead.');
+          status(serializedSVG?'Visual captured · rendering deferred to chat.':'Image capture blocked · region text collected instead.');
         }catch(fallbackError){run.report.fallback={error:diagError(fallbackError)};status('Capture failed · '+run.report.error.message);}
       }else status('Capture failed at '+failedAt+' · '+run.report.error.message+' · More → Copy capture report');
     }finally{
@@ -681,7 +681,7 @@
     }catch{}
     return null;
   }
-  function trayText(items){return items.map((r,i)=>'['+(i+1)+'] '+(r.source||'No source')+'\n'+r.text+(r.image?' (Image: copy collected images separately)':'')).join('\n\n');}
+  function trayText(items){return items.map((r,i)=>'['+(i+1)+'] '+(r.source||'No source')+'\n'+r.text+(r.image||r.svg?' (Visual evidence accompanies request; review attachment before sending)':'')).join('\n\n');}
   // Script-initiated same-tab navigation avoids the external-link click path
   // that may dispatch iPadOS universal links to the native ChatGPT app.
   // A userscript cannot select arbitrary existing Safari tabs.
@@ -798,13 +798,13 @@
     const auto=pending?.autoWorker,run=pending?.run,expired=!!auto&&!run&&Date.now()-Date.parse(pending.created)>AUTO_START_TTL;
     const interrupted=!!auto&&!!run&&!['failed','uncertain','done'].includes(run.phase)&&((atChat&&auto!==instance)||(Date.now()-run.at>AUTO_TIMEOUT));
     const manual=!auto||expired||run?.phase==='failed';
-    const fallback=manual||interrupted||run?.phase==='uncertain';
+    const fallback=manual||interrupted||run?.phase==='uncertain'||run?.phase==='prepared';
     const connectionLost=!!auto&&!atChat&&!hasReply&&linkState==='stale';
     if(replyDraftId!==pending?.id){$('reply-compose').open=false;$('worker-recovery').open=false;$('reply-draft').value='';replyDraftId=pending?.id||null;}
-    const imageQuestion=!!pending?.text?.includes('(Image: copy collected images separately)');
+    const imageQuestion=!!pending?.visuals?.length||!!pending?.text?.includes('(Image: copy collected images separately)');
     const recoverDraft=atChat&&run?.phase==='failed'&&!pending.copied&&editorText(chatEditor())===normalizeChat(pending.text)&&!streamActive()&&canSend(sendControl())&&turnText(lastTurn('user'))!==normalizeChat(pending.text);
-    const canRecoverSend=atChat&&!!pending&&!hasReply&&!pending.copied&&(!run||recoverDraft)&&manual&&!imageQuestion&&here===dest&&here.startsWith('https://chatgpt.com/')&&here!=='https://chatgpt.com/';
-    $('worker-send').textContent=recoverDraft?'Send prepared draft':'Send question';
+    const canRecoverSend=atChat&&!!pending&&!hasReply&&!pending.copied&&(!run||recoverDraft)&&manual&&(!imageQuestion||(!run&&!!pending.visuals?.length))&&here===dest&&here.startsWith('https://chatgpt.com/')&&here!=='https://chatgpt.com/';
+    $('worker-send').textContent=recoverDraft?'Send prepared draft':pending?.visuals?.length?'Prepare question':'Send question';
     $('worker-send').hidden=!canRecoverSend;
     $('worker-recovery').hidden=!atChat||hasReply||!(fallback||pending?.copied);
     $('handoff-clear').hidden=atChat&&!fallback;
@@ -824,7 +824,7 @@
       const sentTo=conversationName(pending.target,pending.chatTitle);
       $('handoff-open').title='Open '+sentTo+' in Safari';
       $('handoff-open').setAttribute('aria-label',$('handoff-open').title);
-      $('handoff-status').textContent=hasReply?(atChat?'Answer returned':'Answer received'):pending.copied?'Question copied · awaiting answer':interrupted?'Submission may have occurred · check chat, do not resend':run?.phase==='uncertain'?'Check chat · '+run.detail:run?.phase==='failed'?'Manual fallback · '+run.detail:manual?(expired?'Chat asleep or unavailable · open chat to send':atChat?(canRecoverSend?'Question waiting to be sent':pending.manualReason||'Question needs attention'):pending.manualReason||'Open chat to send'):connectionLost?(run?'Chat connection paused · check selected tab':'Waiting for chat to wake · open chat if needed'):run?.phase==='sent'?'ChatGPT is responding…':run?.phase==='armed'?'Checking submission…':run?.phase==='claimed'?'Sending to ChatGPT…':'Queued for connected chat…';
+      $('handoff-status').textContent=hasReply?(atChat?'Answer returned':'Answer received'):pending.copied?'Question copied · awaiting answer':interrupted?'Submission may have occurred · check chat, do not resend':run?.phase==='uncertain'?'Check chat · '+run.detail:run?.phase==='failed'?'Manual fallback · '+run.detail:run?.phase==='prepared'?'Visual draft prepared · review and send in chat':manual?(expired?'Chat asleep or unavailable · open chat to send':atChat?(canRecoverSend?'Question waiting to be sent':pending.manualReason||'Question needs attention'):pending.manualReason||'Open chat to send'):connectionLost?(run?'Chat connection paused · check selected tab':'Waiting for chat to wake · open chat if needed'):run?.phase==='sent'?'ChatGPT is responding…':run?.phase==='armed'?'Checking submission…':run?.phase==='claimed'?'Sending to ChatGPT…':'Queued for connected chat…';
       // The selected destination is already shown immediately above the answer.
       // Repeat the title only when this response belongs to a different chat.
       if(hasReply&&!atChat){$('handoff-status').textContent=pending.target===target?'Answer':'Answer · '+sentTo;if(/^Question queued|^Question prepared/.test($('status').textContent))status('');}
@@ -866,14 +866,17 @@
       if(text.length>LIMIT){status('Prepared question exceeds 100,000 characters. Remove or split evidence.');return;}
       const heart=await store.get(LINK_HEART),now=Date.now(),isChatGPT=dest.startsWith('https://chatgpt.com/')&&dest!=='https://chatgpt.com/';
       const proved=heart?.target===dest&&heart.version===VERSION&&fresh(heart.at,now)&&heart.editor&&!heart.disabled&&typeof heart.worker==='string'&&((lastProof?.worker===heart.worker&&lastProof.target===dest&&fresh(lastProof.at,now))||(chatURL(location.href)===dest&&heart.worker===instance));
-      const hasImages=items.some(v=>v.image);
+      const visuals=items.filter(v=>v.image||v.svg).map(v=>({id:v.id,data:v.image||v.svg}));
+      if(visuals.length>3||visuals.reduce((n,v)=>n+v.data.length,0)>4000000){status('Select at most three visual items, totaling up to 4 million encoded characters.');return;}
+      const hasImages=visuals.length>0;
       // On iPadOS Safari a suspended tab may miss the heartbeat. Preserve the
       // explicit request, but only a known worker can auto-submit it on resume.
       const knownWorker=heart?.target===dest&&heart.version===VERSION&&typeof heart.worker==='string'?heart.worker:null;
-      const autoWorker=isChatGPT&&!hasImages&&!(proved&&heart.draft)?knownWorker:null;
-      if(isChatGPT&&!hasImages&&proved&&heart.draft){status('The selected chat has an unsent draft. Finish it, then Ask again. Your question is kept.');return;}
-      const manualReason=items.some(v=>v.image)?'Images require manual paste · open chat':!isChatGPT?'Choose an existing ChatGPT conversation for automatic Ask':'Open the selected chat to send the queued question';
-      const id=uid(),r={id,created:new Date().toISOString(),sourcePage:origin,target:dest,chatTitle:conversationName(dest,heart?.target===dest?heart.title:null),text,...(autoWorker?{autoWorker}:{manualReason})};
+      const autoWorker=isChatGPT&&!(proved&&heart.draft)?knownWorker:null;
+      if(isChatGPT&&proved&&heart.draft){status('The selected chat has an unsent draft. Finish it, then Ask again. Your question is kept.');return;}
+      const manualReason=hasImages?'Open selected ChatGPT to prepare visual evidence':!isChatGPT?'Choose an existing ChatGPT conversation for automatic Ask':'Open the selected chat to send the queued question';
+      const id=uid(),r={id,created:new Date().toISOString(),sourcePage:origin,target:dest,chatTitle:conversationName(dest,heart?.target===dest?heart.title:null),text,...(hasImages?{visuals:visuals.map(v=>({id:v.id,characters:v.data.length,kind:v.data.startsWith('data:image/svg+xml')?'svg':'bitmap'}))}:{}),...(autoWorker?{autoWorker}:{manualReason})};
+      if(hasImages){await store.set(VISUAL+id,visuals);const check=await store.get(VISUAL+id);if(!Array.isArray(check)||check.length!==visuals.length||check.some((v,i)=>v.id!==visuals[i].id||v.data!==visuals[i].data)){await store.del(VISUAL+id);throw Error('Visual evidence storage readback failed');}}
       await store.set(HANDOFF+id,r);
       const check=await store.get(HANDOFF+id);if(check?.id!==id||check.text!==text||check.target!==dest)throw Error('Handoff could not be read back');
       await publishMailbox(r);
@@ -929,7 +932,7 @@
   async function clearHandoff(){
     if(!store||!pending||handoffBusy)return;
     const r=pending;if(!confirm('Dismiss this question and any returned answer? Tray and saved items remain.'))return;
-    handoffBusy=true;try{await store.del(HANDOFF+r.id);await store.del(ACK+r.id);await store.del(SEEN+r.id);await store.del(REPLY+r.id);await store.del(RUN+r.id);await removeMailbox(r.id);await load();}finally{handoffBusy=false;}
+    handoffBusy=true;try{await store.del(HANDOFF+r.id);await store.del(ACK+r.id);await store.del(SEEN+r.id);await store.del(REPLY+r.id);await store.del(RUN+r.id);await store.del(VISUAL+r.id);await removeMailbox(r.id);await load();}finally{handoffBusy=false;}
   }
   action('open',async()=>{
     $('open').hidden=true;$('panel').hidden=false;
@@ -1136,7 +1139,7 @@
       }
     }catch(e){traceReadError=String(e?.message||e).slice(0,200);}
     const exactExecution=request?(executionTrace?.id===request.id?executionTrace:[history?.recent?.find(e=>e.id===request.id),history?.historical?.find(e=>e.id===request.id),requestTrace?.execution,savedTrace?.execution].filter(e=>e?.id===request.id).sort((a,b)=>(b.updated||b.started)-(a.updated||a.started))[0]||null):null;
-    return JSON.stringify({version:VERSION,exportedAt:new Date().toISOString(),reportId:uid(),instance,target:linkTarget,state:linkState,challenge,lastProof,lastHeart,ageMs:lastHeart?Date.now()-lastHeart.at:null,error:linkError,visibility:document.visibilityState,intervalMs:LINK_INTERVAL,expiryMs:LINK_TTL,mailbox:'metadata index; direct request keys',autoStartExpiryMs:AUTO_START_TTL,events:linkEvents,uiEvents,watchdog:pulseSnapshot(),priorPulse,history,retention:{full:HISTORY_FULL,compact:HISTORY_COMPACT,failureExamples:HISTORY_EXAMPLES,distinctFailureSignatures:HISTORY_SIGNATURES,journal:'per tab, survives ordinary reload; sessionStorage'},live,environment:{surface:here?chatSurface():null,storage:modern?'GM async':legacy?'GM legacy':'unavailable',viewport:[innerWidth,innerHeight],visualViewport:window.visualViewport?[window.visualViewport.width,window.visualViewport.height]:null,hasFocus:document.hasFocus(),clipboard:!!navigator.clipboard,position:dock},selfTest:lastSelfTest||savedTrace?.selfTest||null,execution:exactExecution||(!request?(executionTrace||savedTrace?.execution||null):null),latestConversationExecution:request&&!exactExecution?(savedTrace?.execution||null):null,traceReadError,traceError,clipboard:lastCopy,request:request?{id:request.id,target:request.target,chatTitle:request.chatTitle||null,created:request.created,worker:request.autoWorker||null,promptCharacters:request.text?.length||0,seen:request.seen,copied:request.copied,returned:!!request.reply,manualReason:request.manualReason||null,run:request.run,receipts}:null,scope:'Exact request trace when available, recent UI and connection events, live worker DOM and receipt metadata. No custom prompt or answer body. Archive retains recent full executions, compact history, aggregate outcomes and bounded rare failure examples; journal survives ordinary refresh. Latest conversation execution is separate when it belongs to another request.'},null,2);}
+    return JSON.stringify({version:VERSION,exportedAt:new Date().toISOString(),reportId:uid(),instance,target:linkTarget,state:linkState,challenge,lastProof,lastHeart,ageMs:lastHeart?Date.now()-lastHeart.at:null,error:linkError,visibility:document.visibilityState,intervalMs:LINK_INTERVAL,expiryMs:LINK_TTL,mailbox:'metadata index; direct request keys',autoStartExpiryMs:AUTO_START_TTL,events:linkEvents,uiEvents,watchdog:pulseSnapshot(),priorPulse,history,retention:{full:HISTORY_FULL,compact:HISTORY_COMPACT,failureExamples:HISTORY_EXAMPLES,distinctFailureSignatures:HISTORY_SIGNATURES,journal:'per tab, survives ordinary reload; sessionStorage'},live,environment:{surface:here?chatSurface():null,storage:modern?'GM async':legacy?'GM legacy':'unavailable',viewport:[innerWidth,innerHeight],visualViewport:window.visualViewport?[window.visualViewport.width,window.visualViewport.height]:null,hasFocus:document.hasFocus(),clipboard:!!navigator.clipboard,position:dock},selfTest:lastSelfTest||savedTrace?.selfTest||null,execution:exactExecution||(!request?(executionTrace||savedTrace?.execution||null):null),latestConversationExecution:request&&!exactExecution?(savedTrace?.execution||null):null,traceReadError,traceError,clipboard:lastCopy,request:request?{id:request.id,target:request.target,chatTitle:request.chatTitle||null,created:request.created,worker:request.autoWorker||null,promptCharacters:request.text?.length||0,visuals:request.visuals||[],seen:request.seen,copied:request.copied,returned:!!request.reply,manualReason:request.manualReason||null,run:request.run,receipts}:null,scope:'Exact request trace when available, recent UI and connection events, live worker DOM and receipt metadata. No custom prompt or answer body. Archive retains recent full executions, compact history, aggregate outcomes and bounded rare failure examples; journal survives ordinary refresh. Latest conversation execution is separate when it belongs to another request.'},null,2);}
   action('link-report',copyConnectionReport);
   function extractPocketAnswer(last) {
     if(!last)return '';
@@ -1382,6 +1385,20 @@
   }
   function sendEvidence(baseline,expected){const e=chatEditor(),b=sendControl(),current=fingerprint();return {editor:!!e,draftMatches:editorText(e)===expected,expectedCharacters:expected.length,actualCharacters:editorText(e).length,turnMatches:sameTurn(baseline,current),baselineId:baseline.id,currentId:current.id,baselineCount:baseline.count,currentCount:current.count,streaming:streamActive(),attachments:composerAttachments(e),sendCandidates:sendCandidates().map(n=>({label:n.getAttribute('aria-label'),type:n.type,testid:n.dataset.testid||null,disabled:n.disabled||n.getAttribute('aria-disabled')==='true'})),sendEnabled:canSend(b)};}
   function sendBlock(g){return !g.editor?'Composer disappeared':!g.draftMatches?'Composer text changed':!g.turnMatches?'Latest user turn changed':g.streaming?'Chat is generating':g.attachments?'Attachments present':!g.sendEnabled?'Send control unavailable or disabled':null;}
+  // Decode only as an image, never mount source-origin HTML/SVG in ChatGPT.
+  function visualBlob(data){const comma=data.indexOf(','),header=data.slice(0,comma),body=data.slice(comma+1),m=/^data:(image\/(?:svg\+xml|png|jpeg|webp))(?:;[^,]*)?$/i.exec(header);if(comma<0||!m)throw Error('Unsupported visual format');return new Blob([header.includes(';base64')?Uint8Array.from(atob(body),c=>c.charCodeAt(0)):decodeURIComponent(body)],{type:m[1]});}
+  function boundedVisual(promise,ms=10000){let timer;return Promise.race([promise,new Promise((_,reject)=>{timer=setTimeout(()=>reject(Error('Visual operation timed out')),ms);})]).finally(()=>clearTimeout(timer));}
+  async function renderVisual(r,v,index){
+    const blob=visualBlob(v.data);let image=null,method='native-image-data-url';
+    if(blob.type==='image/svg+xml'){
+      try{const im=new Image();im.src=v.data;await boundedVisual(im.decode());image=im;}catch(e){testStage(r,'visual-decode-failed','Destination image URL decode failed',{method,error:String(e?.message||e).slice(0,160)});method='ImageBitmap';image=await boundedVisual(createImageBitmap(blob));}
+    }else{method='ImageBitmap';image=await boundedVisual(createImageBitmap(blob));}
+    try{const w=image.naturalWidth||image.width,h=image.naturalHeight||image.height;if(!w||!h)throw Error('Visual decoded with no dimensions');const scale=Math.min(1,1600/Math.max(w,h)),c=document.createElement('canvas');c.width=Math.max(1,Math.round(w*scale));c.height=Math.max(1,Math.round(h*scale));const ctx=c.getContext('2d');ctx.drawImage(image,0,0,c.width,c.height);const samples=[];for(const x of [.1,.5,.9])for(const y of [.1,.5,.9])samples.push(Array.from(ctx.getImageData(Math.min(c.width-1,Math.floor(c.width*x)),Math.min(c.height-1,Math.floor(c.height*y)),1,1).data));if(samples.every(a=>a[3]===0))throw Error('Decoded visual appears transparent');const png=await boundedVisual(new Promise((resolve,reject)=>c.toBlob(b=>b?resolve(b):reject(Error('PNG encoding failed')),'image/png')));testStage(r,'visual-rendered','Destination rasterized visual',{index,method,dimensions:[c.width,c.height],bytes:png.size,samples});return new File([png],'pocket-'+r.id.slice(0,8)+'-'+(index+1)+'.png',{type:'image/png'});}finally{image?.close?.();}
+  }
+  async function prepareVisualFiles(r){
+    const v=await store.get(VISUAL+r.id);if(!Array.isArray(v)||v.length!==r.visuals.length||v.some((a,i)=>a.id!==r.visuals[i].id||typeof a.data!=='string'||a.data.length!==r.visuals[i].characters))throw Error('Visual payload missing or changed');
+    const files=[];for(let i=0;i<v.length;i++)files.push(await renderVisual(r,v[i],i));return files;
+  }
   async function startAsk(r){
     let attempted=false;
     try{
@@ -1396,6 +1413,8 @@
         await markRun(r,'failed','Chat is busy or contains a draft. No send attempted.');return;
       }
       const baseline=fingerprint(),expected=normalizeChat(r.text);
+      const files=r.visuals?.length?await prepareVisualFiles(r):[];
+      if(files.length&&(!await allowedDestination(r)||!await ownsRequest(r)||chatEditor()!==editor||editorText(editor)||composerAttachments(editor)||streamActive()||!sameTurn(baseline,fingerprint())))throw Error('Composer or destination changed while rendering');
       editor.focus({preventScroll:true});
       testStage(r,'focus','Composer focus attempted');
       if(document.activeElement!==editor||editorText(editor)||composerAttachments(editor)){await markRun(r,'failed','Composer focus or empty draft not verified. No send attempted.');return;}
@@ -1405,6 +1424,19 @@
       testStage(r,'insert-attempt','insertText invoked',{commandReturned:!!inserted,expectedCharacters:expected.length,actualCharacters:editorText(chatEditor()).length});
       if(editorText(chatEditor())!==expected){await markRun(r,'failed','Composer insertion not verified. Check draft before manual paste.');return;}
       testStage(r,'inserted','Composer insertion verified');
+      if(files.length){
+        if(!await allowedDestination(r)||!await ownsRequest(r)||editorText(chatEditor())!==expected||!sameTurn(baseline,fingerprint())||composerAttachments(chatEditor())||streamActive())throw Error('Visual draft changed before paste');
+        const transfer=new DataTransfer();for(const f of files)transfer.items.add(f);
+        const e=chatEditor();e.focus({preventScroll:true});const evt=new ClipboardEvent('paste',{bubbles:true,cancelable:true,composed:true,clipboardData:transfer});
+        e.dispatchEvent(evt);testStage(r,'visual-paste-dispatched','PNG files offered to native composer',{files:files.map(f=>({name:f.name,bytes:f.size})),defaultPrevented:evt.defaultPrevented});
+        const until=Date.now()+12000;while(Date.now()<until&&!composerAttachments(chatEditor())&&sameTurn(baseline,fingerprint()))await new Promise(resolve=>setTimeout(resolve,200));
+        if(!composerAttachments(chatEditor())||editorText(chatEditor())!==expected)throw Error('Image attachment not observed. Inspect composer; no send attempted');
+        // Attachment presence is not upload completion or identity proof. Keep
+        // the existing text-only send guard; the user reviews and sends once.
+        activeAsk={r,baseline,expected,started:Date.now(),user:null,seenBusy:false,answer:'',stableAt:0,assistantID:null,assistantNode:null,manualVisual:true};
+        if(!await markRun(r,'prepared','Visual attachment detected; review and press Send in chat'))activeAsk=null;
+        return;
+      }
       const deadline=Date.now()+8000;
       while(Date.now()<deadline&&!canSend(sendControl()))await new Promise(resolve=>setTimeout(resolve,150));
       const guard=sendEvidence(baseline,expected),block=sendBlock(guard);
@@ -1443,7 +1475,7 @@
         testStage(r,'user-verified','New user turn matched submitted text',{userId:current.id,userCount:current.count});
         if(!await markRun(r,'sent','Matching new user turn observed')){activeAsk=null;return;}
       }else{
-        if(now-a.started>45000)await finishAsk(a,'uncertain','Matching user turn not observed after send attempt');
+        if(!a.manualVisual&&now-a.started>45000)await finishAsk(a,'uncertain','Matching user turn not observed after send attempt');
         return;
       }
     }
