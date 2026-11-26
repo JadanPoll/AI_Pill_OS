@@ -1,6 +1,6 @@
 {
   "schema": "ai_pill_os.capability_atlas",
-  "version": 9,
+  "version": 10,
   "updated": "2026-11-25",
   "purpose": "Can I operate at the speed of thought? Living design inventory, not a promise of implementation.",
   "design_rules": {
@@ -87,7 +87,11 @@
     "switch_recipe": "https://mattpopovich.com/posts/ios-built-in-auto-clicker-full-guide/",
     "voice_replay": "https://www.reddit.com/r/shortcuts/comments/fk8fsg/",
     "voice_switch": "https://www.reddit.com/r/shortcuts/comments/r7bx67/",
-    "voice_negative": "https://www.reddit.com/r/shortcuts/comments/1h3538u/"
+    "voice_negative": "https://www.reddit.com/r/shortcuts/comments/1h3538u/",
+    "pocket": "https://github.com/JadanPoll/AI_Pill_OS/blob/main/Pocket.user.js",
+    "gm_storage": "https://github.com/quoid/userscripts/blob/main/README.md",
+    "gm_scope": "https://stackoverflow.com/questions/77011466/how-do-i-access-the-same-json-file-from-two-different-tampermonkey-scripts",
+    "copy_screenshot": "https://www.reddit.com/r/shortcuts/comments/1nn8qc4/"
   },
   "capabilities": [
     {
@@ -125,6 +129,7 @@
       ],
       "why": "Visual context is essential for figures, equations, UI state, remote desktops and bugs; avoids explaining what is already visible.",
       "mechanisms": [
+        "Native Copy Screenshot Shortcut: Take Screenshot -> Copy to Clipboard; manually paste image into current web chat. Preserve existing screenshot binding until tested.",
         "Screenshot share sheet or Take Screenshot action; choose image; attach to supported AI app; OCR only when text is needed",
         "Optional explicit crop/redaction",
         "Take Screenshot -> Dictate Text -> Minis Send Prompt with image attachment -> Response; compare supported Receive What's On Screen for structured context."
@@ -139,7 +144,8 @@
         "assistive",
         "shortcuts",
         "minis_send",
-        "onscreen"
+        "onscreen",
+        "copy_screenshot"
       ],
       "boundary": "No automatic silent uploads; protected content and current-screen capture may be restricted; image model input/return must be tested."
     },
@@ -246,6 +252,7 @@
       ],
       "why": "Make intelligence callable without reconstructing page context or switching research modes.",
       "mechanisms": [
+        "Primary: existing signed-in Safari ChatGPT/Gemini web conversations, explicit contextual copy/paste; improve navigation/transfer before considering separate inference.",
         "Explicit ChatGPT/Gemini handoff initially",
         "Shortcuts Use Model or eligible official subscription transport",
         "Separate API if useful"
@@ -303,6 +310,7 @@
       ],
       "why": "Many good questions disappear because categorization or repository navigation interrupts the encounter.",
       "mechanisms": [
+        "Pocket.user.js v0.1.1: one script across sites using GM storage, explicit text/link/JSON capture, local search and copy, source/time provenance, copy-all JSON export. One key per record avoids global read-modify-write collisions.",
         "One local JSON inbox with stable ID, source, capture time, kind and optional note",
         "Existing Kami/FKEN adapters; explicit review before canonical commit"
       ],
@@ -315,9 +323,12 @@
         "kami",
         "ecosystem",
         "FKEN",
-        "gigs"
+        "gigs",
+        "pocket",
+        "gm_storage",
+        "gm_scope"
       ],
-      "boundary": "No duplication of canonical research; private captures stay local until reviewed."
+      "boundary": "No duplication of canonical research; private captures stay local until reviewed. Syntax-checked prototype; actual manager cross-origin storage and update persistence unverified. Same-script scope only; no secret storage, network upload or cross-device sync. Default source strips query/fragment; correct it explicitly when necessary."
     },
     {
       "id": "persist.annotation",
@@ -463,7 +474,7 @@
       "id": "compute.bridge",
       "name": "Safari/Shortcuts to iSH",
       "family": "computation",
-      "priority": "P1",
+      "priority": "P2",
       "status": "candidate",
       "intentions": [
         "Run a local calculation",
@@ -492,7 +503,7 @@
       "id": "compute.remote",
       "name": "Run work on available compute",
       "family": "computation",
-      "priority": "P1",
+      "priority": "P2",
       "status": "existing_precedent",
       "intentions": [
         "Run this build",
@@ -520,7 +531,7 @@
       "id": "compute.update",
       "name": "Accelerated code and Shortcut delivery",
       "family": "computation",
-      "priority": "P1",
+      "priority": "P0",
       "status": "candidate",
       "intentions": [
         "Update the pill",
@@ -534,7 +545,7 @@
         "Cherri iPad/browser compile/sign/import; Viticci Shortcuts Playground Codex/Claude Code validation and signing; iPadOS 27 Describe a Shortcut on eligible devices"
       ],
       "depends_on": [],
-      "acceptance": "Update a versioned real script, verify visible version and behavior, roll back; separately prove one Cherri Shortcut imports and runs.",
+      "acceptance": "Update one userscript from raw GitHub, verify visible version and preserved Pocket data, roll back if needed. Native Shortcut authoring only when a real OS-only requirement arises.",
       "week_later": "One update path and one rollback; no repeated manual block construction when avoidable.",
       "sources": [
         "userscripts",
@@ -803,7 +814,7 @@
       "id": "intelligence.shortcut",
       "name": "Native model transport canary",
       "family": "development",
-      "priority": "P0",
+      "priority": "P2",
       "status": "candidate",
       "intentions": [
         "Ask ChatGPT from the pill",
@@ -828,13 +839,13 @@
         "minis_status",
         "minis_builder"
       ],
-      "boundary": "Requires an eligible device or supported ChatGPT app action; no assumption of installed Shortcut or automatic callback. Upstream Swift implements structured result; installed-version behavior and background limits untested."
+      "boundary": "Requires an eligible device or supported ChatGPT app action; no assumption of installed Shortcut or automatic callback. Upstream Swift implements structured result; installed-version behavior and background limits untested. Deferred by user; no new model transport unless a real task requires it."
     },
     {
       "id": "control.dispatch",
       "name": "Stable native invocation with replaceable implementation",
       "family": "control",
-      "priority": "P0",
+      "priority": "P1",
       "status": "candidate",
       "intentions": [
         "Ask about this",
@@ -942,17 +953,11 @@
     }
   ],
   "next_experiments": [
-    "Minis Send Prompt with Wait for Result on: test clipboard text, inspect returned Status/Response/Session ID; then real Kami screenshot attachment and Safari report. Keep explicit review before execution.",
-    "Inspect Set Switch Control Switch State action parameters; test one supervised harmless voice playback canary only if needed. Prefer native structured channels.",
-    "Use the current userscript version for real inspect/record/source excerpt and read-only plan handoff; preserve device-side failures.",
-    "Test native Describe a Shortcut if available; otherwise compile/sign/import one minimal Cherri shortcut. Bind a non-screenshot accessibility trigger once and test a reviewed implementation update without rebinding. Test native Voice Control on AI Pill accessible button names; no new custom voice recognizer.",
-    "v0.3.0: cold-demo Inspect/Record/Sources/DevTools; record while closed and stop after reopening; verify contextual Copy and source search; revisit usefulness after a week and a month.",
-    "Choose one heavily used site and compare two or three representative recurring tasks in its stock and specialized UI; preserve existing scripts and validate on iPad Safari before changing defaults.",
-    "Preserve existing AssistiveTouch double tap; manually test screenshot+question handoff.",
-    "Enable Voice Control and test known native commands; then test dictation to a minimal DOM pill on GitHub/Kami.",
-    "Test inference transport separately from browser execution.",
-    "Use iSH for a real JSON operation, then a short loopback request and app-switch recovery test only if valuable.",
-    "Capture and resume one real Kami/FKEN investigation before inventing a new state system."
+    "Install Pocket.user.js v0.1.1 on two trusted sites. Save selected text plus provenance on Wikipedia/GitHub, open on ChatGPT, copy it into a real conversation, reload and verify persistence. Test copy-all JSON; no fallback to per-origin storage.",
+    "Create Copy Screenshot with Take Screenshot -> Copy to Clipboard, invoke on a real diagram or UI problem, paste into web ChatGPT/Gemini. Preserve existing screenshot gesture until it works.",
+    "Use current AI Pill DevTools to capture one actual defect, move evidence through Pocket or native clipboard, make a real script improvement, and reload. Verify version and stored data across an update.",
+    "After a week, compare app switches, copy operations and discoverability; unify launcher only if useful. Defer native/general agent integration unless recurring workflow demands it.",
+    "Test a direct selected passage-to-source-linked Kami/FKEN workflow using existing scripts; defer cross-script adapters until shared data contract is justified."
   ],
   "observations": [
     {
@@ -1005,7 +1010,9 @@
     "A capability earning its existence does not imply its control earns permanent screen space. Familiar icon, contextual appearance, secondary control and removal are distinct choices.",
     "Accessibility is an input layer, Shortcuts a native capability layer, and reviewed versioned code/data a replaceable implementation layer. Keep the binding stable while iterating behind it.",
     "OpenMinis and iCTRL materially change the build-versus-reuse decision. The unique value of AI Pill OS may be specialized personal interfaces and context/action routing, not a new general agent harness.",
-    "Use Minis App Intents as the first inference transport; separate evidence capture, model execution, and action execution. A reported built-in browser success does not certify Safari access."
+    "Use Minis App Intents as the first inference transport; separate evidence capture, model execution, and action execution. A reported built-in browser success does not certify Safari access.",
+    "Safari-first is a deliberate locality decision: keep cognition and iteration in the already-open workspace. Stable native bridges should be rare; general-purpose agent functionality does not justify a second everyday workspace.",
+    "Pocket is a narrow cross-site shared memory, not a new knowledge lake. GM storage belongs to the same installed script, not automatically every script. Preserve canonical Kami/FKEN data and use explicit export/reconciliation."
   ],
   "site_scripts": {
     "purpose": "A collection of focused personal interface implementations. Existing code remains canonical in its own repository; this is a source index, not duplicate scripts or a universal injected runtime.",
@@ -1183,7 +1190,7 @@
         "boundary": "Gateway required; not equivalent to unrestricted local app control."
       }
     ],
-    "decision": "Try OpenMinis on the target iPad first with a supported model connection and one real Git/JSON or research task; no new agent runtime before evaluating fit. Keep existing personalized userscripts and DevTools. Investigate iCTRL signing/setup separately only if native UI control has material recurring utility. Borrow Relay's contextual capture and Talon's semantic command language, not every feature."
+    "decision": "Preserve OpenMinis acceptance as evidence; defer integration and default use unless a specific task materially benefits. Primary loop remains Safari userscripts and existing web chats."
   },
   "minis_acceptance": {
     "date": "2026-11-25",
@@ -1251,10 +1258,25 @@
     "path": "research/INVESTIGATION_TREE.json",
     "purpose": "Mechanism-independent RSM question landscape and selected investigations with source-linked certificates, stopping/reopening conditions and prioritized device tests.",
     "active_queue": [
-      "I5",
-      "I2",
-      "I3",
+      "I13",
+      "I14",
       "I12"
     ]
+  },
+  "current_strategy": {
+    "date": "2026-11-25",
+    "primary": "Safari userscripts, web ChatGPT/Gemini with explicit user handoff",
+    "secondary": "Few stable native Shortcuts for OS-only actions; first Copy Screenshot",
+    "deferred": [
+      "OpenMinis integration",
+      "iCTRL",
+      "standalone iSH",
+      "new inference APIs",
+      "automatic consumer UI extraction",
+      "backend or universal agent runtime"
+    ],
+    "reason": "User prioritizes portability, minimal app switching and maintenance, and rapid GitHub iteration from web chat. Existing Minis acceptance preserved; use specialist only when concrete task justifies switching.",
+    "acceptance": "Cross-site capture and recall of real data, screenshot paste into web chat, and one actual userscript fix in Safari before further integration.",
+    "limits": "Web consumer plans may have limits; no separate API billing assumed."
   }
 }
