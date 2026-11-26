@@ -123,6 +123,7 @@
     $('draft').placeholder=mode==='notes'?'Write a note…':'What do you want to know or do?';
     if(mode==='notes'){hideDetail();render();}
     if(mode==='ask')paintAttachments();
+    renderConnection();
   }
   function pageContext(){
     const body=document.querySelector('article')||document.querySelector('main')||document.body;
@@ -582,7 +583,7 @@
   const cleanChatTitle=v=>String(v||'').replace(/\s+/g,' ').trim().slice(0,160);
   function localChatTitle(){return cleanChatTitle(document.title).replace(/\s*[|–—-]\s*(ChatGPT|Google Gemini|Gemini)\s*$/i,'').trim();}
   const chatTitles=new Map();
-  function conversationName(dest,title){const name=cleanChatTitle(title||chatTitles.get(dest));if(name&&!/^(ChatGPT|Gemini|Google Gemini|New chat)$/i.test(name))return name;if(!dest)return 'Choose a chat';const id=dest.split('/').filter(Boolean).at(-1);return dest==='https://chatgpt.com/'?'New chat':(dest.includes('chatgpt.com')?'ChatGPT':'Gemini')+' · '+id.slice(-8);}
+  function conversationName(dest,title){const name=[title,chatTitles.get(dest)].map(cleanChatTitle).find(v=>v&&!/^(ChatGPT|Gemini|Google Gemini|New chat|(?:ChatGPT|Gemini) · [a-z0-9-]+)$/i.test(v));if(name)return name;if(!dest)return 'Choose a chat';const id=dest.split('/').filter(Boolean).at(-1);return dest==='https://chatgpt.com/'?'New chat':(dest.includes('chatgpt.com')?'ChatGPT':'Gemini')+' · '+id.slice(-8);}
   async function rememberTitle(dest,title){const name=cleanChatTitle(title);if(!dest||!name||/^(ChatGPT|Gemini|Google Gemini|New chat)$/i.test(name))return;if(chatTitles.get(dest)===name)return;chatTitles.set(dest,name);await store.set(TITLE+dest,name);}
   async function readTitle(dest){if(!dest||!store)return;const name=cleanChatTitle(await store.get(TITLE+dest));if(name)chatTitles.set(dest,name);renderConnection();}
   function paintTarget(){
@@ -718,7 +719,7 @@
       $('handoff-status').textContent=hasReply?(atChat?'Answer returned':'Answer received'):pending.copied?'Question copied · awaiting answer':interrupted?'Submission may have occurred · check chat, do not resend':run?.phase==='uncertain'?'Check chat · '+run.detail:run?.phase==='failed'?'Manual fallback · '+run.detail:manual?(expired?'Chat asleep or unavailable · open chat to send':atChat?(canRecoverSend?'Question waiting to be sent':pending.manualReason||'Question needs attention'):pending.manualReason||'Open chat to send'):connectionLost?(run?'Chat connection paused · check selected tab':'Waiting for chat to wake · open chat if needed'):run?.phase==='sent'?'ChatGPT is responding…':run?.phase==='armed'?'Checking submission…':run?.phase==='claimed'?'Sending to ChatGPT…':'Queued for connected chat…';
       // The selected destination is already shown immediately above the answer.
       // Repeat the title only when this response belongs to a different chat.
-      if(hasReply&&!atChat)$('handoff-status').textContent=pending.target===target?'Answer':'Answer · '+sentTo;
+      if(hasReply&&!atChat){$('handoff-status').textContent=pending.target===target?'Answer':'Answer · '+sentTo;if(/^Question queued|^Question prepared/.test($('status').textContent))status('');}
       else if(!atChat&&pending.target!==target)$('handoff-status').textContent+=' · '+sentTo;
     }else $('handoff-open').removeAttribute('href');
   }
