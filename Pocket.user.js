@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         AI Pill OS - Pocket
 // @namespace    https://github.com/JadanPoll/AI_Pill_OS
-// @version      0.1.0
+// @version      0.1.1
 // @description  A small cross-site pocket for text, links, questions and JSON; save and recall in Safari.
 // @match        https://*/*
 // @match        http://*/*
@@ -19,7 +19,7 @@
 (() => {
   'use strict';
   if (window.top !== window || document.getElementById('ai-pill-pocket')) return;
-  const VERSION='0.1.0', PREFIX='pocket.v1.', LIMIT=100000, MAX_ITEMS=250;
+  const VERSION='0.1.1', PREFIX='pocket.v1.', LIMIT=100000, MAX_ITEMS=250;
   // Deliberately no localStorage fallback: that would appear to work but silently
   // partition the data by site. Only this installed script owns these GM keys.
   const modern=typeof GM!=='undefined' && ['getValue','setValue','listValues','deleteValue'].every(k=>typeof GM[k]==='function');
@@ -39,11 +39,11 @@
     '<div class="row"><input id="filter" class="grow" placeholder="Find saved items…" aria-label="Find saved items">'+btn('refresh','refresh','Refresh saved items')+'</div><small id="count"></small><div id="list"></div>'+
     '<section id="detail" hidden><div class="row"><small class="grow" id="meta"></small>'+btn('copy','copy','Copy selected text','Copy')+'<button id="done">Back</button></div><pre id="body"></pre><details><summary>More</summary><div class="row"><button id="copy-record">Copy with source</button><button id="remove">Delete</button></div></details></section>'+
     '<details><summary>More</summary><div class="row"><button id="export">Copy all as JSON</button></div><small>Local userscript storage. Do not save credentials or other secrets. Enable only on trusted sites. No automatic upload.</small></details>'+
-    '<div id="status" role="status"></div></section>';
+    '<textarea id="fallback" hidden rows="4" readonly aria-label="Manual copy fallback"></textarea><div id="status" role="status"></div></section>';
   document.documentElement.append(host);
   let records=[],selected=null,busy=false,loadEpoch=0;
   const status=t=>$('status').textContent=t;
-  const action=(id,fn)=>{$(id).addEventListener('click',e=>{if(!e.isTrusted)return;Promise.resolve().then(fn).catch(err=>status('Error: '+String(err?.message||err).slice(0,250)));});};
+  const action=(id,fn)=>{$(id).addEventListener('click',e=>{if(!e.isTrusted)return;try{Promise.resolve(fn()).catch(err=>status('Error: '+String(err?.message||err).slice(0,250)));}catch(err){status('Error: '+String(err?.message||err).slice(0,250));}});};
   function sourceURL(){try{const u=new URL(location.href);return u.origin+u.pathname;}catch{return '';}}
   function selection(){
     const s=window.getSelection();if(!s||s.isCollapsed)return '';
@@ -91,7 +91,7 @@
     if(text.length>LIMIT||source.length>2000){status('Item too large (100,000 text characters / 2,000 source characters). Split it first.');return;}
     busy=true;$('save').disabled=true;
     try{
-      const keys=(await store.keys()).filter(k=>k.startsWith(PREFIX));
+      const keys=(await store.keys()).filter(k=>typeof k==='string'&&k.startsWith(PREFIX));
       if(keys.length>=MAX_ITEMS){status('Pocket full (250 items). Export and remove old items before saving.');return;}
       const id=globalThis.crypto?.randomUUID?.()||Date.now().toString(36)+'-'+Math.random().toString(36).slice(2);
       const r={id,created:new Date().toISOString(),source,text};
@@ -102,10 +102,10 @@
     }finally{busy=false;$('save').disabled=false;}
   }
   async function copyText(t){
-    try{await navigator.clipboard.writeText(t);status('Copied. Paste into the destination.');}
+    try{await navigator.clipboard.writeText(t);$('fallback').hidden=true;$('fallback').value='';status('Copied. Paste into the destination.');}
     catch{
       // Fallback lets the user explicitly select/copy even when Safari denies clipboard API.
-      $('draft').value=t;$('draft').focus();$('draft').select();status('Clipboard API unavailable. Use native Copy on the selected text.'); 
+      $('fallback').hidden=false;$('fallback').value=t;$('fallback').focus();$('fallback').select();status('Clipboard API unavailable. Use native Copy on the selected text.'); 
     }
   }
   action('open',async()=>{
@@ -113,7 +113,7 @@
     if(!$('draft').value){$('draft').value=picked||selection();$('source').value=sourceURL();}
     picked='';await load();
   });
-  action('close',()=>{hideDetail();records=[];$('list').replaceChildren();$('panel').hidden=true;$('open').hidden=false;});
+  action('close',()=>{++loadEpoch;hideDetail();$('fallback').hidden=true;$('fallback').value='';records=[];$('list').replaceChildren();$('panel').hidden=true;$('open').hidden=false;});
   action('save',save);action('refresh',load);
   $('filter').addEventListener('input',e=>{if(e.isTrusted){hideDetail();render();}});
   action('done',hideDetail);
