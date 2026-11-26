@@ -1,0 +1,585 @@
+{
+  "schema": "ai_pill_os.rsm_investigation",
+  "version": 1,
+  "updated": "2026-11-25",
+  "parent_purpose": "Reduce mechanical distance from human intention to useful realization; preserve agency, context, and recoverability.",
+  "scope": "iPad-first everyday research and software engineering; not full OS automation for its own sake.",
+  "method_trace": [
+    {
+      "decision": "Separate question landscape from selected investigations",
+      "clause": "RSM-05.01–05.02",
+      "why": "A question need not earn an experiment."
+    },
+    {
+      "decision": "Move from TTS/Voice Control to functional execution requirements",
+      "clause": "RSM-02.09–02.12",
+      "why": "Negative acoustic result does not refute parent purpose."
+    },
+    {
+      "decision": "Factor input, perception, intelligence, execution, continuity and improvement",
+      "clause": "RSM-03.01–03.03",
+      "why": "Avoid assuming shared app/process or same implementation."
+    },
+    {
+      "decision": "Research native contracts before target experiments",
+      "clause": "RSM-02.04; RSM-04.01–04.02",
+      "why": "Existing implementation evidence can eliminate speculative work."
+    },
+    {
+      "decision": "Stop or defer branches when answers no longer change action",
+      "clause": "RSM-02.05–02.06; RSM-04.07",
+      "why": "Bound cost and preserve reopening conditions."
+    }
+  ],
+  "sources": {
+    "rsm": "https://github.com/JadanPoll/Learning_Visualizations_Taxonomy/blob/main/Navigationals/The_Richer_Scientific_Method.md",
+    "atlas": "https://github.com/JadanPoll/AI_Pill_OS/blob/main/capabilities.json",
+    "pill": "https://github.com/JadanPoll/AI_Pill_OS/blob/main/AI_Pill.user.js",
+    "voice": "https://support.apple.com/en-ie/118275",
+    "siri": "https://support.apple.com/guide/shortcuts/run-shortcuts-with-siri-apd07c25bb38/ios",
+    "assistive": "https://support.apple.com/en-mide/guide/ipad/ipad9a2466d3/ipados",
+    "vocal": "https://support.apple.com/guide/iphone/use-vocal-shortcuts-iph7f242ea2c/27/ios/27",
+    "onscreen": "https://support.apple.com/guide/shortcuts/apd350ce757a/ios",
+    "safari_js": "https://support.apple.com/en-euro/guide/shortcuts/apd218e2187d/ios",
+    "safari_multiple": "https://support.apple.com/en-asia/guide/shortcuts/apdb71a01d93/ios",
+    "minis_send": "https://github.com/OpenMinis/OpenMinis/blob/main/src/ios/Agent/Intents/SendPromptIntent.swift#L10-L45",
+    "minis_wait": "https://github.com/OpenMinis/OpenMinis/blob/main/src/ios/Agent/Intents/SendPromptIntent.swift#L230-L276",
+    "minis_result": "https://github.com/OpenMinis/OpenMinis/blob/main/src/ios/Agent/Intents/SendPromptResult.swift",
+    "minis_share": "https://github.com/OpenMinis/OpenMinis/blob/main/src/ios/ShareExtension/Info.plist",
+    "builder": "https://github.com/OpenMinis/MinisSkills/tree/main/shortcuts-builder",
+    "callback": "https://support.apple.com/en-asia/guide/shortcuts/apdcd7f20a6f/ios",
+    "url_scheme": "https://support.apple.com/en-ie/guide/shortcuts/apd624386f42/10.0/ios/27",
+    "appintents": "https://developer.apple.com/documentation/appintents",
+    "native_extension": "https://developer.apple.com/documentation/safariservices/messaging-between-the-app-and-javascript-in-a-safari-web-extension",
+    "extension_limit": "https://developer.apple.com/forums/thread/835330",
+    "switch_action": "https://support.apple.com/en-ng/121131",
+    "switch_description": "https://macnative.com/list-of-settings-actions-for-ios-shortcuts/",
+    "switch_recipe": "https://support.apple.com/en-mide/guide/iphone/-iph400b2f114/ios",
+    "audio_positive": "https://www.reddit.com/r/shortcuts/comments/r7bx67/",
+    "audio_mixed": "https://www.reddit.com/r/shortcuts/comments/fk8fsg/",
+    "audio_negative": "https://www.reddit.com/r/shortcuts/comments/k9acz0/",
+    "audio_recent": "https://www.reddit.com/r/shortcuts/comments/1h3538u/",
+    "ictrl": "https://github.com/OpenMinis/iCTRL",
+    "xcui": "https://developer.apple.com/documentation/XCUIAutomation",
+    "hid": "https://github.com/ClosedLadder/ipad-hid-control",
+    "hid2": "https://github.com/StefanYasin/phonepilot",
+    "relay": "https://github.com/rishiv7/relay",
+    "describe": "https://shortcutjar.com/describe/documentation/",
+    "archive": "https://www.macstories.net/Shortcuts/",
+    "talon": "https://github.com/cursorless-dev/cursorless"
+  },
+  "question_tree": [
+    {
+      "id": "Q0",
+      "parent": null,
+      "question": "Can I operate at the speed of thought?",
+      "why": "Recover the goal independent of implementations."
+    },
+    {
+      "id": "Q1",
+      "parent": "Q0",
+      "question": "How can I express intentions with minimal friction?",
+      "children": [
+        "Q1.1",
+        "Q1.2",
+        "Q1.3"
+      ]
+    },
+    {
+      "id": "Q1.1",
+      "parent": "Q1",
+      "question": "Which native voice and physical triggers are available?"
+    },
+    {
+      "id": "Q1.2",
+      "parent": "Q1",
+      "question": "Can a small stable vocabulary invoke diverse workflows without repeated AI interpretation?"
+    },
+    {
+      "id": "Q1.3",
+      "parent": "Q1",
+      "question": "Can the system sustain natural dictation and task invocation without constant mode switching?"
+    },
+    {
+      "id": "Q2",
+      "parent": "Q0",
+      "question": "What relevant context can the agent acquire?",
+      "children": [
+        "Q2.1",
+        "Q2.2",
+        "Q2.3"
+      ]
+    },
+    {
+      "id": "Q2.1",
+      "parent": "Q2",
+      "question": "Can a screenshot and spoken question reach the model from a real reading session?"
+    },
+    {
+      "id": "Q2.2",
+      "parent": "Q2",
+      "question": "Can structured context reach the model from the actual Safari page or foreground app?"
+    },
+    {
+      "id": "Q2.3",
+      "parent": "Q2",
+      "question": "Do we need native UI trees or continuous screen streams, and for which real tasks?"
+    },
+    {
+      "id": "Q3",
+      "parent": "Q0",
+      "question": "Where should intelligence and computation execute?",
+      "children": [
+        "Q3.1",
+        "Q3.2",
+        "Q3.3"
+      ]
+    },
+    {
+      "id": "Q3.1",
+      "parent": "Q3",
+      "question": "What useful existing work can Minis already perform?"
+    },
+    {
+      "id": "Q3.2",
+      "parent": "Q3",
+      "question": "Can Minis become a callable, attributable inference provider?"
+    },
+    {
+      "id": "Q3.3",
+      "parent": "Q3",
+      "question": "When do model choice, remote compute or another runtime materially change an outcome?"
+    },
+    {
+      "id": "Q4",
+      "parent": "Q0",
+      "question": "What operations can actually be realized?",
+      "children": [
+        "Q4.1",
+        "Q4.2",
+        "Q4.3",
+        "Q4.4",
+        "Q4.5",
+        "Q4.6",
+        "Q4.7"
+      ]
+    },
+    {
+      "id": "Q4.1",
+      "parent": "Q4",
+      "question": "Can native semantic actions replace simulated interaction?"
+    },
+    {
+      "id": "Q4.2",
+      "parent": "Q4",
+      "question": "Can existing Safari userscripts and Shortcuts execute reviewed semantic operations?"
+    },
+    {
+      "id": "Q4.3",
+      "parent": "Q4",
+      "question": "Can human speech, touch and saved gesture macros cover the residual UI tasks?"
+    },
+    {
+      "id": "Q4.4",
+      "parent": "Q4",
+      "question": "Can synthesized speech reliably trigger a harmless Voice Control action?"
+    },
+    {
+      "id": "Q4.5",
+      "parent": "Q4",
+      "question": "Does Set Switch Control Switch State actuate a switch or merely configure it?"
+    },
+    {
+      "id": "Q4.6",
+      "parent": "Q4",
+      "question": "When is broad native UI automation worth the signing/lifecycle/security costs of a test runner?"
+    },
+    {
+      "id": "Q4.7",
+      "parent": "Q4",
+      "question": "Could an external input peripheral provide sufficient supervised automation instead?"
+    },
+    {
+      "id": "Q5",
+      "parent": "Q0",
+      "question": "How do context, responses and work survive transitions?",
+      "children": [
+        "Q5.1",
+        "Q5.2",
+        "Q5.3"
+      ]
+    },
+    {
+      "id": "Q5.1",
+      "parent": "Q5",
+      "question": "Can a response return to the same Safari context without manual transfer?"
+    },
+    {
+      "id": "Q5.2",
+      "parent": "Q5",
+      "question": "Can a running task be identified, resumed and recovered without losing evidence?"
+    },
+    {
+      "id": "Q5.3",
+      "parent": "Q5",
+      "question": "How do Kami/FKEN research and development artifacts remain source-linked and recoverable?"
+    },
+    {
+      "id": "Q6",
+      "parent": "Q0",
+      "question": "How does the environment improve without adding overhead?",
+      "children": [
+        "Q6.1",
+        "Q6.2",
+        "Q6.3"
+      ]
+    },
+    {
+      "id": "Q6.1",
+      "parent": "Q6",
+      "question": "Can Shortcuts be rapidly generated and updated while preserving stable triggers?"
+    },
+    {
+      "id": "Q6.2",
+      "parent": "Q6",
+      "question": "Can a real userscript defect be fixed faster with evidence and AI-directed follow-ups?"
+    },
+    {
+      "id": "Q6.3",
+      "parent": "Q6",
+      "question": "Which features remain useful after a week/month and which should disappear?"
+    }
+  ],
+  "investigations": [
+    {
+      "id": "I1",
+      "questions": [
+        "Q1.1",
+        "Q1.2",
+        "Q4.3"
+      ],
+      "status": "research_sufficient",
+      "why": "Avoid duplicating built-in human input mechanisms.",
+      "model": "Siri/Voice Control/AssistiveTouch are invocation channels; named Shortcuts are stable operation identifiers.",
+      "belief": "Documented native capabilities; which triggers are available on installed device remains unknown.",
+      "certificate": "Voice Control supports custom commands that run Shortcuts or replay recorded commands; Siri runs named Shortcuts; AssistiveTouch has documented Hot Corners with Shortcut assignment. These do not imply programmatic arbitrary gestures.",
+      "evidence": [
+        "voice",
+        "siri",
+        "assistive",
+        "vocal",
+        "talon"
+      ],
+      "stop": "Stop researching trigger options once one spoken and one physical invocation work without disrupting screenshot double tap.",
+      "reopen": "Reopen on observed recurring mode-switch friction or unavailable trigger.",
+      "next": "Test one named Shortcut through Siri; choose a single second trigger only if useful.",
+      "depends_on": []
+    },
+    {
+      "id": "I2",
+      "questions": [
+        "Q2.1"
+      ],
+      "status": "ready_for_device_test",
+      "why": "Screen context is essential for diagrams and opaque applications.",
+      "model": "Screenshot or share input + spoken question -> Minis attachment -> response.",
+      "belief": "Share extension and App Intent accept images at source level; capture order, installed provider vision support and target-device runtime are unverified.",
+      "certificate": "Minis Share Extension Info.plist declares image, text, file and URL support; Send Prompt declares IntentFile attachments. Existing screenshot description projects demonstrate the broader workflow.",
+      "evidence": [
+        "minis_send",
+        "minis_share",
+        "describe",
+        "archive",
+        "relay"
+      ],
+      "stop": "One real Kami diagram answered using its actual image, with source/session preserved; no new screenshot manager.",
+      "reopen": "Reopen if capture timing, model vision or attachment coercion loses content.",
+      "next": "First share existing Kami screenshot directly to Minis; if useful, build Take Screenshot before Dictate Text then Send Prompt with attachment.",
+      "depends_on": []
+    },
+    {
+      "id": "I3",
+      "questions": [
+        "Q2.2",
+        "Q4.2",
+        "Q5.1"
+      ],
+      "status": "ready_for_device_test",
+      "why": "Avoid copying page evidence and losing active Safari context.",
+      "model": "Safari Share Sheet -> JS read -> Minis Send Prompt -> fixed second JS or display; alternative existing pill + clipboard.",
+      "belief": "Documented Safari webpage input and multiple JavaScript actions; long model wait may invalidate original page context.",
+      "certificate": "Apple explicitly requires active Safari webpage input via share sheet and says each JS action can use the same original Safari webpage. Receive What's On Screen supplies content from supporting apps, not arbitrary UI trees.",
+      "evidence": [
+        "safari_js",
+        "safari_multiple",
+        "onscreen",
+        "minis_send",
+        "pill"
+      ],
+      "stop": "One real page evidence/response round trip; retain same document if possible. If second JS cannot use original input after model wait, stop this variant and use clipboard/pill.",
+      "reopen": "Reopen when Share Sheet route is too slow or Safari lifecycle blocks recurring tasks.",
+      "next": "Use harmless title/URL/heading count, then real diagnostic evidence; second fixed JS only displays reviewed text, never eval model output.",
+      "depends_on": [
+        "I5"
+      ]
+    },
+    {
+      "id": "I4",
+      "questions": [
+        "Q3.1",
+        "Q3.3"
+      ],
+      "status": "collapsed_for_now",
+      "why": "Reuse rather than create another general agent runtime.",
+      "model": "Minis handles shell, repository reading, own browser, model connection; specialized Safari UI stays separate.",
+      "belief": "User-relayed 3/5 acceptance, not independently executed.",
+      "certificate": "At fd9372b, Git clone/inspection, built-in browser REM extraction and local JSON validation passed; standalone iSH, Git writes, Safari control and native invocation not established.",
+      "evidence": [
+        "atlas"
+      ],
+      "stop": "Do not build general runtime until a real task exposes a gap. Compare remote compute only for work beyond local capacity.",
+      "reopen": "Reopen on a failed representative build, model cost/quality problem, or inability to preserve required artifacts.",
+      "next": "Use existing Minis for repository work and research; defer separate iSH bridge and secondary provider setup.",
+      "depends_on": []
+    },
+    {
+      "id": "I5",
+      "questions": [
+        "Q3.2",
+        "Q5.2"
+      ],
+      "status": "highest_priority_device_test",
+      "why": "Prove transport before automating UI or designing custom APIs.",
+      "model": "Minis Send Prompt App Intent -> typed result -> completed Response or Session ID recovery.",
+      "belief": "Swift source establishes native contract, not installed version execution.",
+      "certificate": "SendPromptIntent exposes prompt, attachment, session, model, Wait for Result and notifications. Cancellation/timeout returns Running, not completed; SendPromptResult exposes Status, Response, Session ID. Completion field is not independent proof of task correctness.",
+      "evidence": [
+        "minis_send",
+        "minis_wait",
+        "minis_result"
+      ],
+      "stop": "One exact text round trip and one real Safari diagnostic; if Running preserve session rather than misreport completion. No additional inference backend unless necessary.",
+      "reopen": "Reopen on absent action, incompatible output property or runtime failure.",
+      "next": "Create AI Pill Ask: clipboard -> Send Prompt Wait for Result -> inspect status -> copy Response or recover session. Test with actual evidence.",
+      "depends_on": []
+    },
+    {
+      "id": "I6",
+      "questions": [
+        "Q5.1",
+        "Q5.2"
+      ],
+      "status": "candidate_after_I5",
+      "why": "Determine whether app transitions can be eliminated economically.",
+      "model": "Clipboard with explicit paste; x-callback URL; Safari share sheet; later native extension or file/mailbox.",
+      "belief": "Apple documents callback textual output, not return to identical live tab; URL data can leak. Extension messaging requires installed extension/app integration.",
+      "certificate": "x-callback-url appends result to callback URL; input can be clipboard or text. Native Safari extension supports native messaging/app groups, but macOS app-to-JS dispatch must not be assumed on iPad, and foreground launch constraints remain.",
+      "evidence": [
+        "callback",
+        "url_scheme",
+        "native_extension",
+        "extension_limit",
+        "safari_multiple"
+      ],
+      "stop": "Prefer simplest usable route. Test callback only with non-sensitive nonce, not actual user data in URL. If no same-tab return, keep explicit copy/paste or share sheet; no new extension until recurring cost established.",
+      "reopen": "Reopen after repeated handoff friction or loss of state.",
+      "next": "Compare same-page Share Sheet flow (I3) with current pill clipboard handoff; if needed test harmless callback to controlled local/personal page.",
+      "depends_on": [
+        "I5"
+      ]
+    },
+    {
+      "id": "I7",
+      "questions": [
+        "Q4.1",
+        "Q4.2",
+        "Q4.3"
+      ],
+      "status": "research_sufficient",
+      "why": "Most user goals may have semantic actions rather than UI simulation.",
+      "model": "Three action channels: App Intents/URLs/APIs; site-specific DOM; human accessibility assistance.",
+      "belief": "Native App Intents expose only implemented capabilities. DOM operations cannot confer native cross-app privileges.",
+      "certificate": "Apple App Intents defines app-provided actions; native Voice Control can invoke commands; existing pill implements read-only inspection plans only. General cross-app control is not established through these routes.",
+      "evidence": [
+        "appintents",
+        "voice",
+        "pill",
+        "safari_js"
+      ],
+      "stop": "For reading, engineering and capture workflows, enumerate required actions and choose least-privileged adequate route; only open native automation branch for uncovered recurring operation.",
+      "reopen": "Reopen when an actual desired action cannot be achieved through direct semantics or low-cost human action.",
+      "next": "Test read-only plan first; later introduce small explicitly reviewed reversible DOM actions where useful.",
+      "depends_on": [
+        "I3",
+        "I5"
+      ]
+    },
+    {
+      "id": "I8",
+      "questions": [
+        "Q4.4"
+      ],
+      "status": "low_priority_bounded",
+      "why": "Discriminate a cheap unconventional route from unreliable speculation.",
+      "model": "Acoustic TTS -> Voice Control, possibly affected by simultaneous accessibility modes and audio routing.",
+      "belief": "Mixed historical anecdotes: positive and negative; no current target-device certificate.",
+      "certificate": "2021 Switch Control coexistence report and reports of failed recordings/TTS establish variability, not causal explanation or current compatibility.",
+      "evidence": [
+        "audio_positive",
+        "audio_mixed",
+        "audio_negative",
+        "audio_recent"
+      ],
+      "stop": "One supervised Show Numbers/Hide Numbers baseline and a small playback comparison; stop if inconsistent. Even success is not a general control guarantee. No autonomous chain.",
+      "reopen": "Reopen only if specific valuable missing action and reproducible safe channel warrant deeper testing.",
+      "next": "Try only after supported direct actions; ensure immediate manual stop. No sensitive apps.",
+      "depends_on": []
+    },
+    {
+      "id": "I9",
+      "questions": [
+        "Q4.5"
+      ],
+      "status": "research_pruned",
+      "why": "Avoid confusing configuration and input event injection.",
+      "model": "Switch Control recipes map switch events to gestures; Shortcuts action changes configured switch state.",
+      "belief": "Heuristic: configuration likely, not actuation. Apple wording ambiguous; third-party action description says toggles configured switches.",
+      "certificate": "Apple iOS 18 notes state manipulation; MacNative action catalogue describes toggling existing switches; Apple recipes document configured input. No source establishes simulated switch press.",
+      "evidence": [
+        "switch_action",
+        "switch_description",
+        "switch_recipe"
+      ],
+      "stop": "Inspect action's parameter picker/info once if convenient. If only enable/disable/toggle, collapse as no evidence for actuation. Do not build a gesture engine on this.",
+      "reopen": "Reopen only if source or observed event establishes actuating a switch programmatically.",
+      "next": "Inspect action info on device; no extended experiment unless it supports event semantics.",
+      "depends_on": []
+    },
+    {
+      "id": "I10",
+      "questions": [
+        "Q2.3",
+        "Q4.6",
+        "Q4.7"
+      ],
+      "status": "deferred_conditional",
+      "why": "Understand full-control alternatives without committing to setup.",
+      "model": "Native test runner (iCTRL/XCUITest) vs external physical HID peripheral vs human assistance.",
+      "belief": "iCTRL upstream demonstrates broad local runner architecture; external HID repos show ordinary pointer input with practical limitations; no target setup.",
+      "certificate": "iCTRL README documents paired local JSON-RPC, signed UITest runner, DDI, UI snapshots and input; Apple XCUIAutomation is a test framework. Independent HID projects expose peripheral-based control, with reported reliability limitations.",
+      "evidence": [
+        "ictrl",
+        "xcui",
+        "hid",
+        "hid2"
+      ],
+      "stop": "Defer until two recurring high-value tasks fail cheaper routes or one essential task is blocked. Then evaluate supervised test runner first; external hardware only if justified.",
+      "reopen": "Reopen on concrete native-only residual task; reject unattended sensitive actions and remote exposure by default.",
+      "next": "Inventory real native-only gap; assess signing and lifecycle once, not open-ended installation work.",
+      "depends_on": [
+        "I7"
+      ]
+    },
+    {
+      "id": "I11",
+      "questions": [
+        "Q6.1"
+      ],
+      "status": "research_sufficient",
+      "why": "Avoid recreating visual blocks and bindings repeatedly.",
+      "model": "Stable native triggers; reviewed source/config updates; existing Minis Shortcuts Builder.",
+      "belief": "Builder supports drafting, validation and signing backends; installation and third-party intent binding not yet verified.",
+      "certificate": "Builder is adapted from Shortcuts Playground and explicitly requires chosen signing backend, approval for third-party uploads, and local validation. No silent imports assumed.",
+      "evidence": [
+        "builder",
+        "atlas"
+      ],
+      "stop": "One minimal working Shortcut; use builder only when complexity exceeds manual editing. Preserve same invocation name.",
+      "reopen": "Reopen if repeated Shortcut iteration becomes bottleneck.",
+      "next": "Use built-in Minis actions first; ask builder for validated draft only if needed.",
+      "depends_on": [
+        "I5"
+      ]
+    },
+    {
+      "id": "I12",
+      "questions": [
+        "Q5.3",
+        "Q6.2",
+        "Q6.3",
+        "Q1.3"
+      ],
+      "status": "ready_after_transport",
+      "why": "Measure whole-system value rather than isolated functionality.",
+      "model": "Representative workflow = encounter -> evidence -> inference -> reviewed result -> persistent source or changed script -> verify. Repeated commands become deterministic affordances.",
+      "belief": "Prior scripts demonstrate design pattern; new end-to-end utility and retention unmeasured.",
+      "certificate": "Current atlas and pill document existing evidence capture, read-only plans, contextual handoff, compact UI; reported Eruda launch only. No end-to-end defect fix certified.",
+      "evidence": [
+        "atlas",
+        "pill",
+        "rsm"
+      ],
+      "stop": "One real Kami research result retained, one real userscript defect improved, one week/month rediscovery review. Stop adding controls if no actual demand; compare against prior workflow.",
+      "reopen": "Reopen for observed failures, lost provenance, or unused controls.",
+      "next": "Track manual app switches, copy/paste operations, repeated explanations and recoverability on actual workflows; no telemetry archive.",
+      "depends_on": [
+        "I2",
+        "I3",
+        "I5"
+      ]
+    }
+  ],
+  "relationships": [
+    {
+      "from": "I5",
+      "to": "I3",
+      "type": "enables"
+    },
+    {
+      "from": "I5",
+      "to": "I6",
+      "type": "enables"
+    },
+    {
+      "from": "I7",
+      "to": "I10",
+      "type": "may_obviate"
+    },
+    {
+      "from": "I8",
+      "to": "I9",
+      "type": "alternative"
+    },
+    {
+      "from": "I3",
+      "to": "I6",
+      "type": "competes_with"
+    },
+    {
+      "from": "I4",
+      "to": "I5",
+      "type": "supports"
+    },
+    {
+      "from": "I12",
+      "to": "I10",
+      "type": "may_justify"
+    }
+  ],
+  "active_queue": [
+    "I5",
+    "I2",
+    "I3",
+    "I12"
+  ],
+  "conditional_queue": [
+    "I1",
+    "I6",
+    "I11",
+    "I8",
+    "I9",
+    "I10"
+  ],
+  "global_stop": "If one real screenshot question and one real userscript iteration can be accomplished with fewer manual transfers and recoverable outputs, stop infrastructure expansion and use the system. Reopen only observed consequential gaps.",
+  "limitations": "Source review and user-relayed prior acceptance only. No new device execution. No exhaustive proof of impossibility; no hardware purchase or new agent backend. Source links may evolve; check installed versions."
+}
