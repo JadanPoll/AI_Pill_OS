@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         AI Pill OS - DevTools and Ask
 // @namespace    https://github.com/JadanPoll/AI_Pill_OS
-// @version      0.4.5
+// @version      0.4.6
 // @description  Inspect, record, export browser evidence; hand it to ChatGPT and run bounded read-only investigation requests.
 // @match        https://*/*
 // @match        http://*/*
@@ -17,7 +17,7 @@
 (() => {
   'use strict';
   if (window.top !== window || document.getElementById('ai-pill-os')) return;
-  const VERSION = '0.4.5', MAX = 100, MAX_REPORT = 100000;
+  const VERSION = '0.4.6', MAX = 100, MAX_REPORT = 100000;
   let host, root, status, preview, question, scope, includeText, planBox, pill;
   let picked = null, selection = '', armed = false, recording = false, observer = null;
   let events = [], dropped = 0, started = 0, lastReport = null, erudaReady = false;
@@ -262,18 +262,30 @@
     popupDeadline=setTimeout(()=>{stopPopupCapture();setStatus(lastPopup?'Popup retained. Tap Copy popup.':'No new visible popup observed.');},60000);
   }
   function copyPopup(){if(!lastPopup){setStatus('Arm Capture popup, then open the native menu.');return;}stopPopupCapture();return copyPrepared(JSON.stringify(lastPopup,null,2),'Captured popup');}
-  async function copyHTML() {
-    let html;
-    try {
+  function liveHTML(){
       const snapshot=document.documentElement.cloneNode(true);
       for(const node of snapshot.querySelectorAll('#ai-pill-os,#ai-pill-console,#ai-pill-pocket,#ai-pill-pocket-error,#eruda'))node.remove();
       // Do not serialize password input value attributes into an evidence packet.
       for(const node of snapshot.querySelectorAll('input[type="password" i]'))node.removeAttribute('value');
       const doctype=document.doctype?new XMLSerializer().serializeToString(document.doctype)+'\n':'';
-      html=doctype+snapshot.outerHTML;
-    }catch(e){setStatus('HTML capture failed: '+safe(e.message));return;}
-    return copyPrepared(html,'Live HTML');
+      return doctype+snapshot.outerHTML;
   }
+  let retainedHTML=null,htmlTimer=null,htmlCountdown=null,htmlDeadline=0;
+  function stopTimedHTML(){clearTimeout(htmlTimer);clearInterval(htmlCountdown);htmlTimer=htmlCountdown=null;htmlDeadline=0;syncRecord();}
+  function armTimedHTML(){
+    stopTimedHTML();retainedHTML=null;byId('copy-timed-html').disabled=true;htmlDeadline=Date.now()+7000;
+    pill.hidden=true;byId('open').hidden=false;
+    const tick=()=>{byId('open').textContent='HTML in '+Math.max(0,Math.ceil((htmlDeadline-Date.now())/1000))+'s';};
+    tick();htmlCountdown=setInterval(tick,250);
+    htmlTimer=setTimeout(()=>{
+      stopTimedHTML();
+      try{retainedHTML={at:new Date().toISOString(),html:liveHTML()};byId('copy-timed-html').disabled=false;byId('open').textContent='HTML captured · AI';setStatus('Timed HTML captured · '+retainedHTML.html.length.toLocaleString()+' characters. Tap More → Copy captured HTML.');}
+      catch(e){setStatus('Timed HTML failed: '+safe(e.message));byId('open').textContent='Capture failed · AI';}
+    },7000);
+  }
+  async function copyHTML(){try{return copyPrepared(liveHTML(),'Live HTML');}catch(e){setStatus('HTML capture failed: '+safe(e.message));}}
+  function copyTimedHTML(){if(!retainedHTML){setStatus('Use HTML in 7s and open the native menu.');return;}return copyPrepared(retainedHTML.html,'Timed HTML ('+retainedHTML.at+')');}
+
   function ask() {
     const q=question.value.trim(); if(!q){setStatus('Enter a question.');return;}
     let context={page:url(location.href)};
@@ -513,7 +525,7 @@
         field('question',2,'Ask about this page…'),
         row(el('select',{id:'scope',class:'grow','aria-label':'Context'},...([['none','URL only'],['selection','Selected text'],['page','Page text'],['report','Diagnostic report']].map(([value,label])=>el('option',{value},label)))),plain('ask','Prepare',{class:'primary'})),
         el('section',{id:'evidence',hidden:true},head(el('small',{},'Review before sharing'),button('copy','copy','Copy evidence','Copy')),field('preview',4,null,{'aria-label':'Evidence preview'}),row(link('https://chatgpt.com/','ChatGPT',{target:'_blank',rel:'noopener noreferrer'}),link('https://gemini.google.com/','Gemini',{target:'_blank',rel:'noopener noreferrer'}))),
-        details('More',row(plain('popup-arm','Capture popup'),plain('popup-copy','Copy popup',{disabled:true})),row(plain('snapshot','Page report'),plain('direct-inspect','Direct tap inspect'),link('shortcuts://run-shortcut?name=AI%20Pill%20Ask','Run Shortcut')),check('text','Include element text in reports'),details('AI investigation plan',field('plan',3,'{"operations":[{"op":"inspect","selector":"button"}]}'),plain('run','Run read-only plan'))),
+        details('More',row(plain('html-delay','HTML in 7s'),plain('copy-timed-html','Copy captured HTML',{disabled:true})),row(plain('popup-arm','Capture popup'),plain('popup-copy','Copy popup',{disabled:true})),row(plain('snapshot','Page report'),plain('direct-inspect','Direct tap inspect'),link('shortcuts://run-shortcut?name=AI%20Pill%20Ask','Run Shortcut')),check('text','Include element text in reports'),details('AI investigation plan',field('plan',3,'{"operations":[{"op":"inspect","selector":"button"}]}'),plain('run','Run read-only plan'))),
         el('div',{id:'status',role:'status'},'Ready. Nothing is sent automatically.')
       ),
       el('div',{id:'pointer-box',hidden:true}),el('div',{id:'pointer-cursor',hidden:true}),
@@ -532,11 +544,11 @@
     pill=$('panel');status=$('status');preview=$('preview');question=$('question');scope=$('scope');includeText=$('text');planBox=$('plan');
     const toggle=open=>{pill.hidden=!open;$('open').hidden=open;};
     syncRecord();syncEvidence();
-    $('open').onclick=()=>{if(popupCapture){observePopup();stopPopupCapture();setStatus(lastPopup?'Popup retained. Tap More → Copy popup.':'No new popup captured.');}toggle(true);};$('close').onclick=()=>{armed=false;toggle(false)};
+    $('open').onclick=()=>{if(htmlDeadline){stopTimedHTML();setStatus('Timed capture cancelled; arm it and wait for HTML captured before reopening.');}if(popupCapture){observePopup();stopPopupCapture();setStatus(lastPopup?'Popup retained. Tap More → Copy popup.':'No new popup captured.');}toggle(true);};$('close').onclick=()=>{armed=false;toggle(false)};
     $('inspect').onclick=startPointer;bindPointer();$('direct-inspect').onclick=()=>{armed=true;toggle(false);setStatus('Tap an element to inspect.');$('open').textContent='Cancel inspect · v'+VERSION;};
     $('open').addEventListener('click',()=>{armed=false;syncRecord();});
     $('record').onclick=()=>recording?stop():record();$('snapshot').onclick=()=>show(report());
-    $('popup-arm').onclick=e=>{if(e.isTrusted)armPopupCapture();};$('popup-copy').onclick=e=>{if(e.isTrusted)void copyPopup();};$('copy').onclick=copy;$('copy-html').onclick=e=>{if(e.isTrusted)void copyHTML();};$('ask').onclick=ask;$('run').onclick=runPlan;$('eruda').onclick=devtools;
+    $('html-delay').onclick=e=>{if(e.isTrusted)armTimedHTML();};$('copy-timed-html').onclick=e=>{if(e.isTrusted)void copyTimedHTML();};$('popup-arm').onclick=e=>{if(e.isTrusted)armPopupCapture();};$('popup-copy').onclick=e=>{if(e.isTrusted)void copyPopup();};$('copy').onclick=copy;$('copy-html').onclick=e=>{if(e.isTrusted)void copyHTML();};$('ask').onclick=ask;$('run').onclick=runPlan;$('eruda').onclick=devtools;
     $('sources').onclick=openSources;$('dev-sources').onclick=openSources;
     const openConsole=()=>{if(!document.getElementById('ai-pill-console')){setStatus('Install AI_Pill_Console.user.js first, then reload.');return;}document.dispatchEvent(new Event('ai-pill-console-open'));};
     $('console').onclick=openConsole;$('dev-console').onclick=openConsole;
