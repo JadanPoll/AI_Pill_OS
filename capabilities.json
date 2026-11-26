@@ -1,6 +1,6 @@
 {
   "schema": "ai_pill_os.capability_atlas",
-  "version": 3,
+  "version": 4,
   "updated": "2026-11-25",
   "purpose": "Can I operate at the speed of thought? Living design inventory, not a promise of implementation.",
   "design_rules": {
@@ -64,7 +64,10 @@
     "grokipedia_fix": "https://github.com/JadanPoll/Learning_Visualizations_Taxonomy/blob/main/Grok_Wikipedia_Correction.user.js",
     "eruda": "https://github.com/liriliri/eruda",
     "devtools": "https://github.com/JadanPoll/AI_Pill_OS/blob/main/AI_Pill.user.js",
-    "native_model": "https://support.apple.com/guide/shortcuts/use-apple-intelligence-in-shortcuts-tpg3vrvwmclv/ios"
+    "native_model": "https://support.apple.com/guide/shortcuts/use-apple-intelligence-in-shortcuts-tpg3vrvwmclv/ios",
+    "eruda_ui": "https://github.com/liriliri/eruda/blob/v3.4.3/src/DevTools/DevTools.js",
+    "eruda_sources": "https://github.com/liriliri/eruda/blob/v3.4.3/src/Sources/Sources.js",
+    "beautify": "https://github.com/beautifier/js-beautify"
   },
   "capabilities": [
     {
@@ -718,7 +721,8 @@
       ],
       "why": "Reduces the time between encountering a site or userscript problem and giving AI actionable evidence.",
       "mechanisms": [
-        "AI_Pill.user.js v0.1.1: Eruda pinned dependency; element geometry/attributes/ancestors; bounded interaction and resource timing report; explicit review and copy"
+        "AI_Pill.user.js v0.1.1: Eruda pinned dependency; element geometry/attributes/ancestors; bounded interaction and resource timing report; explicit review and copy",
+        "v0.2.1 large opacity/height controls and dedicated source browser: explicit file selection, raw/format toggle, search and bounded excerpt review"
       ],
       "depends_on": [
         "control.recover"
@@ -729,9 +733,12 @@
         "eruda",
         "devtools",
         "microsoft",
-        "REM"
+        "REM",
+        "eruda_ui",
+        "eruda_sources",
+        "beautify"
       ],
-      "boundary": "Committed prototype parses; target iPad not tested. Resource Timing is not full request capture. Eruda realm and initialization coverage unverified. No response bodies or credentials in custom report by design; review URLs, labels and IDs."
+      "boundary": "Committed prototype parses; target iPad not tested. Resource Timing is not full request capture. Eruda realm and initialization coverage unverified. No response bodies or credentials in custom report by design; review URLs, labels and IDs. First iPad Eruda launch observed; new ergonomics and source browser not yet tested."
     },
     {
       "id": "develop.plan",
@@ -866,6 +873,7 @@
     }
   ],
   "next_experiments": [
+    "On the same GitHub page test v0.2.1 opacity/height/close, Sources file filter, format HTML/JS, search and review/copy an excerpt; report concrete failure if blocked.",
     "Install AI_Pill.user.js v0.1.1 on iPad; inspect a real site element, record an interaction, copy report to ChatGPT and run a read-only plan. Test Eruda separately. Then test AI Pill Ask Shortcut; defer iSH.",
     "Choose one heavily used site and compare two or three representative recurring tasks in its stock and specialized UI; preserve existing scripts and validate on iPad Safari before changing defaults.",
     "Preserve existing AssistiveTouch double tap; manually test screenshot+question handoff.",
@@ -886,6 +894,12 @@
       "capability": "compute.shell",
       "evidence": "User reports iSH installed.",
       "scope": "Installation reported; shell commands and integration not tested."
+    },
+    {
+      "date": "2026-11-25",
+      "capability": "develop.inspect",
+      "evidence": "User screenshots show Eruda Elements and Sources opened in iPad Safari on GitHub; user reports opacity, thumb ergonomics and source readability problems.",
+      "scope": "Eruda panel launch and HTML/DOM visibility observed, not full network capture or custom export."
     }
   ],
   "thoughts": [
@@ -896,7 +910,8 @@
     "A website is a source of capabilities and content; its default interface is not necessarily the best way for this person to access them.",
     "The AI is often more valuable at design time (generating and revising the user's interface) than at runtime (adding inference latency to common operations).",
     "A collection of specialized userscripts is a legitimate core architecture; standardize only after discovering repeated needs, not to satisfy an abstract framework.",
-    "The key acceleration is closing the evidence-to-code loop; DevTools is infrastructure for producing many specialized interfaces, not merely another feature."
+    "The key acceleration is closing the evidence-to-code loop; DevTools is infrastructure for producing many specialized interfaces, not merely another feature.",
+    "A developer tool should optimize time to useful evidence, not reproduce the appearance of desktop F12. Prefer thumb-sized controls and a direct searchable source-to-excerpt workflow."
   ],
   "site_scripts": {
     "purpose": "A collection of focused personal interface implementations. Existing code remains canonical in its own repository; this is a source index, not duplicate scripts or a universal injected runtime.",
