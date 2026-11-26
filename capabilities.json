@@ -1,6 +1,6 @@
 {
   "schema": "ai_pill_os.capability_atlas",
-  "version": 11,
+  "version": 12,
   "updated": "2026-11-25",
   "purpose": "Can I operate at the speed of thought? Living design inventory, not a promise of implementation.",
   "design_rules": {
@@ -325,6 +325,7 @@
       ],
       "why": "Many good questions disappear because categorization or repository navigation interrupts the encounter.",
       "mechanisms": [
+        "Pocket.user.js v0.2.1 retains existing pocket.v1. records and separates working tray keys; collect, save, recall, copy and JSON export.",
         "Pocket.user.js v0.1.1: one script across sites using GM storage, explicit text/link/JSON capture, local search and copy, source/time provenance, copy-all JSON export. One key per record avoids global read-modify-write collisions.",
         "One local JSON inbox with stable ID, source, capture time, kind and optional note",
         "Existing Kami/FKEN adapters; explicit review before canonical commit"
@@ -441,7 +442,7 @@
       ],
       "why": "Fast capture and deliberate synthesis are different cognitive modes; batch organization prevents live interruption.",
       "mechanisms": [
-        "Context-aware suggested destination: Kami document anchor/domain research, FKEN appropriate resource/project/thought/investigation, selected existing Drive document/folder. Explicit user-directed write via authorized connector, then readback receipt.",
+        "Context-aware destination: Kami_Uploads_RSM_Tree repository canonical domain investigation.json, existing question/source/node structures; FKEN appropriate resource/project/thought/investigation, selected Drive destination. Explicit authorized write then readback receipt.",
         "Local inbox to reviewable JSON patch or prompt",
         "Agent-assisted deduplication, canonical stable IDs and source links"
       ],
@@ -461,7 +462,7 @@
         "drive_actions",
         "github_access"
       ],
-      "boundary": "Human reviews canonical writes; no silent destructive merges or public upload. Destination must be inspected and user-authorized, not guessed; public repositories must not receive private data without explicit authorization."
+      "boundary": "Human reviews canonical writes; no silent destructive merges or public upload. Destination must be inspected and user-authorized, not guessed; public repositories must not receive private data without explicit authorization. User clarified Kami persistence means research repository, not the companion's annotation/comment sync."
     },
     {
       "id": "compute.shell",
@@ -561,6 +562,7 @@
       ],
       "why": "The feedback loop from agent commit to running iPad behavior is itself a frequent workflow.",
       "mechanisms": [
+        "Pocket v0.2.1 has @updateURL and @downloadURL pointing to its canonical raw GitHub path; existing script identity/storage namespace preserved.",
         "Manager-native @version/@updateURL/@downloadURL plus one version inventory, copyable diagnostics and manual known-good rollback; no arbitrary remote eval or silent replacement.",
         "Git pull or raw .user.js install via Userscripts",
         "Cherri source-to-Shortcut compilation and supported signing/import",
@@ -909,6 +911,7 @@
       ],
       "why": "Do not interrupt an investigation to transfer each observation.",
       "mechanisms": [
+        "v0.2.1 implements ordered text/JSON working tray with clear and copy-all; handoffs snapshot tray content. Image capture remains unimplemented.",
         "Rectangular crop of supported capture; native screenshot import for real pixels; explicitly distinguish DOM reconstruction",
         "Ordered screenshots, text, structured JSON, file references; numbered composite PNG or individual attachments",
         "Temporary tray; promote to durable Pocket on request"
@@ -923,7 +926,7 @@
         "clipboard_api",
         "pocket"
       ],
-      "boundary": "No privileged tab capture claim, GM binary quota and image paste untested; no automatic uploads."
+      "boundary": "No privileged tab capture claim, GM binary quota and image paste untested; no automatic uploads. Text/JSON slice executed against mocked DOM and GM; no real Safari storage or image capture established."
     },
     {
       "id": "control.handoff",
@@ -937,6 +940,7 @@
       ],
       "why": "Move intention/context across tabs without losing origin, retyping or rebuilding context.",
       "mechanisms": [
+        "Pocket v0.2.1: pin exact existing ChatGPT/Gemini conversation once; Ask with tray stores per-request snapshot and source; source opens selected conversation, destination reviews/copies; acknowledgment means clipboard copy only. Reload/resume reads local state.",
         "Same universal installed script's GM storage, immutable request ID, exact chosen destination, acknowledgment and durable pending state; resume pull fallback",
         "Borrow LabX task attribution and stale-operation guards, not localhost service",
         "Explicit user handoff to existing conversation; supported transport only for automatic inference"
@@ -957,7 +961,7 @@
         "openai_terms",
         "google_terms"
       ],
-      "boundary": "Same-script storage and browser lifecycle unverified on target; no consumer response scraping, background auto-submit or arbitrary cross-script privilege bridge."
+      "boundary": "Same-script storage and browser lifecycle unverified on target; no consumer response scraping, background auto-submit or arbitrary cross-script privilege bridge. Nine integration-style checks passed against mocked GM, DOM, URL and clipboard; no live Safari or provider traffic. User must paste/send and transfer results; no automatic consumer interaction."
     }
   ],
   "workflows": [
@@ -1039,11 +1043,10 @@
     }
   ],
   "next_experiments": [
-    "I15: test same-script GM handoff on two trusted non-provider sites, with queued/acknowledged status and foreground/resume/reload recovery. Verify installed manager/version.",
-    "I14/I19: test Copy Screenshot and collect three real visual crops in an ordered tray, transfer as composite or separate files; compare actual pixels and reconstruction.",
-    "I16: route one contextual dictated question to exact existing AI conversation through explicit handoff; compare dual Safari windows with tab switch. Do not implement automated consumer response extraction.",
-    "I17: on explicit request, persist one useful discovery to existing canonical destination, read back receipt; no private data in public repos or inferred Drive folder.",
-    "I20/I12: update a real script through manager, preserve Pocket, verify rollback and end-to-end debugging utility; revisit after a week/month."
+    "Pocket v0.2.1: install as update (same script identity), open existing AI conversation and Use this chat; collect a passage on Wikipedia and another on GitHub, dictate question at source, Ask with tray, Open chat, open Pocket, copy/paste/send explicitly; return to source and refresh, verify copied not sent status. Reload and verify prior saved records.",
+    "On an explicit request to preserve a useful answer, update the matching existing Kami_Uploads_RSM_Tree domain investigation or FKEN canonical record using authorized connector, inspect schema and read back exact commit/path.",
+    "Implement visual tray only after the text handoff is established; test three real crops and composite export, preserve native screenshot fallback.",
+    "Use manager-native update metadata for next revision; verify storage and rollback. Keep debugger separate until consolidation proves useful."
   ],
   "observations": [
     {
@@ -1081,6 +1084,12 @@
       "capability": "control.dom",
       "evidence": "User relayed Minis navigated GitHub and extracted REM-04.01 using its built-in browser.",
       "scope": "Minis browser only, no active Safari session access."
+    },
+    {
+      "date": "2026-11-25",
+      "capability": "control.handoff",
+      "evidence": "Pocket v0.2.1 executed with mocked DOM, URL, GM and clipboard: nine checks passed (selected destination, two-origin collection, snapshot content, reload recovery, wrong conversation rejection, clipboard failure preserves draft/no ack, success copy-only ack, source receipt, clear tray preserves saved and queued snapshot).",
+      "scope": "Actual script in mock environment; not Safari, actual GM manager, real AI provider or UX acceptance."
     }
   ],
   "thoughts": [
@@ -1099,7 +1108,8 @@
     "Use Minis App Intents as the first inference transport; separate evidence capture, model execution, and action execution. A reported built-in browser success does not certify Safari access.",
     "Safari-first is a deliberate locality decision: keep cognition and iteration in the already-open workspace. Stable native bridges should be rare; general-purpose agent functionality does not justify a second everyday workspace.",
     "Pocket is a narrow cross-site shared memory, not a new knowledge lake. GM storage belongs to the same installed script, not automatically every script. Preserve canonical Kami/FKEN data and use explicit export/reconciliation.",
-    "The universal pill is a workspace-level shell, not a monolithic replacement for every website. Mini-pills own site-specific interaction and canonical adapters. Borrow LabX request identity and recovery without its server. Speech is high-bandwidth input for language, not a substitute for spatial touch."
+    "The universal pill is a workspace-level shell, not a monolithic replacement for every website. Mini-pills own site-specific interaction and canonical adapters. Borrow LabX request identity and recovery without its server. Speech is high-bandwidth input for language, not a substitute for spatial touch.",
+    "REM year-scale utility: capture, ask and retain are stable verbs; avoid worker dashboards, duplicate knowledge stores and complex agent orchestration. Kami canonical persistence specifically means Kami_Uploads_RSM_Tree."
   ],
   "site_scripts": {
     "purpose": "A collection of focused personal interface implementations. Existing code remains canonical in its own repository; this is a source index, not duplicate scripts or a universal injected runtime.",
@@ -1367,12 +1377,12 @@
       "backend or universal agent runtime"
     ],
     "reason": "User resolved functional preferences A–H. Optimize speed, persistence, portability and iteration, not autonomous OS control. Prefer no context switch where supported; preserve provider permissions, no automatic consumer output extraction, no unsupported background execution.",
-    "acceptance": "Actual cross-site request/acknowledgment; multi-region visual evidence in one transfer; explicitly selected canonical persistence with verified receipt; real userscript update/rollback with retained data.",
+    "acceptance": "Current v0.2.1 text slice: collect actual evidence on two websites, pin an existing AI conversation, queue an actual question, recall/copy it there, reload and confirm receipt at source. Then canonical persistence, image tray and update/rollback.",
     "limits": "GM storage is same installed script; cross-tab notifications/hidden execution and existing-tab focus depend on manager and iPadOS. Consumer web plans have limits and terms; no separate inference runtime assumed.",
     "persistence_layers": [
       "Temporary ordered working tray (local, explicitly retained if useful)",
       "Durable Pocket (unclassified thoughts/evidence)",
-      "Canonical Kami/FKEN/Drive (explicit request, existing authority, source anchor and write receipt)",
+      "Canonical Kami_Uploads_RSM_Tree domain research JSON, FKEN and selected Drive destination (explicit request, existing authority, source anchor and write receipt)",
       "Versioned capabilities (GitHub scripts and investigation contracts)"
     ]
   }
