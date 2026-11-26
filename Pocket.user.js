@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         AI Pill OS - Pocket
 // @namespace    https://github.com/JadanPoll/AI_Pill_OS
-// @version      0.3.1
+// @version      0.3.2
 // @updateURL    https://raw.githubusercontent.com/JadanPoll/AI_Pill_OS/main/Pocket.user.js
 // @downloadURL  https://raw.githubusercontent.com/JadanPoll/AI_Pill_OS/main/Pocket.user.js
 // @description  Universal Safari pill: collect evidence, keep discoveries, and hand a question to a chosen chat.
@@ -15,14 +15,14 @@
 // @grant        GM_setValue
 // @grant        GM_listValues
 // @grant        GM_deleteValue
-// @require      https://cdn.jsdelivr.net/npm/html2canvas-pro@2.6.4/dist/html2canvas-pro.min.js
+// @require      https://unpkg.com/@zumer/snapdom@3.8.3/dist/snapdom.js
 // @run-at       document-idle
 // @noframes
 // ==/UserScript==
 (() => {
   'use strict';
   if (window.top !== window || document.getElementById('ai-pill-pocket')) return;
-  const VERSION='0.3.1', PREFIX='pocket.v1.', TRAY='tray.v1.', HANDOFF='handoff.v1.', ACK='ack.v1.', TARGET='target.v1', LIMIT=100000, MAX_ITEMS=250;
+  const VERSION='0.3.2', PREFIX='pocket.v1.', TRAY='tray.v1.', HANDOFF='handoff.v1.', ACK='ack.v1.', TARGET='target.v1', LIMIT=100000, MAX_ITEMS=250;
   const uid=()=>globalThis.crypto?.randomUUID?.()||Date.now().toString(36)+'-'+Math.random().toString(36).slice(2);
   // Deliberately no localStorage fallback: that would appear to work but silently
   // partition the data by site. Only this installed script owns these GM keys.
@@ -46,8 +46,8 @@
     '<div class="row" id="collection-head">'+btn('tray-tab','back','Return to collected items')+'<strong id="collection-title" class="grow"></strong>'+btn('copy-tray','copy','Copy collected evidence')+'</div>'+
     '<div class="row" id="filter-row" hidden><input id="filter" class="grow" placeholder="Find items…" aria-label="Find items"></div><small id="count"></small><div id="list"></div>'+
     '<section id="detail" hidden><div class="row">'+btn('done','back','Back to items')+'<small class="grow" id="meta"></small>'+btn('copy','copy','Copy selected text')+'</div><pre id="body"></pre><details><summary>More</summary><div class="row"><button id="copy-record">Copy with source</button><button id="keep">Keep in saved</button>'+btn('remove','trash','Delete item')+'</div></details></section>'+
-    '<details id="settings"><summary aria-label="More options">'+icon('settings')+'</summary><label id="source-label" for="source">Source reference</label><input id="source" placeholder="Source URL or reference" aria-label="Source URL or reference"><div class="row">'+btn('refresh','refresh','Refresh shared storage')+'<button id="export">Export saved JSON</button><button id="save">Save draft</button><button id="pin" hidden>Use this chat instead</button><span id="tray-tools">'+btn('clear-tray','trash','Clear working tray')+'</span></div><small>v'+VERSION+' · Local storage · No automatic upload. Avoid secrets.</small></details>'+
-    '<textarea id="fallback" hidden rows="4" readonly aria-label="Manual copy fallback"></textarea><div id="status" role="status"></div></section>';
+    '<details id="settings"><summary aria-label="More options">'+icon('settings')+'</summary><label id="source-label" for="source">Source reference</label><input id="source" placeholder="Source URL or reference" aria-label="Source URL or reference"><div class="row">'+btn('refresh','refresh','Refresh shared storage')+'<button id="export">Export saved JSON</button><button id="save">Save draft</button><button id="import-image">Import screenshots</button><button id="pin" hidden>Use this chat instead</button><span id="tray-tools">'+btn('clear-tray','trash','Clear working tray')+'</span></div><small>v'+VERSION+' · Local storage · No automatic upload. Avoid secrets.</small></details>'+
+    '<input id="image-files" type="file" accept="image/*" multiple hidden><textarea id="fallback" hidden rows="4" readonly aria-label="Manual copy fallback"></textarea><div id="status" role="status"></div></section>';
   // Keep native text editing and IME behavior; don't let page hotkeys see our keystrokes.
   for(const type of ['keydown','keypress','keyup'])root.addEventListener(type,e=>{if(e.composedPath().some(el=>el instanceof Element&&el.matches('textarea,input,[contenteditable]')))e.stopPropagation();});
   document.documentElement.append(host);
@@ -141,9 +141,12 @@
       await navigator.clipboard.write([new ClipboardItem({'image/png':blob})]);status('Images copied. Paste into chat; Ask includes text evidence separately.');
     }catch(e){try{const b=await blob;const u=URL.createObjectURL(b);const link=document.createElement('a');link.href=u;link.download='pocket-captures.png';link.click();setTimeout(()=>URL.revokeObjectURL(u),30000);status('Image clipboard unavailable; PNG download requested.');}catch(err){status('Image export failed: '+err.message);}}
   }
+  let renderPending=false;
   function startSnip(){
     if(!store||busy||handoffBusy)return;
-    if(typeof html2canvas!=='function'){status('Capture library unavailable. Check @require support.');return;}
+    if(renderPending){status('Previous renderer still running. Import screenshots from More, or reload.');return;}
+    if(typeof globalThis.snapdom?.toCanvas!=='function'){status('SnapDOM unavailable. Import screenshots from More.');return;}
+    if(window.visualViewport&&Math.abs(window.visualViewport.scale-1)>0.01){status('Reset page zoom before drawing a region, or import a screenshot.');return;}
     const source=sourceURL(),sx=scrollX,sy=scrollY;
     host.style.visibility='hidden';
     const overlay=document.createElement('div');overlay.style.cssText='position:fixed;inset:0;z-index:2147483647;touch-action:none;cursor:crosshair;background:rgba(0,0,0,.12);';
@@ -165,15 +168,61 @@
       busy=true;status('Capturing webpage region…');
       try{
         if(scrollX!==sx||scrollY!==sy)throw Error('Page moved during selection; try again.');
-        const canvas=await html2canvas(document.documentElement,{x:sx+x,y:sy+y,width:w,height:h,scale:Math.min(2,1200/Math.max(w,h)),useCORS:true,allowTaint:false,logging:false,ignoreElements:el=>el.id==='ai-pill-pocket'||el.id==='ai-pill-os'||el.id==='eruda'});
+        const startTime=performance.now();let timer;
+        renderPending=true;
+        // Clip at the source; do not reconstruct the entire document to crop it afterward.
+        const work=Promise.resolve().then(()=>globalThis.snapdom.toCanvas(document.documentElement,{
+          clip:{x:sx+x,y:sy+y,width:w,height:h},scale:Math.min(2,1600/Math.max(w,h)),dpr:1,
+          cache:'disabled',exclude:['#ai-pill-pocket','#ai-pill-os','#eruda'],embedFonts:'auto'
+        }));
+        work.then(()=>{renderPending=false;},()=>{renderPending=false;});
+        let canvas;
+        try{canvas=await Promise.race([work,new Promise((_,reject)=>{timer=setTimeout(()=>reject(Error('Renderer exceeded 12s; no retry. Import screenshots from More.')),12000);})]);}
+        finally{clearTimeout(timer);}
+        if(!canvas?.width||!canvas?.height)throw Error('Empty capture');
+        const elapsed=Math.round(performance.now()-startTime);
         const image=canvas.toDataURL('image/png');if(image.length>2000000)throw Error('Region exceeds image storage limit; select a smaller area.');
         const keys=await store.keys();if(keys.filter(k=>k.startsWith(TRAY)).length>=30)throw Error('Collection full');
-        const r={id:uid(),created:new Date().toISOString(),source,text:'Webpage region (DOM reconstruction)',image,renderer:'html2canvas-pro@2.6.4',region:[x,y,w,h]};
+        const r={id:uid(),created:new Date().toISOString(),source,text:'Webpage region (DOM reconstruction)',image,renderer:'snapdom@3.8.3',region:[x,y,w,h],elapsedMs:elapsed};
         await store.set(TRAY+r.id,r);const check=await store.get(TRAY+r.id);if(check?.image!==image)throw Error('Image storage readback failed');
-        view='tray';hideDetail();await load();status('Region collected · reconstructed image');
-      }catch(err){status('Capture failed (html2canvas-pro 2.6.4): '+String(err.message||err));}finally{busy=false;}
+        view='tray';hideDetail();await load();status('Region collected · '+elapsed+' ms · reconstructed');
+      }catch(err){status('Capture failed (SnapDOM 3.8.3): '+String(err.message||err)+' · More → Import screenshots');}finally{busy=false;}
     });
   }
+  // Pixel-accurate input comes from an explicitly chosen image, not a reconstructed DOM.
+  async function importImages(files){
+    if(!store||busy||handoffBusy||!files.length)return;
+    busy=true;let count=0;
+    const source=sourceURL();
+    try{
+      for(const file of files.slice(0,10)){
+        if(!file.type.startsWith('image/'))throw Error('Select an image file');
+        if(file.size>25000000)throw Error('Image exceeds 25 MB; crop it in the native screenshot editor first');
+        const keys=await store.keys();if(keys.filter(k=>typeof k==='string'&&k.startsWith(TRAY)).length>=30)throw Error('Collection full');
+        const u=URL.createObjectURL(file);
+        try{
+          const im=await new Promise((resolve,reject)=>{const img=new Image();img.onload=()=>resolve(img);img.onerror=()=>reject(Error('Image decode failed'));img.src=u;});
+          const scale=Math.min(1,2000/Math.max(im.naturalWidth,im.naturalHeight));
+          const c=document.createElement('canvas');c.width=Math.max(1,Math.round(im.naturalWidth*scale));c.height=Math.max(1,Math.round(im.naturalHeight*scale));
+          c.getContext('2d').drawImage(im,0,0,c.width,c.height);
+          let image=c.toDataURL('image/png');
+          if(image.length>2000000)image=c.toDataURL('image/jpeg',.88);
+          if(image.length>2000000)throw Error('Image exceeds storage limit; crop it first');
+          const r={id:uid(),created:new Date().toISOString(),source,text:'Imported screenshot (source page as labeled at import)',image,renderer:'native-image-import',dimensions:[im.naturalWidth,im.naturalHeight],storedDimensions:[c.width,c.height]};
+          await store.set(TRAY+r.id,r);
+          const check=await store.get(TRAY+r.id);if(check?.image!==image)throw Error('Image storage readback failed');
+          count++;
+        }finally{URL.revokeObjectURL(u);}
+      }
+      view='tray';hideDetail();await load();status('Imported '+count+' screenshot'+(count===1?'':'s'));
+    }catch(err){view='tray';hideDetail();await load();status('Imported '+count+' · '+String(err.message||err));}finally{busy=false;}
+  }
+  action('import-image',()=>$('image-files').click());
+  $('image-files').addEventListener('change',e=>{if(!e.isTrusted)return;const files=Array.from(e.target.files||[]);e.target.value='';importImages(files);});
+  $('draft').addEventListener('paste',e=>{
+    if(!e.isTrusted)return;const files=Array.from(e.clipboardData?.files||[]).filter(f=>f.type.startsWith('image/'));
+    if(!files.length)return;e.preventDefault();e.stopPropagation();importImages(files);
+  });
   function chatURL(value){
     try{
       const u=new URL(value);if(u.protocol!=='https:'||u.port||u.username||u.password)return null;
