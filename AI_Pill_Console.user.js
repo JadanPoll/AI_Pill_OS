@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         AI Pill OS - Console journal
 // @namespace    https://github.com/JadanPoll/AI_Pill_OS
-// @version      0.1.0
+// @version      0.1.1
 // @match        https://*/*
 // @match        http://*/*
 // @run-at       document-start
@@ -18,7 +18,7 @@
 (()=>{
 'use strict';
 if(window.top!==window)return;
-const VERSION='0.1.0',MAX=600,BUDGET=350000,EVENT='ai-pill-console-open';
+const VERSION='0.1.1',MAX=600,BUDGET=350000,EVENT='ai-pill-console-open';
 const boot=Date.now(),pageId=String(boot)+'-'+Math.random().toString(36).slice(2);
 const modern=typeof GM!=='undefined'&&typeof GM.getValue==='function'&&typeof GM.setValue==='function';
 const legacy=typeof GM_getValue==='function'&&typeof GM_setValue==='function';
@@ -71,14 +71,22 @@ add('journal.start',{version:VERSION,page:url(location.href),readyState:document
 (async()=>{try{if(store&&key){const old=await store.get(key);if(Array.isArray(old?.entries)){const current=rows;rows=old.entries.slice(-MAX).filter(e=>e&&typeof e.id==='string').map(e=>({e,size:JSON.stringify(e).length})).concat(current);total=rows.reduce((n,r)=>n+r.size,0);dropped+=Number(old.dropped)||0;trim();}}}catch(e){storageError=clean(e.message);}finally{ready=true;dirty=true;schedule();}})();
 function resourceEntries(){return performance.getEntriesByType('resource').slice(-300).map(e=>({url:url(e.name),type:e.initiatorType,startMs:e.startTime,duration:e.duration,transferSize:e.transferSize,encodedBodySize:e.encodedBodySize,decodedBodySize:e.decodedBodySize,responseStatus:e.responseStatus??null,fetchStart:e.fetchStart,responseStart:e.responseStart,responseEnd:e.responseEnd}));}
 function report(){return {schema:'ai_pill_os.console_journal',version:VERSION,time:new Date().toISOString(),page:url(location.href),pageId,environment:{ua:navigator.userAgent,readyState:document.readyState,visibility:document.visibilityState,viewport:[innerWidth,innerHeight]},persistence:{mode:store&&key?'GM per tab/origin':'memory only',ready,lastSaved,storageError,dropped,retained:rows.length},console:{hooked:Object.keys(hooks),stillHooked:Object.keys(hooks).filter(k=>console[k]===hooks[k]),hookErrors},entries:rows.map(r=>r.e),resources:resourceEntries(),limitations:['Content-world console only; page-world console, native extension logs and messages before injection may be invisible.','Reload checkpoints are best effort; browser termination or a blocked main thread may lose the newest entries.','Bounded recent journal; values are limited and best-effort redacted. Review before sharing.']};}
-let host,root,box,area,status,launcher;
+let host,root,box,area,status,launcher,copying=false;
 function syncLauncher(){if(launcher&&box.hidden)launcher.hidden=!!document.querySelector('#ai-pill-os[data-console-journal]');}
 function show(){if(!host)mount();if(!host)return;area.value=JSON.stringify(report(),null,2);box.hidden=false;launcher.hidden=true;status.textContent='Review before copying. '+rows.length+' entries.';}
 function mount(){
  if(host||!document.documentElement)return;
  host=document.createElement('div');host.id='ai-pill-console';root=host.attachShadow({mode:'closed'});
  root.innerHTML='<style>:host{all:initial;position:fixed;right:12px;bottom:75px;z-index:2147483647;font:14px system-ui;color:#172033}[hidden]{display:none!important}button{font:inherit;min-height:44px;border:1px solid #94a3b8;border-radius:9px;background:white;color:#172033;padding:8px;cursor:pointer}#launch{border-radius:22px;background:#172033;color:white}section{width:min(440px,calc(100vw - 24px));padding:10px;background:#fff;border:1px solid #94a3b8;border-radius:12px;box-shadow:0 3px 16px #0003}.row{display:flex;align-items:center;gap:6px}.grow{flex:1}textarea{width:100%;box-sizing:border-box;height:min(45vh,330px);font:12px monospace;margin:8px 0}small{color:#475569}</style><button id="launch" title="Open console journal">Logs v'+VERSION+'</button><section id="box" hidden><div class="row"><strong class="grow">Console <small>v'+VERSION+'</small></strong><button id="refresh" title="Refresh report">↻</button><button id="close" aria-label="Close">×</button></div><textarea id="area" readonly aria-label="Review console report"></textarea><div class="row"><button id="copy" class="grow">Copy logs</button></div><small id="status" role="status"></small></section>';
- const $=id=>root.getElementById(id);box=$('box');area=$('area');status=$('status');launcher=$('launch');launcher.onclick=show;$('refresh').onclick=show;$('close').onclick=()=>{box.hidden=true;syncLauncher();};$('copy').onclick=async()=>{try{await navigator.clipboard.writeText(area.value);status.textContent='Copied.';}catch{area.focus();area.select();status.textContent='Use native Copy on selected report.';}};
+ const $=id=>root.getElementById(id);box=$('box');area=$('area');status=$('status');launcher=$('launch');launcher.onclick=show;$('refresh').onclick=show;$('close').onclick=()=>{box.hidden=true;syncLauncher();};$('copy').onclick=async e=>{
+ if(!e.isTrusted||copying)return;
+ const text=area.value,size=text.length.toLocaleString()+' characters';
+ if(!text){status.textContent='Refresh report first.';return;}
+ copying=true;status.textContent='Copying…';
+ try{await navigator.clipboard.writeText(text);status.textContent='Copied · '+size+'.';}
+ catch(err){area.value=text;area.focus();area.select();status.textContent='Not copied: '+clean(err.message||err,160)+' · '+size+'. Tap Copy logs again or use native Copy.';}
+ finally{copying=false;}
+ };
  document.documentElement.append(host);syncLauncher();
  if(typeof MutationObserver==='function')new MutationObserver(syncLauncher).observe(document.documentElement,{childList:true});
 }
