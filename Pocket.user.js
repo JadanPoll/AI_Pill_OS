@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         AI Pill OS - Pocket
 // @namespace    https://github.com/JadanPoll/AI_Pill_OS
-// @version      0.4.1
+// @version      0.4.2
 // @updateURL    https://raw.githubusercontent.com/JadanPoll/AI_Pill_OS/main/Pocket.user.js
 // @downloadURL  https://raw.githubusercontent.com/JadanPoll/AI_Pill_OS/main/Pocket.user.js
 // @description  Universal Safari pill: collect evidence, keep discoveries, and hand a question to a chosen chat.
@@ -20,8 +20,34 @@
 // ==/UserScript==
 (() => {
   'use strict';
-  if (window.top !== window || document.getElementById('ai-pill-pocket')) return;
-  const VERSION='0.4.1', PREFIX='pocket.v1.', TRAY='tray.v1.', HANDOFF='handoff.v1.', ACK='ack.v1.', TARGET='target.v1', LIMIT=100000, MAX_ITEMS=250;
+  if (window.top !== window) return;
+  const VERSION='0.4.2';
+  // Report initialization failures without depending on the main UI, storage or a CDN.
+  function bootFailure(error,phase){
+    const message=String(error?.message||error).slice(0,500);
+    const report=JSON.stringify({script:'Pocket',version:VERSION,phase,error:message,readyState:document.readyState},null,2);
+    console.error('[Pocket v'+VERSION+'] '+phase,error);
+    try{
+      document.getElementById('ai-pill-pocket')?.remove();
+      document.getElementById('ai-pill-pocket-error')?.remove();
+      const shell=document.createElement('div');shell.id='ai-pill-pocket-error';
+      shell.style.cssText='all:initial;position:fixed;left:12px;bottom:18px;z-index:2147483647;display:block';
+      const sr=shell.attachShadow({mode:'closed'});
+      const b=document.createElement('button');
+      b.type='button';b.textContent='Pocket v'+VERSION+' · Error';
+      b.style.cssText='background:#fff1f2;color:#991b1b;border:1px solid #e11d48;border-radius:20px;padding:10px;font:14px system-ui;min-height:44px';
+      const details=document.createElement('textarea');
+      details.readOnly=true;details.value=report;details.hidden=true;
+      details.style.cssText='display:none;width:min(320px,80vw);height:130px;font:13px monospace;background:white;color:#172033';
+      b.onclick=()=>{details.hidden=false;details.style.display='block';details.focus();details.select();};
+      sr.append(details,b);(document.documentElement||document.body).append(shell);
+    }catch(e){console.error('[Pocket] Recovery indicator failed',e);}
+  }
+  function boot(){
+    if(document.getElementById('ai-pill-pocket'))return;
+    let phase='storage setup';
+    try{
+  const PREFIX='pocket.v1.', TRAY='tray.v1.', HANDOFF='handoff.v1.', ACK='ack.v1.', TARGET='target.v1', LIMIT=100000, MAX_ITEMS=250;
   const uid=()=>globalThis.crypto?.randomUUID?.()||Date.now().toString(36)+'-'+Math.random().toString(36).slice(2);
   // Deliberately no localStorage fallback: that would appear to work but silently
   // partition the data by site. Only this installed script owns these GM keys.
@@ -29,6 +55,7 @@
   const legacy=typeof GM_getValue==='function'&&typeof GM_setValue==='function'&&typeof GM_listValues==='function'&&typeof GM_deleteValue==='function';
   const store=modern?{get:(k)=>GM.getValue(k,null),set:(k,v)=>GM.setValue(k,v),keys:()=>GM.listValues(),del:k=>GM.deleteValue(k)}:
     legacy?{get:k=>GM_getValue(k,null),set:(k,v)=>GM_setValue(k,v),keys:()=>GM_listValues(),del:k=>GM_deleteValue(k)}:null;
+  phase='UI construction';
   const host=document.createElement('div');host.id='ai-pill-pocket';
   const root=host.attachShadow({mode:'closed'});
   const $=id=>root.getElementById(id);
@@ -36,7 +63,7 @@
   Object.assign(icons,{bookmark:'<path d="M6 3h12v18l-6-4-6 4z"/>',back:'<path d="m15 18-6-6 6-6"/>',trash:'<path d="M3 6h18M9 6V3h6v3M6 6l1 15h10l1-15M10 10v7M14 10v7"/>',settings:'<circle cx="5" cy="12" r="1"/><circle cx="12" cy="12" r="1"/><circle cx="19" cy="12" r="1"/>',arrow:'<path d="M7 17 17 7M7 7h10v10"/>',pin:'<path d="m16 3 5 5-4 2-3 5-2-2-6 6-1-1 6-6-2-2 5-3z"/>',search:'<circle cx="10" cy="10" r="6"/><path d="m14 14 6 6"/>'});
   icons.crop='<path d="M6 3v15h15M3 6h15v15"/>';icons.chat='<path d="M20 11a8 8 0 0 1-8 8H4l2-4a8 8 0 1 1 14-4Z"/><path d="M9 11h6"/>';const icon=k=>'<svg width="21" height="21" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round" stroke-linecap="round" aria-hidden="true">'+icons[k]+'</svg>';
   const btn=(id,k,title,words='')=>'<button id="'+id+'" type="button" aria-label="'+title+'" title="'+title+'">'+icon(k)+(words?' '+words:'')+'</button>';
-  root.innerHTML='<style>:host{all:initial;position:fixed;left:12px;bottom:18px;z-index:2147483645;color:#172033;font:14px system-ui}*{box-sizing:border-box}[hidden]{display:none!important}button,input,textarea{font:inherit;color:inherit}button{min-height:44px;min-width:44px;border:0;border-radius:8px;background:transparent;display:inline-flex;align-items:center;justify-content:center;gap:5px;padding:8px;cursor:pointer}button:disabled{opacity:.35}button:focus-visible,a:focus-visible,summary:focus-visible{outline:2px solid #2563eb}#open{font-size:11px;border-radius:22px;background:#172033;color:#fff;box-shadow:0 2px 10px #0004}#panel{width:min(380px,calc(100vw - 24px));max-height:78vh;overflow:auto;background:rgba(255,255,255,.86);backdrop-filter:blur(3px);-webkit-backdrop-filter:blur(3px);border:1px solid #cbd5e1;border-radius:14px;padding:10px;box-shadow:0 4px 20px #0004}.row{display:flex;gap:4px;align-items:center;margin:4px 0}.grow{flex:1;min-width:0}textarea,input{width:100%;border:1px solid #cbd5e1;border-radius:8px;padding:9px;background:#fff;font-size:16px}input{min-height:44px}textarea{resize:vertical}small,#status{font-size:12px;color:#475569;overflow-wrap:anywhere}h3{font-size:16px;margin:0}#list{max-height:30vh;overflow:auto}.entry{display:block;text-align:left;width:100%;border-bottom:1px solid #e2e8f0;border-radius:0;overflow-wrap:anywhere}.entry b,.entry small{display:block}#detail{border-top:1px solid #e2e8f0;margin-top:6px;padding-top:6px}#body,#handoff-preview{white-space:pre-wrap;overflow-wrap:anywhere;max-height:25vh;overflow:auto;background:#f8fafc;padding:8px;font:13px/1.45 ui-monospace,monospace;user-select:text}#ask{background:#172033;color:white}button[aria-pressed=true]{background:#e2e8f0;font-weight:600}#handoff{border:1px solid #cbd5e1;border-radius:8px;padding:5px;margin:6px 0}#handoff-open{color:#1d4ed8;min-height:44px;min-width:44px;display:inline-flex;align-items:center;justify-content:center}#status:empty,#count:empty{display:none}details{border-top:1px solid #e2e8f0;padding:4px 0}summary{cursor:pointer;min-height:44px;display:flex;align-items:center;gap:6px;list-style:none}summary::-webkit-details-marker{display:none}#settings summary{justify-content:flex-end}#source-label{font-size:11px}#pin{border:1px solid #cbd5e1}#remove,#clear-tray{color:#991b1b}#open[data-pinned=true],#chat-target[data-pinned=true]{background:#e9bf58;color:#392804}#chat-target{border:1px solid #cbd5e1}#target-label{display:block;line-height:1.3}#target-label:empty{display:none}#ask{background:rgba(23,32,51,.94)}#draft{background:rgba(255,255,255,.75)}#collection-head{margin-top:6px}#crop-editor{position:fixed;inset:8px;z-index:2147483647;display:flex;flex-direction:column;background:#f8fafc;border:1px solid #94a3b8;border-radius:12px;padding:10px;box-shadow:0 4px 20px #0005}#crop-stage{flex:1;min-height:0;display:flex;align-items:center;justify-content:center;overflow:hidden;background:#e2e8f0;border-radius:8px;position:relative}#crop-image-wrap{position:relative;max-width:100%;max-height:100%;display:flex;align-items:center;justify-content:center;touch-action:none;user-select:none}#crop-image{display:block;max-width:100%;max-height:100%;object-fit:contain;pointer-events:none}#crop-selection{position:absolute;outline:2px solid #2563eb;background:rgba(37,99,235,.12);pointer-events:none;box-shadow:0 0 0 200vmax #0004}#crop-stage:has(#crop-image-wrap:not([hidden])) #crop-empty{display:none}#crop-help{padding:5px 2px}#crop-editor .row{flex-wrap:wrap}#crop-add{background:#172033;color:white}#crop-empty{padding:16px;text-align:center;color:#475569}</style>'+
+  root.innerHTML='<style>:host{all:initial;position:fixed;left:12px;bottom:18px;z-index:2147483645;color:#172033;font:14px system-ui}*{box-sizing:border-box}[hidden]{display:none!important}button,input,textarea{font:inherit;color:inherit}button{min-height:44px;min-width:44px;border:0;border-radius:8px;background:transparent;display:inline-flex;align-items:center;justify-content:center;gap:5px;padding:8px;cursor:pointer}button:disabled{opacity:.35}button:focus-visible,a:focus-visible,summary:focus-visible{outline:2px solid #2563eb}#open[data-storage-error=true]{outline:2px solid #dc2626}#open{font-size:11px;border-radius:22px;background:#172033;color:#fff;box-shadow:0 2px 10px #0004}#panel{width:min(380px,calc(100vw - 24px));max-height:78vh;overflow:auto;background:rgba(255,255,255,.86);backdrop-filter:blur(3px);-webkit-backdrop-filter:blur(3px);border:1px solid #cbd5e1;border-radius:14px;padding:10px;box-shadow:0 4px 20px #0004}.row{display:flex;gap:4px;align-items:center;margin:4px 0}.grow{flex:1;min-width:0}textarea,input{width:100%;border:1px solid #cbd5e1;border-radius:8px;padding:9px;background:#fff;font-size:16px}input{min-height:44px}textarea{resize:vertical}small,#status{font-size:12px;color:#475569;overflow-wrap:anywhere}h3{font-size:16px;margin:0}#list{max-height:30vh;overflow:auto}.entry{display:block;text-align:left;width:100%;border-bottom:1px solid #e2e8f0;border-radius:0;overflow-wrap:anywhere}.entry b,.entry small{display:block}#detail{border-top:1px solid #e2e8f0;margin-top:6px;padding-top:6px}#body,#handoff-preview{white-space:pre-wrap;overflow-wrap:anywhere;max-height:25vh;overflow:auto;background:#f8fafc;padding:8px;font:13px/1.45 ui-monospace,monospace;user-select:text}#ask{background:#172033;color:white}button[aria-pressed=true]{background:#e2e8f0;font-weight:600}#handoff{border:1px solid #cbd5e1;border-radius:8px;padding:5px;margin:6px 0}#handoff-open{color:#1d4ed8;min-height:44px;min-width:44px;display:inline-flex;align-items:center;justify-content:center}#status:empty,#count:empty{display:none}details{border-top:1px solid #e2e8f0;padding:4px 0}summary{cursor:pointer;min-height:44px;display:flex;align-items:center;gap:6px;list-style:none}summary::-webkit-details-marker{display:none}#settings summary{justify-content:flex-end}#source-label{font-size:11px}#pin{border:1px solid #cbd5e1}#remove,#clear-tray{color:#991b1b}#open[data-pinned=true],#chat-target[data-pinned=true]{background:#e9bf58;color:#392804}#chat-target{border:1px solid #cbd5e1}#target-label{display:block;line-height:1.3}#target-label:empty{display:none}#ask{background:rgba(23,32,51,.94)}#draft{background:rgba(255,255,255,.75)}#collection-head{margin-top:6px}#crop-editor{position:fixed;inset:8px;z-index:2147483647;display:flex;flex-direction:column;background:#f8fafc;border:1px solid #94a3b8;border-radius:12px;padding:10px;box-shadow:0 4px 20px #0005}#crop-stage{flex:1;min-height:0;display:flex;align-items:center;justify-content:center;overflow:hidden;background:#e2e8f0;border-radius:8px;position:relative}#crop-image-wrap{position:relative;max-width:100%;max-height:100%;display:flex;align-items:center;justify-content:center;touch-action:none;user-select:none}#crop-image{display:block;max-width:100%;max-height:100%;object-fit:contain;pointer-events:none}#crop-selection{position:absolute;outline:2px solid #2563eb;background:rgba(37,99,235,.12);pointer-events:none;box-shadow:0 0 0 200vmax #0004}#crop-stage:has(#crop-image-wrap:not([hidden])) #crop-empty{display:none}#crop-help{padding:5px 2px}#crop-editor .row{flex-wrap:wrap}#crop-add{background:#172033;color:white}#crop-empty{padding:16px;text-align:center;color:#475569}</style>'+
     btn('open','pocket','Open AI Pocket','v'+VERSION)+
     '<section id="panel" hidden><div class="row"><h3 class="grow">Pocket <small>v'+VERSION+'</small></h3>'+btn('saved-tab','bookmark','Open saved discoveries')+btn('close','close','Close Pocket')+'</div>'+
     '<textarea id="draft" rows="2" placeholder="Ask, or select text to collect…" aria-label="Question or selected text"></textarea>'+
@@ -51,6 +78,7 @@
   // Keep native text editing and IME behavior; don't let page hotkeys see our keystrokes.
   for(const type of ['keydown','keypress','keyup'])root.addEventListener(type,e=>{if(e.composedPath().some(el=>el instanceof Element&&el.matches('textarea,input,[contenteditable]')))e.stopPropagation();});
   document.documentElement.append(host);
+  phase='event binding';
   let records=[],tray=[],selected=null,busy=false,loadEpoch=0,view='tray',target=null,pending=null,handoffBusy=false;
   const status=t=>$('status').textContent=t;
   const action=(id,fn)=>{$(id).addEventListener('click',e=>{if(!e.isTrusted)return;try{Promise.resolve(fn()).catch(err=>status('Error: '+String(err?.message||err).slice(0,250)));}catch(err){status('Error: '+String(err?.message||err).slice(0,250));}});};
@@ -386,10 +414,15 @@
   action('copy-record',()=>{if(selected)return copyText(JSON.stringify(selected,null,2));});
   action('remove',async()=>{if(!store||!selected||busy)return;const r=selected,prefix=view==='tray'?TRAY:PREFIX;if(!confirm('Delete this item?'))return;busy=true;try{await store.del(prefix+r.id);hideDetail();await load();status('Deleted item.');}finally{busy=false;}});
   action('export',async()=>{if(!store)return;await copyText(JSON.stringify({schema:'ai_pill_os.pocket',version:1,items:records},null,2));});
-  function refreshVisible(){if(document.hidden||busy||handoffBusy)return;const work=$('panel').hidden?refreshTarget():load();work.catch(e=>status('Error: '+String(e.message||e)));}
+  function refreshVisible(){if(document.hidden||busy||handoffBusy)return;const work=$('panel').hidden?refreshTarget():load();work.catch(e=>{status('Storage refresh failed: '+String(e.message||e));$('open').title='Pocket v'+VERSION+' · Storage refresh failed';$('open').setAttribute('data-storage-error','true');});}
+  phase='initial refresh';
   refreshVisible();
   let lastChatURL=chatURL(location.href);const routeTimer=setInterval(()=>{if(document.hidden)return;const here=chatURL(location.href);if(here!==lastChatURL){lastChatURL=here;refreshVisible();}},1200);
   window.addEventListener('popstate',refreshVisible);
   window.addEventListener('pageshow',refreshVisible);
   document.addEventListener('visibilitychange',refreshVisible);
+  document.getElementById('ai-pill-pocket-error')?.remove();
+    }catch(error){bootFailure(error,phase);}
+  }
+  if(document.documentElement)boot();else document.addEventListener('DOMContentLoaded',boot,{once:true});
 })();
