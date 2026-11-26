@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         AI Pill OS - Pocket
 // @namespace    https://github.com/JadanPoll/AI_Pill_OS
-// @version      0.5.2
+// @version      0.5.3
 // @updateURL    https://raw.githubusercontent.com/JadanPoll/AI_Pill_OS/main/Pocket.user.js
 // @downloadURL  https://raw.githubusercontent.com/JadanPoll/AI_Pill_OS/main/Pocket.user.js
 // @description  Universal Safari pill: collect evidence, keep discoveries, and hand a question to a chosen chat.
@@ -21,7 +21,7 @@
 (() => {
   'use strict';
   if (window.top !== window) return;
-  const VERSION='0.5.2';
+  const VERSION='0.5.3';
   // Report initialization failures without depending on the main UI, storage or a CDN.
   function bootFailure(error,phase){
     const message=String(error?.message||error).slice(0,500);
@@ -181,6 +181,32 @@
     captureLib=module.snapdom;
     return captureLib;
   }
+  // Evidence only: same pinned distribution, independent transport probes, no retry or eval.
+  const diagnosticURLs=[RENDERER_URL,RENDERER_URL.replace('.mjs','.js'),RENDERER_URL.replace('https://cdn.jsdelivr.net/npm/','https://unpkg.com/'),RENDERER_URL.split('/dist/')[0]+'/package.json'];
+  const diagError=e=>({name:e?.name||'',message:String(e?.message||e),stack:String(e?.stack||'').slice(0,4000)});
+  function diagURL(v){if(!v)return '';try{const u=new URL(v,location.href);return u.origin+u.pathname;}catch{return String(v).slice(0,180);}}
+  function depResources(){return performance.getEntriesByType('resource').filter(e=>/snapdom|jsdelivr|unpkg/.test(e.name)).map(e=>({url:diagURL(e.name),initiatorType:e.initiatorType,startTime:e.startTime,duration:e.duration,fetchStart:e.fetchStart,redirectStart:e.redirectStart,redirectEnd:e.redirectEnd,domainLookupStart:e.domainLookupStart,domainLookupEnd:e.domainLookupEnd,connectStart:e.connectStart,connectEnd:e.connectEnd,secureConnectionStart:e.secureConnectionStart,requestStart:e.requestStart,responseStart:e.responseStart,responseEnd:e.responseEnd,transferSize:e.transferSize,encodedBodySize:e.encodedBodySize,decodedBodySize:e.decodedBodySize,nextHopProtocol:e.nextHopProtocol,responseStatus:e.responseStatus??null}));}
+  function depEnvironment(){return {ua:navigator.userAgent,platform:navigator.platform,secureContext:isSecureContext,origin:location.origin,online:navigator.onLine,visibility:document.visibilityState,devicePixelRatio,viewport:[innerWidth,innerHeight],visualViewport:window.visualViewport?{width:visualViewport.width,height:visualViewport.height,scale:visualViewport.scale,offsetLeft:visualViewport.offsetLeft,offsetTop:visualViewport.offsetTop}:null,features:{fetch:typeof fetch,GM:typeof GM,GM_xmlhttpRequest:typeof GM_xmlhttpRequest,clipboardRead:!!navigator.clipboard?.read,clipboardWrite:!!navigator.clipboard?.write,ClipboardItem:typeof ClipboardItem,cryptoDigest:!!globalThis.crypto?.subtle,foreignObject:typeof SVGForeignObjectElement},cspMeta:[...document.querySelectorAll('meta[http-equiv="Content-Security-Policy" i]')].map(e=>e.content)};}
+  async function depFetch(url){
+    const start=performance.now(),ac=new AbortController(),timer=setTimeout(()=>ac.abort(),10000);
+    try{
+      const res=await fetch(url,{mode:'cors',credentials:'omit',cache:'no-store',signal:ac.signal});
+      const bytes=await res.arrayBuffer(),body=new TextDecoder().decode(bytes);
+      let sha256=null;
+      try{if(globalThis.crypto?.subtle)sha256=Array.from(new Uint8Array(await crypto.subtle.digest('SHA-256',bytes)),x=>x.toString(16).padStart(2,'0')).join('');}catch{}
+      const result={url,ms:Math.round(performance.now()-start),status:res.status,ok:res.ok,finalURL:res.url,redirected:res.redirected,type:res.type,headers:Object.fromEntries(res.headers.entries()),byteLength:bytes.byteLength,sha256,bodyPrefix:body.slice(0,180),bodySuffix:body.slice(-180)};
+      if(url.endsWith('package.json'))try{const j=JSON.parse(body);result.package={name:j.name,version:j.version,module:j.module,main:j.main,exports:j.exports,dependencies:j.dependencies||{}};}catch(e){result.parseError=diagError(e);}
+      return result;
+    }catch(e){return {url,ms:Math.round(performance.now()-start),error:diagError(e)};}finally{clearTimeout(timer);}
+  }
+  async function probeFailedDependency(run){
+    recordCapture(run,'dependency diagnostics');
+    const control=(async()=>{try{const m=await import('data:text/javascript,export%20const%20marker%3D42');return {marker:m.marker};}catch(e){return {error:diagError(e)};}})();
+    run.report.dependencyProbes=await Promise.all(diagnosticURLs.map(depFetch));
+    let controlTimer;
+    try{run.report.moduleControl=await Promise.race([control,new Promise(resolve=>{controlTimer=setTimeout(()=>resolve({timeout:true}),3000);})]);}finally{clearTimeout(controlTimer);}
+    run.report.resourceTiming=depResources();
+  }
   function redactCSS(v){
     return String(v??'').replace(/url\([^)]*\)/gi,'url([omitted])').slice(0,180);
   }
@@ -237,9 +263,14 @@
   async function runCapture(region){
     if(captureRun||busy)return;
     const {x,y,w,h,sx,sy,source}=region,controller=new AbortController();
-    const run={started:performance.now(),controller,report:{version:VERSION,renderer:RENDERER,source,time:new Date().toISOString(),viewport:[innerWidth,innerHeight],documentSize:[document.documentElement.scrollWidth,document.documentElement.scrollHeight],region:[x,y,w,h],scroll:[sx,sy],events:[],rendererURL:RENDERER_URL}};
+    const run={started:performance.now(),controller,report:{version:VERSION,renderer:RENDERER,source,time:new Date().toISOString(),viewport:[innerWidth,innerHeight],documentSize:[document.documentElement.scrollWidth,document.documentElement.scrollHeight],region:[x,y,w,h],scroll:[sx,sy],events:[],rendererURL:RENDERER_URL,environment:depEnvironment(),browserEvents:[]}};
     captureRun=run;busy=true;$('capture-cancel').hidden=false;
     let watchdog,clock;
+    const browserEvent=(type,detail)=>{if(run.report.browserEvents.length<80)run.report.browserEvents.push({ms:Math.round(performance.now()-run.started),type,...detail});};
+    const csp=e=>browserEvent('CSP',{blockedURI:diagURL(e.blockedURI),effectiveDirective:e.effectiveDirective,violatedDirective:e.violatedDirective,originalPolicy:e.originalPolicy,disposition:e.disposition,statusCode:e.statusCode,sourceFile:diagURL(e.sourceFile),line:e.lineNumber,column:e.columnNumber});
+    const resourceError=e=>{const url=e.filename||e.target?.src||e.target?.href||'';if(/snapdom|jsdelivr|unpkg/.test(url))browserEvent('error',{url:diagURL(url),message:e.message||null,line:e.lineno||null,column:e.colno||null,error:e.error?diagError(e.error):null});};
+    const rejection=e=>browserEvent('unhandled rejection',{error:diagError(e.reason)});
+    document.addEventListener('securitypolicyviolation',csp);window.addEventListener('error',resourceError,true);window.addEventListener('unhandledrejection',rejection);
     try{
       recordCapture(run,'starting');await checkpointCapture(run);
       // Yield so Safari can paint the status before the synchronous clone/parse work.
@@ -275,9 +306,12 @@
     }catch(err){
       const failedAt=run.report.stage;
       run.report.error={stage:failedAt,message:redactCSS(String(err?.message||err)),stack:String(err?.stack||'').replace(/https?:\/\/[^\s)]+/g,m=>m.includes('snapdom')?m:'[url omitted]').slice(0,1800)};
+      if(failedAt==='loading renderer'){await checkpointCapture(run);try{await probeFailedDependency(run);}catch(e){run.report.diagnosticError=diagError(e);}}
       recordCapture(run,'failed');status('Capture failed at '+failedAt+' · '+run.report.error.message+' · More → Copy capture report');
     }finally{
       clearTimeout(watchdog);clearInterval(clock);
+      document.removeEventListener('securitypolicyviolation',csp);window.removeEventListener('error',resourceError,true);window.removeEventListener('unhandledrejection',rejection);
+      run.report.resourceTiming=depResources();
       await checkpointCapture(run);captureRun=null;busy=false;$('capture-cancel').hidden=true;
     }
   }
@@ -285,7 +319,7 @@
   action('capture-report',async()=>{
     const report=latestCapture||await store?.get(CAPTURE_KEY)||{version:VERSION,rendererLoaded:!!captureLib,stage:'no capture attempted'};
     const images=[...tray,...records].filter(r=>r.image).slice(-12).map(r=>({id:r.id,renderer:r.renderer||null,characters:String(r.image).length,format:String(r.image).split(',')[0].slice(0,50),storedDimensions:r.storedDimensions||null}));
-    const output={...report,rendererLoaded:!!captureLib,storage:modern?'modern GM':legacy?'legacy GM':'unavailable',imageRecords:images};
+    const output={...report,rendererLoaded:!!captureLib,storage:modern?'modern GM':legacy?'legacy GM':'unavailable',imageRecords:images,resourceTiming:depResources()};
     await copyText(JSON.stringify(output,null,2));
   });
   // Native bitmap acquisition is separate from crop geometry. No DOM renderer or network dependency.
