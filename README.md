@@ -16,6 +16,26 @@ The ambition is not simply to make clicking faster, put an AI chatbot on every w
 
 Speed of thought is an asymptotic objective, not a latency guarantee. Some thinking benefits from deliberation, unfamiliar knowledge, and productive friction. The point is to remove unnecessary friction, not to eliminate the human's intellectual participation.
 
+## Current direction: Safari first (November 25, 2026)
+
+The primary environment is Safari, the existing signed-in ChatGPT/Gemini web chats and rapidly iterated userscripts. Native Shortcuts are deliberately rare: create one when it unlocks a genuinely valuable OS capability that Safari cannot supply. OpenMinis has reported successful Git inspection, local validation and its own browser navigation; retain those results but defer integration and app switching until a concrete task justifies it. Separate API inference, iCTRL and iSH integration are not current priorities.
+
+### Pocket — cross-site local memory (v0.1.1)
+
+[Install / view raw Pocket.user.js](https://raw.githubusercontent.com/JadanPoll/AI_Pill_OS/main/Pocket.user.js) · [Source](Pocket.user.js).
+
+A small universal userscript for explicitly saving selected text, thoughts, links, prompts and JSON across websites. The bookmark-like Pocket icon opens a local inbox: save text with source, search, open, copy, or export all records as JSON. It needs no server or model. Select text before opening; to save a link only, enter the URL as text. Source defaults to origin + path (query/fragment removed); edit it if those details are necessary. Clipboard fallback preserves the draft.
+
+Storage is the installed script's GM namespace (modern or legacy APIs), not site localStorage. Records use separate keys, no silent fallback and no automatic network transfer. Different installed scripts do not automatically share a namespace; initially use explicit clipboard transfer, not a page-accessible cross-script message bus. Data is local to the manager/device; export before changing installation or uninstalling. Enable only on trusted sites; no secrets or credentials. Pocket and DevTools are separate scripts for this first canary so the GM grants do not change Eruda's execution context; consolidate the launchers only if actual use warrants it.
+
+**Acceptance:** select/save a passage on GitHub or Wikipedia, recall it in Safari ChatGPT, copy/paste into a real conversation, reload and verify persistence. Export JSON, then verify the same items survive a normal script update. If GM storage is unavailable, preserve the visible diagnostic and report the manager/version. Syntax checked only, not yet tested on iPad.
+
+### One native bridge: Copy Screenshot
+
+Create a Shortcut named `Copy Screenshot` with two actions: Take Screenshot → Copy to Clipboard (use screenshot output). Invoke with Siri or bind to an unused accessibility gesture if the action picker supports it. Preserve existing double tap until this works. Test by pasting the image directly into an existing web chat. Built-in screenshot Copy and Delete is the fallback. No model action or photo-deletion step needed.
+
+[Current RSM investigation tree](research/INVESTIGATION_TREE.json) and [capability atlas](capabilities.json) preserve the revised priorities and stopping conditions.
+
 ## Try the current implementation (v0.3.0)
 
 [Install / view raw AI_Pill.user.js](https://raw.githubusercontent.com/JadanPoll/AI_Pill_OS/main/AI_Pill.user.js) · [Source](AI_Pill.user.js).
@@ -32,9 +52,9 @@ Install using your Safari userscript manager (on iPad, import or save the .user.
 ```
 Only inspect, controls, sources and resources are allowed, at most eight operations. No arbitrary code, clicks, form submission, credential extraction, or automatic model response retrieval. Review requests and reports before sharing.
 
-**Native inference canary:** create a Shortcut named exactly `AI Pill Ask` with Get Clipboard → Use Model (choose ChatGPT, if available) → Copy to Clipboard → Show Result. Connect your ChatGPT account in Apple Intelligence settings where supported. From the pill prepare and copy a non-sensitive question, then open More → Run Shortcut; verify the model answer and manually paste the clipboard result back into Safari or your conversation. If Use Model is absent, check whether the official ChatGPT app exposes a suitable Shortcuts action; otherwise keep browser handoff. This shortcut is a manual setup recipe, not a distributed signed shortcut or a verified callback. No confidential content in the shortcut URL. [Apple documentation](https://support.apple.com/guide/shortcuts/use-apple-intelligence-in-shortcuts-tpg3vrvwmclv/ios) · [ChatGPT account setup](https://help.openai.com/en/articles/10269382-setting-up-chatgpt-with-apple-intelligence).
+**Deferred native inference canary (historical):** create a Shortcut named exactly `AI Pill Ask` with Get Clipboard → Use Model (choose ChatGPT, if available) → Copy to Clipboard → Show Result. Connect your ChatGPT account in Apple Intelligence settings where supported. From the pill prepare and copy a non-sensitive question, then open More → Run Shortcut; verify the model answer and manually paste the clipboard result back into Safari or your conversation. If Use Model is absent, check whether the official ChatGPT app exposes a suitable Shortcuts action; otherwise keep browser handoff. This shortcut is a manual setup recipe, not a distributed signed shortcut or a verified callback. No confidential content in the shortcut URL. [Apple documentation](https://support.apple.com/guide/shortcuts/use-apple-intelligence-in-shortcuts-tpg3vrvwmclv/ios) · [ChatGPT account setup](https://help.openai.com/en/articles/10269382-setting-up-chatgpt-with-apple-intelligence).
 
-**First acceptance:** inspect a real problematic control, record one interaction, send evidence to ChatGPT, run a requested read-only follow-up, and use the returned evidence to make a real userscript improvement. On a second public site test the contextual prompt and Eruda. Verify the shortcut independently. If something fails, copy the status/report and note the manager, version and site. JavaScript syntax has been checked; no iPad execution or end-to-end inference has been certified. iSH is deferred.
+**First acceptance:** inspect a real problematic control, record one interaction, send evidence to ChatGPT, run a requested read-only follow-up, and use the returned evidence to make a real userscript improvement. On a second public site test the contextual prompt and Eruda. Native inference shortcut is deferred; test Copy Screenshot instead. If something fails, copy the status/report and note the manager, version and site. JavaScript syntax has been checked; no iPad execution or end-to-end inference has been certified. iSH is deferred.
 
 ### Subtractive interface (v0.3.0)
 
@@ -63,7 +83,7 @@ The first iPad screenshots supplied on November 25 establish that Eruda's Elemen
 
 [**capabilities.json**](capabilities.json) is the canonical, evolving inventory of capabilities and realistic workflows. It records human intentions, why each capability matters, candidate mechanisms, dependencies, evidence status, practical acceptance criteria and whether it should remain discoverable and useful after a week or month. It is not a feature commitment or a personal data store.
 
-The initial high-priority surfaces are the existing AssistiveTouch screenshot gesture and screenshot-to-intelligence handoff, native voice control and semantic DOM execution, source-linked capture and investigation resumption (Kami/FKEN), and local computation using iSH. [Apple Shortcuts research](research/APPLE_SHORTCUTS.md) covers native orchestration and ambient intelligence. Develop from actual recurring workflows, not from an exhaustive API catalog. Preserve the existing fast paths.
+The initial high-priority surfaces are the existing AssistiveTouch screenshot gesture and screenshot-to-intelligence handoff, native voice control and semantic DOM execution, source-linked capture and investigation resumption (Kami/FKEN), and portable local data handoff through Pocket; iSH is deferred. [Apple Shortcuts research](research/APPLE_SHORTCUTS.md) covers native orchestration and ambient intelligence. Develop from actual recurring workflows, not from an exhaustive API catalog. Preserve the existing fast paths.
 
 ## Personal interfaces: a collection of site-specific userscripts
 
