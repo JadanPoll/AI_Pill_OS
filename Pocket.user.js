@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         AI Pill OS - Pocket
 // @namespace    https://github.com/JadanPoll/AI_Pill_OS
-// @version      0.7.6
+// @version      0.7.7
 // @updateURL    https://raw.githubusercontent.com/JadanPoll/AI_Pill_OS/main/Pocket.user.js
 // @downloadURL  https://raw.githubusercontent.com/JadanPoll/AI_Pill_OS/main/Pocket.user.js
 // @description  Universal Safari pill: collect evidence, keep discoveries, and hand a question to a chosen chat.
@@ -24,7 +24,7 @@
 (() => {
   'use strict';
   if (window.top !== window) return;
-  const VERSION='0.7.6';
+  const VERSION='0.7.7';
   // Report initialization failures without depending on the main UI, storage or a CDN.
   function bootFailure(error,phase){
     const message=String(error?.message||error).slice(0,500);
@@ -78,8 +78,16 @@
     '</div><details id="settings"><summary aria-label="More options">'+icon('settings')+'</summary><label id="source-label" for="source">Source reference</label><input id="source" placeholder="Source URL or reference" aria-label="Source URL or reference"><div class="settings-grid">'+btn('refresh','refresh','Refresh shared storage','Refresh')+'<button id="export">Export saved JSON</button><button id="save">Save draft</button><button id="import-image">Import screenshots</button><button id="bitmap-crop">Crop imported image</button><button id="capture-report">Copy capture report</button><button id="link-report">Copy connection report</button><button id="pin" hidden>Use this chat instead</button><span id="tray-tools">'+btn('clear-tray','trash','Clear working tray','Clear tray')+'</span></div><small>v'+VERSION+' · Local storage · No automatic upload. Avoid secrets.</small></details>'+
     '<input id="image-files" type="file" accept="image/*" multiple hidden><input id="crop-file" type="file" accept="image/*" hidden><textarea id="fallback" hidden rows="4" readonly aria-label="Manual copy fallback"></textarea><div id="status" role="status"></div><button id="capture-cancel" hidden>Cancel capture</button></section>'+
     '<section id="crop-editor" hidden><div class="row"><h3 class="grow">Crop screenshot <small>v'+VERSION+'</small></h3><button id="crop-paste">Paste image</button><button id="crop-choose">Choose image</button>'+btn('crop-close','close','Close screenshot editor')+'</div><div id="crop-stage"><div id="crop-empty">Take a native screenshot, copy it, then tap Paste image. Or choose a saved screenshot.</div><div id="crop-image-wrap" hidden><img id="crop-image" alt="Screenshot to crop" draggable="false"><div id="crop-selection" hidden></div></div></div><small id="crop-help" role="status">No image selected.</small><div class="row"><button id="crop-reset" hidden>Reset crop</button><button id="crop-add" class="grow" disabled>Collect image</button></div></section>';
-  // Keep native text editing and IME behavior; don't let page hotkeys see our keystrokes.
-  for(const type of ['keydown','keypress','keyup'])root.addEventListener(type,e=>{if(e.composedPath().some(el=>el instanceof Element&&el.matches('textarea,input,[contenteditable]')))e.stopPropagation();});
+  // Contain Pocket interactions at the shadow boundary, AFTER native controls
+  // and their local handlers receive the event. Never preventDefault here:
+  // iPad dictation, IME, selection, paste and normal input must still work.
+  // Earlier document/window capture handlers remain outside our control.
+  const editingEvents=['keydown','keypress','keyup','beforeinput','input','change','compositionstart','compositionupdate','compositionend','paste','copy','cut','focusin','focusout','select'];
+  for(const type of editingEvents)root.addEventListener(type,e=>e.stopPropagation());
+  // Prevent host-page delegated click/keyboard-focus handlers from treating a
+  // Pocket tap as an interaction with the underlying webpage. Local button
+  // handlers still run first. Do not capture at window or synthesize input.
+  for(const type of ['pointerdown','pointerup','mousedown','mouseup','touchstart','touchend','click','dblclick','contextmenu'])root.addEventListener(type,e=>e.stopPropagation());
   // Worker status is independent of the Notes/Ask workspace.
   $('panel').insertBefore($('handoff'),$('settings'));
   $('worker-notes').hidden=true;
