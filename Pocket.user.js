@@ -1544,7 +1544,7 @@
         const all=turns('user'),baseIndex=all.findIndex(n=>a.baseline.id&&turnID(n)===a.baseline.id);
         const eligible=baseIndex>=0?all.slice(baseIndex+1):all.slice(-1);
         const matches=marked||eligible.filter(n=>turnText(n)===a.expected&&(!turnID(n)||!a.knownUserIds?.includes(turnID(n)))&&(!a.baseline.id||turnID(n)!==a.baseline.id));
-        if(matches.length!==1){if(marked&&matches.length===0){if(!editorText(chatEditor())&&!composerAttachments(chatEditor())&&now-a.started>45000)await finishAsk(a,'uncertain','Original request not visible; will recover if marker appears');return;}await finishAsk(a,'uncertain','Original turn not uniquely identified · other chat activity is allowed');return;}
+        if(matches.length!==1){if(marked&&matches.length===0){if(!editorText(chatEditor()).includes(r.marker)&&now-a.started>45000)await finishAsk(a,'uncertain','Original request not visible; will recover if marker appears');return;}await finishAsk(a,'uncertain','Original turn not uniquely identified · other chat activity is allowed');return;}
         const matched=matches[0];a.user={count:all.length,id:turnID(matched),text:turnText(matched)};
         testStage(r,'user-verified',validMarker(r)?'Request marker matched in user turn':'New user turn matched submitted text',{userId:a.user.id,userCount:a.user.count,markerMatched:!!marked});
         if(!await markRun(r,'sent','Matching new user turn observed')){activeAsk=null;return;}
@@ -1556,7 +1556,7 @@
     const user=marked?marked.length===1?marked[0]:null:a.user.id?turns('user').find(n=>turnID(n)===a.user.id&&turnText(n)===a.expected):sameTurn(a.user,current)?lastTurn('user'):null;
     if(!user){await finishAsk(a,'uncertain','Original turn no longer visible · other chat activity is allowed');return;}
     const modern=chatSurface()==='modern',container=user?.closest('[data-turn-key]');
-    const candidate=turns('assistant').filter(n=>user&&!!(user.compareDocumentPosition(n)&Node.DOCUMENT_POSITION_FOLLOWING)&&(!modern||(container&&n.closest('[data-turn-key]')===container))).at(-1);
+    const candidate=answerForUser(user);
     if(!candidate||(!modern&&busyNow)){a.stableAt=0;return;}
     const text=extractPocketAnswer(candidate);
     if(!text)return;
@@ -1581,6 +1581,12 @@
   }
   // A submitted marker can be reconciled even after a reload, manual send,
   // timeout, or receiver switch. Observation only: never replays a question.
+  function answerForUser(user){
+    if(!user)return null;
+    const modern=chatSurface()==='modern',container=user.closest('[data-turn-key]');
+    const next=turns('user').find(n=>!!(user.compareDocumentPosition(n)&Node.DOCUMENT_POSITION_FOLLOWING));
+    return turns('assistant').filter(n=>!!(user.compareDocumentPosition(n)&Node.DOCUMENT_POSITION_FOLLOWING)&&(modern?(container&&n.closest('[data-turn-key]')===container):(!next||!!(n.compareDocumentPosition(next)&Node.DOCUMENT_POSITION_FOLLOWING)))).at(-1)||null;
+  }
   let lastReconcile=0;
   async function reconcileMarked(here){
     if(Date.now()-lastReconcile<4000)return false;lastReconcile=Date.now();
@@ -1590,7 +1596,13 @@
       if(await store.get(REPLY+e.id))continue;
       const r=await store.get(HANDOFF+e.id);if(!validMarker(r)||r.target!==here)continue;
       const matches=visible.filter(n=>markedTurn(n,r));if(matches.length!==1)continue;
-      const n=matches[0],user={id:turnID(n),text:turnText(n),count:visible.length};
+      const n=matches[0],candidate=answerForUser(n);
+      // Do not occupy the execution slot for an old marker whose response
+      // is absent, virtualized or not yet ready. Revisit on a future poll.
+      if(!candidate||!extractPocketAnswer(candidate))continue;
+      const complete=chatSurface()==='modern'?candidate.closest('[data-talvt-turn-state]')?.getAttribute('data-talvt-turn-state')==='complete':!!candidate.closest('article,[data-testid^="conversation-turn-"]')?.querySelector('button[data-testid="copy-turn-action-button"],button[data-testid="good-response-turn-action-button"],button[data-testid="bad-response-turn-action-button"]');
+      if(!complete)continue;
+      const user={id:turnID(n),text:turnText(n),count:visible.length};
       activeAsk={r,baseline:fingerprint(),expected:normalizeChat(r.text),started:Date.now(),user,seenBusy:false,answer:'',stableAt:0,assistantID:null,assistantNode:null};
       testStage(r,'reconciled','Existing submitted request marker recovered',{userId:user.id});
       await markRun(r,'sent','Recovered matching user turn; observing reply only');return true;
