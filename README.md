@@ -1,0 +1,117 @@
+# AI Pill OS
+
+> Can I operate at the speed of thought?
+
+AI Pill OS is an attempt to asymptotically collapse the distance between human intention and its realization. The human should spend more time thinking, exploring, deciding, and creating, and less time translating those intentions into the mechanical operations of software.
+
+The ambition is not simply to make clicking faster, put an AI chatbot on every webpage, or maximize autonomous execution. It is to make intelligence and computational capabilities available at the point of intention, without requiring the human to constantly switch applications, reconstruct context, remember interface conventions, or manage the underlying machinery.
+
+## What would operating at the speed of thought look like?
+
+- While reading, ask a question about what is in front of you and continue the investigation without reconstructing its context elsewhere.
+- While browsing, express what you want to accomplish rather than individually specifying the clicks and navigation necessary to accomplish it.
+- While engineering, collect relevant evidence, ask an AI to interpret it, and use the result in the current environment.
+- Invoke familiar operations almost immediately; recruit deeper intelligence for unfamiliar or ambiguous problems.
+- Retain control over consequential decisions, while software absorbs the repetitive translation and execution work.
+
+Speed of thought is an asymptotic objective, not a latency guarantee. Some thinking benefits from deliberation, unfamiliar knowledge, and productive friction. The point is to remove unnecessary friction, not to eliminate the human's intellectual participation.
+
+## First practical realization: Safari on iPadOS
+
+A small, movable AI pill on permitted webpages, accessible through touch and native dictation.
+
+Open the pill, express an intention, optionally include selected text or page context, and choose an available intelligence provider. Ideally the answer returns to the current page and, where appropriate, can inform a local browser action.
+
+The first problem is not building a universal browser agent. It is determining whether intelligence from existing ChatGPT Plus and Gemini Pro subscriptions can be made callable from the browser with sufficiently little friction.
+
+### Minimal interface
+
+```text
+             [ AI ]
+                |
+    What do you want to know or do?
+    [................................]
+    Context: None / Selection / Page
+    Provider: ChatGPT / Gemini
+                              [ Ask ]
+    Status                  [ Details ]
+```
+
+Show the provider choices that actually work. Keep diagnostic details and copyable reports available without filling the ordinary interface. Use iPad dictation before building a speech recognition system.
+
+## Functional intent and factorization
+
+Separate three capabilities:
+
+| Capability | Responsibility |
+|---|---|
+| Perception | Obtain relevant page state, selected content or available controls. |
+| Intelligence | Interpret context and intention, answer questions or propose actions. |
+| Execution | Present results or perform validated actions in the browser. |
+
+The initial functional contract is simply:
+
+```text
+ask(context, intention) -> response
+```
+
+A later extension, justified by demonstrated utility:
+
+```text
+ask(context, intention, available_actions) -> proposed_actions
+```
+
+The provider and its transport are replaceable implementation choices. Known operations need not invoke an AI at all. Do not require a universal workflow engine, backend, new persistence system or general browser automation framework to prove the first contract.
+
+## First investigation: the inference transport
+
+**Q0. Can a real request from Safari reach a supported intelligence provider and return a usable result to the originating webpage?**
+
+| Candidate | What to establish | Status |
+|---|---|---|
+| Apple Shortcuts / ChatGPT | Can an available model action receive text and return a response to Safari? Does it require Apple Intelligence or foreground interaction? | Unverified on target iPad |
+| Sign in with ChatGPT | Can an eligible application use official subscription inference, and what companion runtime or OAuth infrastructure is required? | Eligibility and iPad integration unverified |
+| Gemini developer API | Can a separately provisioned key provide a low-cost reference transport? | Separate quota/billing; not inherited from Gemini Pro |
+| Explicit browser handoff | Can a prompt be transferred to the existing authenticated ChatGPT or Gemini interface, with a user-controlled return? | Immediate fallback candidate; not an autonomous API |
+
+Prefer supported mechanisms. Do not treat consumer web sessions as unrestricted inference APIs or automate extraction in violation of provider terms. Do not expose OAuth tokens, API keys, or unrelated page contents in diagnostics or URL parameters.
+
+References: [Apple Shortcuts URL schemes](https://support.apple.com/guide/shortcuts/run-a-shortcut-from-a-url-apd624386f42/ios), [Sign in with ChatGPT](https://developers.openai.com/siwc), [Gemini API pricing](https://ai.google.dev/gemini-api/docs/pricing), [Safari Userscripts](https://github.com/quoid/userscripts).
+
+## Coal-mine canary
+
+Begin with one versioned userscript and only the companion components that the chosen transport actually requires.
+
+1. On a real Wikipedia page in Safari, enter a contextual question.
+2. Send the prompt through one supported transport.
+3. Receive and display the corresponding real model response on the originating page.
+4. Export a compact report of the stages reached, elapsed times, and any obstruction.
+
+This certifies the actual inference loop, not merely that a button works or a simulated response can render. A manual handoff is useful but must be labeled separately from a verified automatic return. If a transport fails, identify the failed boundary (authentication, invocation, inference, callback, tab lifecycle, or rendering) and decide whether to repair, substitute, or abandon it.
+
+After the first real success, test switching tabs, refreshing, and using a second domain. Then consider one reversible browser action, such as opening a relevant link. Consequential actions and sensitive data transfers require appropriate user authorization. No hidden retries or duplicate submissions.
+
+## Existing foundations
+
+Reuse proven components and lessons rather than rebuilding the ecosystem:
+
+| Project | Relevance |
+|---|---|
+| [Logical Cloud](https://github.com/JadanPoll/Logical_Cloud) | Human intention, functional contracts, replaceable computation and evidence. |
+| [LabX](https://github.com/JadanPoll/LabX) | Browser adapters, task identity, conversation attribution, failure handling; not a reason to reproduce its local hub or unsupported automation. |
+| [Gig Economics](https://github.com/JadanPoll/gig_economics) | Inspectable JSON handoff and low-infrastructure workflows. |
+| [Kami Reading Companion](https://github.com/JadanPoll/Learning_Visualizations_Taxonomy/blob/main/Kami_Wikipedia.user.js) | Contextual browser augmentation and cross-domain userscript storage. |
+| [Microsoft](https://github.com/JadanPoll/microsoft) | Real-device canaries, visible lifecycle, copyable diagnostics. |
+| [Fire Console](https://github.com/JadanPoll/fire) | Human-facing interaction decoupled from execution placement. |
+
+## Engineering and investigation method
+
+- [REM](https://github.com/JadanPoll/Learning_Visualizations_Taxonomy/blob/main/Navigationals/The_Richer_Engineering_Method.md): recover the holistic goal (REM-01/02), test consequential real flows (REM-03), optimize human-facing utility over time and expose failures (REM-04).
+- [RSM](https://github.com/JadanPoll/Learning_Visualizations_Taxonomy/blob/main/Navigationals/The_Richer_Scientific_Method.md): factor the question (RSM-02/03), investigate alternative mechanisms and revise beliefs from evidence (RSM-04), preserve the useful investigation trajectory (RSM-05/06).
+- [FKEN](https://github.com/JadanPoll/Learning_Visualizations_Taxonomy/blob/main/Navigationals/Fractal_Knowledge_And_Ecosystem_Navigation.md): discover existing implementations and capabilities rather than unnecessarily inventing them.
+
+Judge progress by the total human effort from intention to useful outcome, including context reconstruction, waiting, corrections and recovery. A faster individual operation can still make the overall workflow worse.
+
+## Current status
+
+Vision and initial investigation plan established. No working inference transport or iPad acceptance has yet been demonstrated in this repository. The first implementation is an inference canary, not a complete operating system.
