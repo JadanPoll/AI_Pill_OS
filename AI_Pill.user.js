@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         AI Pill OS - DevTools and Ask
 // @namespace    https://github.com/JadanPoll/AI_Pill_OS
-// @version      0.2.0
+// @version      0.2.1
 // @description  Inspect, record, export browser evidence; hand it to ChatGPT and run bounded read-only investigation requests.
 // @match        https://*/*
 // @match        http://*/*
@@ -16,7 +16,7 @@
 (() => {
   'use strict';
   if (window.top !== window || document.getElementById('ai-pill-os')) return;
-  const VERSION = '0.2.0', MAX = 100, MAX_REPORT = 100000;
+  const VERSION = '0.2.1', MAX = 100, MAX_REPORT = 100000;
   let host, root, status, preview, question, scope, includeText, planBox, pill;
   let picked = null, selection = '', armed = false, recording = false, observer = null;
   let events = [], dropped = 0, started = 0, lastReport = null, erudaReady = false;
@@ -29,7 +29,7 @@
       return u.origin + u.pathname.split('/').map(p => p.length > 48 ? '[long-segment]' : p).join('/');
     } catch { return '[unavailable]'; }
   };
-  const own = e => e.composedPath().includes(host);
+  const own = e => e.composedPath().includes(host) || e.composedPath().some(x=>x instanceof Element && x.id==='eruda');
   const setStatus = s => { if (status) status.textContent = s; };
   function push(type, data) {
     if (!recording) return;
@@ -218,7 +218,13 @@
     const end=Math.min(t.length,sourceOffset+WINDOW);
     const before=t.slice(0,sourceOffset), first=before.split('\n').length;
     const chunk=t.slice(sourceOffset,end);
-    byId('source-code').textContent=chunk;
+    const pre=byId('source-code');
+    pre.textContent=chunk;
+    if(sourceMatch>=sourceOffset && sourceMatch+sourceQuery.length<=end && sourceQuery){
+      const rel=sourceMatch-sourceOffset, mark=document.createElement('mark');
+      mark.textContent=chunk.slice(rel,rel+sourceQuery.length);
+      pre.replaceChildren(document.createTextNode(chunk.slice(0,rel)),mark,document.createTextNode(chunk.slice(rel+sourceQuery.length)));
+    }
     byId('source-code').scrollTop=0;
     byId('source-position').textContent=sourceMeta ? sourceViewName()+' · line '+first+' · chars '+sourceOffset+'–'+end+' / '+t.length : 'Choose a file and tap Load';
     byId('source-prev').disabled=sourceOffset===0;
@@ -230,7 +236,7 @@
     const item=sourceItems[Number(selected)];if(!item)return;
     const epoch=++sourceEpoch;
     sourceAbort?.abort();sourceAbort=new AbortController();
-    const signal=sourceAbort.signal, timer=setTimeout(()=>sourceAbort?.abort(),15000);
+    const controller=sourceAbort, signal=controller.signal, timer=setTimeout(()=>controller.abort(),15000);
     sourceRaw='';sourcePretty=null;sourceMeta=null;sourceOffset=0;sourceMatch=-1;sourceQuery='';
     byId('source-find').value='';renderSource();
     sourceStatus('Loading selected file locally…');
@@ -267,7 +273,7 @@
     if(!q || !t)return sourceStatus('Load a file and enter a search term.');
     const hay=t.toLowerCase(), needle=q.toLowerCase();
     if(q!==sourceQuery){sourceMatch=-1;sourceQuery=q;}
-    let pos=direction>0?hay.indexOf(needle,sourceMatch+1):hay.lastIndexOf(needle,sourceMatch<0?t.length:sourceMatch-1);
+    let pos=direction>0?hay.indexOf(needle,sourceMatch+1):(sourceMatch===0?-1:hay.lastIndexOf(needle,sourceMatch<0?t.length:sourceMatch-1));
     if(pos<0)pos=direction>0?hay.indexOf(needle):hay.lastIndexOf(needle);
     if(pos<0)return sourceStatus('No matches for '+safe(q,80));
     sourceMatch=pos;sourceOffset=Math.max(0,pos-400);
@@ -281,8 +287,9 @@
     preview.value=excerpt;closeSources();setStatus('Source excerpt ready. Review and Copy.');
   }
   function openSources() {
+    byId('source-panel').hidden=false;
     if(erudaReady) eruda.hide();
-    pill.hidden=true;byId('open').hidden=true;byId('source-panel').hidden=false;
+    pill.hidden=true;byId('open').hidden=true;
     refreshSourceList(true);
   }
   function closeSources() {
@@ -294,7 +301,7 @@
     const alpha=Number(cfg.get('transparency')), size=Number(cfg.get('displaySize'));
     byId('dev-alpha').textContent='Opacity '+Math.round(alpha*100)+'%';
     byId('dev-size').textContent='Height '+Math.round(size)+'%';
-    byId('dev-bar').style.bottom='calc('+Math.min(88,size)+'vh + 8px)';
+    byId('dev-bar').style.top='max(8px, calc('+(100-size)+'vh - 58px))';
   }
   function cycleConfig(key, values) {
     try {
@@ -311,17 +318,17 @@
         erudaReady=true;
         const dev=eruda.get();
         dev.on('show',()=>{byId('dev-bar').hidden=false;erudaSettings();});
-        dev.on('hide',()=>{byId('dev-bar').hidden=true;});
+        dev.on('hide',()=>{byId('dev-bar').hidden=true;if(byId('source-panel').hidden && pill.hidden)byId('open').hidden=false;});
         dev.config.on('change',erudaSettings);
         const erudaRoot=document.getElementById('eruda')?.shadowRoot;
         if(erudaRoot){
           const style=document.createElement('style');
-          style.textContent='.eruda-resizer{min-height:28px!important;touch-action:none}.eruda-resizer::before{content:"";display:block;width:48px;height:4px;background:#94a3b8;border-radius:3px;margin:5px auto}';
+          style.textContent='.eruda-resizer{min-height:28px!important;top:-24px!important;touch-action:none}.eruda-resizer::before{content:"";display:block;width:48px;height:4px;background:#94a3b8;border-radius:3px;margin:5px auto}';
           erudaRoot.append(style);
         }
         eruda.get('entryBtn')?.hide();
       }
-      pill.hidden=true;byId('open').hidden=false;
+      pill.hidden=true;byId('open').hidden=true;
       eruda.show();erudaSettings();setStatus('Eruda opened; use the large controls above it.');
     } catch(e) {setStatus('Eruda unavailable: '+safe(e.message));}
   }
