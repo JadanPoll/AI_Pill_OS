@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         AI Pill OS - DevTools and Ask
 // @namespace    https://github.com/JadanPoll/AI_Pill_OS
-// @version      0.4.33
+// @version      0.4.34
 // @description  LLM-directed investigation: run bounded JSON plans, collect evidence and export outcomes.
 // @match        https://*/*
 // @match        http://*/*
@@ -17,7 +17,7 @@
 (() => {
   'use strict';
   if (window.top !== window || document.getElementById('ai-pill-os')) return;
-  const VERSION = '0.4.33', MAX = 100, MAX_REPORT = 100000;
+  const VERSION = '0.4.34', MAX = 100, MAX_REPORT = 100000;
   let host, root, status, preview, includeText, planBox, pill;
   let picked = null, armed = false, recording = false, observer = null;
   let events = [], dropped = 0, started = 0, erudaReady = false;
@@ -366,15 +366,29 @@
     const status=result.executionError?'failed':unmet.length||issues.length?(useful?'partial':'failed'):'passed';
     return {index,op:x.op,...(x.id?{id:x.id}:{}),status,execution:result.executionError?'failed':'completed',observation:result.executionError?'unavailable':issues.length?'incomplete':['searchIndex','exploreIndex'].includes(x.op)&&observed.items===0?'empty':'available',expectation:result.executionError?'not evaluated':unmet.length?'unmet':checks.length?'met':'not specified',elapsedMs,observed,checks,issues,...(itemRows.length?{items:itemRows.map(({name,status,error,bytes,candidate,basis})=>({name,status:error?'failed':status,...(error?{error}:{}),...(bytes!==undefined?{bytes}:{}),...(candidate?{candidate}:{}),...(basis?{basis}:{})}))}:{})};
   }
+  // Preserve validated replay parameters, excluding selectors, recording
+  // instructions and arbitrary extra properties from retained outcomes.
+  function outcomePlan(p){
+    const plan={...(p.origin!==undefined?{origin:p.origin}:{}),...(p.description!==undefined?{description:p.description}:{}),operations:[]},redactions=[];
+    const keys={snapshotSources:['maxFiles','resume','offset'],searchIndex:['all','any','not','scope','limit','files'],exploreIndex:['offset','limit','files'],readSource:['file','sha256','start','length'],resolveModule:['moduleId','file','sha256'],collectSources:['from','files'],collectDependency:['parent','path'],sources:[],resources:[],controls:[],inspect:[],record:['seconds','probe']};
+    for(const [index,x] of p.operations.entries()){
+      const row={op:x.op};
+      for(const key of ['id','expect',...(keys[x.op]||[])])if(x[key]!==undefined)row[key]=x[key];
+      if(x.op==='inspect')redactions.push({index,field:'selector'});
+      if(x.op==='record')redactions.push({index,field:'instruction'});
+      plan.operations.push(row);
+    }
+    return {plan,...(redactions.length?{plan_redactions:redactions,plan_status:'Redacted; supply omitted fields before replay.'}:{})};
+  }
   function buildOutcome(bundle){
     const operations=bundle.outcomes||[],counts={passed:0,partial:0,failed:0,skipped:0};
     for(const x of operations)counts[x.status]++;
     const status=counts.passed===operations.length&&!bundle.error?'passed':counts.passed||counts.partial?'partial':'failed';
-    return {schema:'ai_pill_os.investigation_outcome.v1',version:bundle.version,runId:bundle.runId,origin:bundle.origin,at:bundle.at,description:bundle.description,status,counts,elapsedMs:bundle.elapsedMs,operations,answers:(bundle.results||[]).filter(x=>['searchIndex','exploreIndex','readSource','resolveModule','collectDependency'].includes(x.op)).map(x=>({...x})),archive:bundle.archive||undefined,files:bundle.files.slice(0,256).map(({name,bytes,source})=>({name,bytes,url:source?.url})),...(bundle.files.length>256?{fileList:{total:bundle.files.length,shown:256,fullManifest:'Save discovery map or full evidence'}}:{}),bytes:bundle.bytes,...(bundle.atlas?{discovery:{schema:bundle.atlas.schema,coverage:bundle.atlas.coverage,exports:{discoveryMap:true,fullEvidence:true}}}:{}),...(bundle.error?{error:bundle.error}:{})};
+    return {schema:'ai_pill_os.investigation_outcome.v1',version:bundle.version,runId:bundle.runId,origin:bundle.origin,at:bundle.at,description:bundle.description,...(bundle.plan?outcomePlan(bundle.plan):{}),status,counts,elapsedMs:bundle.elapsedMs,operations,answers:(bundle.results||[]).filter(x=>['searchIndex','exploreIndex','readSource','resolveModule','collectDependency'].includes(x.op)).map(x=>({...x})),archive:bundle.archive||undefined,files:bundle.files.slice(0,256).map(({name,bytes,source})=>({name,bytes,url:source?.url})),...(bundle.files.length>256?{fileList:{total:bundle.files.length,shown:256,fullManifest:'Save discovery map or full evidence'}}:{}),bytes:bundle.bytes,...(bundle.atlas?{discovery:{schema:bundle.atlas.schema,coverage:bundle.atlas.coverage,exports:{discoveryMap:true,fullEvidence:true}}}:{}),...(bundle.error?{error:bundle.error}:{})};
   }
   function investigationContract(){
     return {schema:'ai_pill_os.plan_contract.v1',version:VERSION,origin:location.origin,
-      use:'Explore before narrowing. Paste JSON into AI Pill and Run; Copy results includes bounded index answers and source excerpts. Use saved index/readSource before refetching. Save full evidence for complete original sources.',
+      use:'Explore before narrowing. Paste JSON into AI Pill and Run; Copy results includes source-plan parameters, bounded index answers and source excerpts. Recent runs → Copy all exports retained outcomes together. Use saved index/readSource before refetching. Save full evidence for complete original sources.',
       description:'Give every plan a concise human-readable description of its investigative purpose (max 160 characters). Optional for older plans.',example:{origin:location.origin,description:'Map available source resources',operations:[{op:'sources'}]},
       operations:[
         {op:'sources',use:'Discover script/style URLs in the page source inventory',expect:{minItems:1}},
@@ -7422,11 +7436,22 @@ return module.exports;
     const prior=select.value;select.replaceChildren();
     for(const o of recentRuns){const label=new Date(o.at).toLocaleTimeString([], {hour:'2-digit',minute:'2-digit',second:'2-digit'})+' · '+(o.description||'Investigation')+' · '+o.status;select.append(el('option',{value:o.runId},label));}
     if(recentRuns.some(o=>o.runId===prior))select.value=prior;
-    byId('recent-runs').hidden=!recentRuns.length;byId('recent-copy').disabled=!recentRuns.length;
+    byId('recent-runs').hidden=!recentRuns.length;byId('recent-copy').disabled=!recentRuns.length;byId('recent-copy-all').disabled=!recentRuns.length;
+    byId('recent-runs-summary').textContent='Recent runs ('+recentRuns.length+')';
+    resetCopyFeedback('recent-copy-all','Copy all');
   }
   async function loadRecentRuns(){if(recentLoad)return recentLoad;recentLoad=(async()=>{try{const h=await archiveIO('recent-runs');if(Array.isArray(h)){const known=new Set(recentRuns.map(o=>o.runId));recentRuns=[...recentRuns,...h.filter(o=>o?.origin===location.origin&&!known.has(o.runId))].slice(0,20);syncRecentRuns();}}catch{}})();return recentLoad;}
   async function rememberRun(o){await loadRecentRuns();const copy=JSON.parse(JSON.stringify(o));recentRuns=[copy,...recentRuns.filter(v=>v.runId!==copy.runId)].slice(0,20);while(recentRuns.length>1&&JSON.stringify(recentRuns).length>1000000)recentRuns.pop();syncRecentRuns();byId('recent-select').value=copy.runId;try{await archiveIO('recent-runs',recentRuns);}catch(e){byId('recent-status').textContent='Recent results are in memory only: '+safe(e.message||e,100);}}
   async function copyRecentRun(){const o=recentRuns.find(x=>x.runId===byId('recent-select').value);if(o)await copyPrepared(JSON.stringify(o,null,2),'Investigation results',{id:'recent-copy',label:'Copy selected result'});}
+  function recentRunPacket(runs,origin,exportedAt){
+    return {schema:'ai_pill_os.recent_runs.v1',version:VERSION,origin,exportedAt,count:runs.length,order:'newest first',retention:{maxRuns:20,targetCharacters:1000000,scope:'retained results for this origin; not the full run history'},runs};
+  }
+  async function copyRecentRuns(){
+    if(!recentRuns.length)return setStatus('No recent runs retained.');
+    const packet=recentRunPacket(recentRuns,location.origin,new Date().toISOString());
+    // Compact JSON; clipboard begins directly in the trusted tap.
+    await copyPrepared(JSON.stringify(packet),'All '+packet.count+' recent runs',{id:'recent-copy-all',label:'Copy all'});
+  }
   async function runPlan(autoPlan,sourceReviewed=false){
     if(planActive||recording)return setStatus('Another recording or plan is active.');
     closeSourceReview();
@@ -7714,7 +7739,7 @@ return module.exports;
         el('section',{id:'plan-result',hidden:true},el('div',{id:'plan-summary',role:'status'}),row(el('button',{id:'plan-copy',type:'button',class:'primary grow icon-btn',disabled:true},icon('copy'),el('span',{},'Copy results')))),
         el('div',{id:'status',role:'status'},''),
         el('section',{id:'source-review',hidden:true,style:'border:1px solid #cbd5e1;border-radius:8px;padding:8px;margin:6px 0'},el('strong',{},'Source access'),el('small',{id:'source-review-note',style:'display:block;margin:5px 0'}),el('div',{id:'source-review-list',style:'max-height:35vh;overflow:auto'}),row(plain('source-review-continue','Continue snapshot',{class:'primary grow'}),plain('source-review-cancel','Cancel'))),
-        el('details',{id:'recent-runs',hidden:true},el('summary',{},'Recent runs'),row(el('select',{id:'recent-select',class:'grow','aria-label':'Recent investigations'})),row(el('button',{id:'recent-copy',type:'button',class:'grow icon-btn'},icon('copy'),el('span',{},'Copy selected result'))),el('small',{id:'recent-status'},'Local results (including excerpts) · last 20, up to about 1 MB')),
+        el('details',{id:'recent-runs',hidden:true},el('summary',{id:'recent-runs-summary'},'Recent runs'),row(el('select',{id:'recent-select',class:'grow','aria-label':'Recent investigations'})),row(el('button',{id:'recent-copy',type:'button',class:'grow icon-btn'},icon('copy'),el('span',{},'Copy selected result')),el('button',{id:'recent-copy-all',type:'button',class:'grow icon-btn',disabled:true},icon('copy'),el('span',{},'Copy all'))),el('small',{id:'recent-status'},'Local results (including excerpts) · last 20, about 1 million characters')),
         el('details',{id:'evidence',hidden:true},el('summary',{},'Result details & exports'),el('div',{id:'export-row',class:'row',hidden:true},el('button',{id:'plan-save',type:'button',class:'grow icon-btn',disabled:true,hidden:true},icon('download'),el('span',{},'Save run evidence')),el('button',{id:'plan-map',type:'button',class:'grow icon-btn',hidden:true},icon('download'),el('span',{},'Save discovery map'))),el('div',{id:'preview-wrap',hidden:true},field('preview',5,null,{'aria-label':'Evidence preview'}),row(button('copy','copy','Copy visible evidence','Copy')))),
         el('details',{id:'tools'},el('summary',{},'Tools'),
           row(plain('contract','Copy tool list'),button('sources','file','Browse sources','Sources'),button('console','terminal','Open persistent console logs','Console')),row(plain('source-access','Source access')),
@@ -7743,7 +7768,7 @@ return module.exports;
     $('inspect').onclick=startPointer;bindPointer();$('direct-inspect').onclick=()=>{armed=true;toggle(false);setStatus('Tap an element to inspect.');$('open').textContent='Cancel inspect · v'+VERSION;};
     $('open').addEventListener('click',()=>{armed=false;syncRecord();});
     $('record').onclick=()=>planActive?planFinish?.():recording?stop():record();$('snapshot').onclick=()=>show(report());
-    $('html-delay').onclick=e=>{if(e.isTrusted)armTimedHTML();};$('copy-timed-html').onclick=e=>{if(e.isTrusted)void copyTimedHTML();};$('popup-arm').onclick=e=>{if(e.isTrusted)armPopupCapture();};$('popup-copy').onclick=e=>{if(e.isTrusted)void copyPopup();};$('copy').onclick=copy;$('copy-html').onclick=e=>{if(e.isTrusted)void copyHTML();};$('ai-context').onclick=e=>{if(e.isTrusted)void copyAIContext();};$('contract').onclick=e=>{if(e.isTrusted)void copyPrepared(JSON.stringify(investigationContract(),null,2),'Investigation capabilities');};$('run').onclick=e=>{if(e.isTrusted)void runPlan();};$('plan-clear').onclick=e=>{if(e.isTrusted&&!planActive){closeSourceReview();planBox.value='';setStatus('Plan cleared.');}};$('recent-copy').onclick=e=>{if(e.isTrusted)void copyRecentRun();};$('recent-select').onchange=()=>resetCopyFeedback('recent-copy','Copy selected result');void loadRecentRuns();$('plan-save').onclick=savePlanBundle;$('plan-map').onclick=saveDiscoveryMap;$('plan-copy').onclick=copyPlanOutcome;$('plan-finish').onclick=()=>planFinish?.();$('eruda').onclick=devtools;
+    $('html-delay').onclick=e=>{if(e.isTrusted)armTimedHTML();};$('copy-timed-html').onclick=e=>{if(e.isTrusted)void copyTimedHTML();};$('popup-arm').onclick=e=>{if(e.isTrusted)armPopupCapture();};$('popup-copy').onclick=e=>{if(e.isTrusted)void copyPopup();};$('copy').onclick=copy;$('copy-html').onclick=e=>{if(e.isTrusted)void copyHTML();};$('ai-context').onclick=e=>{if(e.isTrusted)void copyAIContext();};$('contract').onclick=e=>{if(e.isTrusted)void copyPrepared(JSON.stringify(investigationContract(),null,2),'Investigation capabilities');};$('run').onclick=e=>{if(e.isTrusted)void runPlan();};$('plan-clear').onclick=e=>{if(e.isTrusted&&!planActive){closeSourceReview();planBox.value='';setStatus('Plan cleared.');}};$('recent-copy').onclick=e=>{if(e.isTrusted)void copyRecentRun();};$('recent-copy-all').onclick=e=>{if(e.isTrusted)void copyRecentRuns();};$('recent-select').onchange=()=>resetCopyFeedback('recent-copy','Copy selected result');void loadRecentRuns();$('plan-save').onclick=savePlanBundle;$('plan-map').onclick=saveDiscoveryMap;$('plan-copy').onclick=copyPlanOutcome;$('plan-finish').onclick=()=>planFinish?.();$('eruda').onclick=devtools;
     $('source-access').onclick=e=>{if(e.isTrusted&&!planActive)showSourceReview(null,true);};$('source-review-continue').onclick=e=>{if(e.isTrusted&&!planActive)applySourceReview();};$('source-review-cancel').onclick=e=>{if(e.isTrusted){closeSourceReview();setStatus('Source review cancelled.');}};
     $('sources').onclick=openSources;$('dev-sources').onclick=openSources;
     const openConsole=()=>{if(!document.getElementById('ai-pill-console')){setStatus('Install AI_Pill_Console.user.js first, then reload.');return;}document.dispatchEvent(new Event('ai-pill-console-open'));};
