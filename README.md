@@ -69,6 +69,20 @@ The Discord v0.4.27 report recorded 256/874 eligible JS files collected, zero fe
 - The 60,000-character orientation packet retains a bounded catalog for large corpora (largest files plus evenly spaced identities); full-corpus motif totals and local `exploreIndex`, `searchIndex`, `readSource`, and explicit evidence exports remain available. A sampled context is not a negative search result. Copied outcomes cap the manifest preview at 256 entries; export the discovery map for the full manifest.
 - Tool-side syntax compilation and a continuation fixture using the report's 874/256 shape passed, including inventory change/reordering, reuse without fetches and explicit fresh reset. This is not a live Safari network, memory, IndexedDB, or discovery-quality certificate. Verify on Discord with the existing archive and copy the outcome; do not restart from scratch unless necessary.
 
+### Structural discovery (v0.4.29)
+
+Discord live v0.4.28 retained 1,429/1,429 observed eligible scripts (24,197,823 bytes), reused 256, acquired 1,173, no failed/deferred, 9.765 s. Subsequent four search/explore operations took 1.255 s; eight original source reads took 0.155 s. Both used the same retained run ID and collected zero new files. These exposed locale loading, editor reconciliation, scroll anchors, error attribution and per-resource backoff. They did not verify runtime execution or independent reload persistence.
+
+v0.4.29 reuses embedded Acorn to parse supported Webpack JSONP chunk registry factories as well as Rspack ESM factories. Module index v3 rebuilds locally from retained source; no fresh snapshot required. Numeric and string loader references are lexical candidates, not verified call edges. `resolveModule` returns root and direct dependency candidates with file/digest/range, preserves ambiguity across same-namespace retained builds, and reports unsupported coverage. Search prioritizes definition-shaped matches, then lexical coverage; exploration brings different grammar families forward. Catalog projection is at most 80 identities on large corpora, with staged allocation relative to remaining context budget and full-corpus module coverage.
+
+Live acceptance: after updating, run the following on the retained Discord archive. The consumer must resolve to its known source; the store/backoff roots may be unavailable if the main bootstrap wrapper is not supported. Read its header to distinguish parser coverage from a missing asset. Then copy AI context to inspect API/module/region allocation. Do not reacquire source merely to change a derived index.
+
+```json
+{"origin":"https://discord.com","description":"Verify structural discovery against retained Discord code","operations":[{"op":"resolveModule","moduleId":"674658","file":"d98faba192fc7e37.js"},{"op":"resolveModule","moduleId":"590180"},{"op":"resolveModule","moduleId":"158390"},{"op":"searchIndex","any":["isProductFetchBackedOff"],"scope":"module","limit":6},{"op":"readSource","file":"web.1732a939a32a5e17.js","start":0,"length":1500},{"op":"exploreIndex","limit":12}]}
+```
+
+Tool-side syntax and parser check using the exact supplied consumer, a Rspack fixture and a representative cross-file store/backoff fixture passed. Full Safari parser latency, coverage, migration and discovery quality not yet verified.
+
 ## Try the current implementation (v0.4.1)
 
 [Install / view raw AI_Pill.user.js](https://raw.githubusercontent.com/JadanPoll/AI_Pill_OS/main/AI_Pill.user.js) · [Source](AI_Pill.user.js).
