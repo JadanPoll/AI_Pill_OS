@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         AI Pill OS - DevTools and Ask
 // @namespace    https://github.com/JadanPoll/AI_Pill_OS
-// @version      0.4.26
+// @version      0.4.27
 // @description  LLM-directed investigation: run bounded JSON plans, collect evidence and export outcomes.
 // @match        https://*/*
 // @match        http://*/*
@@ -17,7 +17,7 @@
 (() => {
   'use strict';
   if (window.top !== window || document.getElementById('ai-pill-os')) return;
-  const VERSION = '0.4.26', MAX = 100, MAX_REPORT = 100000;
+  const VERSION = '0.4.27', MAX = 100, MAX_REPORT = 100000;
   let host, root, status, preview, includeText, planBox, pill;
   let picked = null, armed = false, recording = false, observer = null;
   let events = [], dropped = 0, started = 0, erudaReady = false;
@@ -608,7 +608,7 @@
     const now=inventory.filter(x=>x.kind==='js').flatMap(x=>{try{const p=sourceAcquisitionPolicy(new URL(x.address),archive.origin);return p.allowed?[p.address]:[];}catch{return [];}});
     const current=new Set(now);return {observed:current.size,newlyObserved:[...current].filter(x=>!old.has(x)).length,notCurrentlyObserved:[...old].filter(x=>!current.has(x)).length};
   }
-  const MODULE_INDEX_VERSION=2,REGION_INDEX_VERSION=2;
+  const MODULE_INDEX_VERSION=2,REGION_INDEX_VERSION=3;
   const orientationNoise=new Set([...vocabNoise,'__rspack_esm_ids','__webpack_modules__','__webpack_require__','exports','module','createElement','createContext','useContext','useEffect','useState','useReducer','useSyncExternalStore','setTimeout','setInterval','queueMicrotask','addEventListener','getBoundingClientRect','defaultMessage','formatMessage','className','currentColor','gradientUnits','maskUnits','fillRule','clipRule','strokeWidth','BackgroundImageFix','viewBox','location','history','subscribe','dispatch','getState','setState','File','Blob','TextEncoder','TextDecoder','Uint8Array','ArrayBuffer','URLSearchParams','AbortController','documentElement']);
   function readableClue(n){
     n=displayNameOf(n);
@@ -6932,7 +6932,7 @@ return module.exports;
       // Reset at tile boundary; retain the closest witness per rule per tile.
       for(const m of text.slice(t.start,t.end).matchAll(/[A-Za-z_$][A-Za-z0-9_$]*/g)){
         const n=displayNameOf(m[0]),families=liftByToken.get(n);if(!families)continue;
-        const hit=[n,t.start+m.index];
+        const hit=[m[0],t.start+m.index];
         for(const f of families)for(const [label,seq] of liftEnds.get(f)||[]){
           const chain=seq.slice(0,-1).map(k=>last.get(k)).concat([hit]);
           if(chain.some(v=>!v)||chain.some((v,i)=>i>0&&v[1]<=chain[i-1][1]))continue;
@@ -7039,6 +7039,8 @@ return module.exports;
       exclusions:atlas.inventory.filter(x=>x.status==='excluded').slice(0,12).map(({name,reason})=>[name,reason]),environment:{visibility:document.visibilityState,platform:navigator.platform||'',touchPoints:navigator.maxTouchPoints||0},
       glossary:{distinctTerms:df.size,distinctWords:words.size,uniqueTerms:[...df.values()].filter(n=>n===1).length,omittedOccurrences:fs.reduce((a,f)=>a+(f.vocabulary?.omittedOccurrences||0),0),fileRow:'[exact source name, byte length, signature identifiers, SHA-256]',regionRow:'[file index, start UTF-16 offset, identifiers]; inverse within-file tile frequency, APIs separated',alias:'Closure JSC$numeric_ prefixes normalized only for discovery and query aliases; raw source and returned occurrences unchanged',apiRow:'[API token, number of files, candidate file indices, capability families]',edgeRow:'[from file index, candidate target indices, total]; literal basename match only',entryRow:'[file index, candidate route paths, total]; static string clues',scope:'Filtered lexical identifiers. Counts and offsets remain in the retained map. File indices are zero-based.'},
       contract,files:fs.map(f=>[f.source.name,f.source.bytes,[],f.source.sha256]),regions:[],mechanismLandmarks:[],browserAPIs:[],frameworkSignals:[],literalEdges:[],entryPoints:[],commandClues:[],modules:[],moduleCoverage:{recognizedFiles:moduleFiles.length,totalFiles:fs.length,candidateModules:moduleFiles.reduce((a,f)=>a+f.moduleIndex.modules.length,0),algorithmVersion:MODULE_INDEX_VERSION,method:'Acorn-parsed direct registry factory properties; unsupported files retain file/region scopes. Export and dependency hints remain lexical.',row:'[file index,module id,start,end,named exports,API clues,distinctive names]'},uncollected:{observed:atlas.inventory.filter(x=>x.status==='deferred'||x.status==='failed').map(x=>x.name),literalCandidates:frontier.length,candidateRow:'[parent file index, exact literal, path shape, sampled offset or null]; same-origin parents only, lexical clues; bare filename resolution inferred; use parent and literal in collectDependency',candidates:frontier.slice(0,24)},evidenceHistory:evidenceHistory.slice(-6)};
+    const landscape=explorationOrder(atlas);
+    packet.mechanisms={basis:'Ordered lexical motif witnesses, not function classification or causal order; names may occur in strings/comments. Use exploreIndex with offset or files to navigate all tiles.',families:landscape.familyCounts,totalTiles:landscape.tiles,indexedTiles:landscape.rows.length,row:'[file index, tile start, grammar label, [[original identifier, UTF-16 offset],...]]'};
     let packetSize=JSON.stringify(packet).length;
     const add=(array,value,budget)=>{const delta=JSON.stringify(value).length+(array.length?1:0);if(packetSize+delta>budget-512)return false;array.push(value);packetSize+=delta;return true;};
     // Retain API diversity, even where business-logic identifiers dominated the file signature.
@@ -7053,13 +7055,16 @@ return module.exports;
     for(let depth=0;depth<3;depth++)for(const [i,terms] of signatures.entries()){if(terms[depth])add(packet.files[i][2],terms[depth][0],CONTEXT_LIMIT*.68);}
     const modules=[];for(const [i,f] of fs.entries())for(const m of f.moduleIndex?.modules||[]){const named=m.exports.filter(readableClue),apis=m.apis.filter(n=>!orientationNoise.has(n));if(!named.length&&!apis.length)continue;modules.push({i,m,named,apis,score:named.length*6+apis.length*3});}
     modules.sort((a,b)=>b.score-a.score||a.i-b.i||a.m.start-b.m.start);const modulePer=new Map();for(let round=0;round<8;round++)for(const x of modules){if(x.used||(modulePer.get(x.i)||0)!==round)continue;if(add(packet.modules,[x.i,x.m.id,x.m.start,x.m.end,x.named.slice(0,6),x.apis.slice(0,5),x.m.signature.slice(0,4)],CONTEXT_LIMIT*.76)){x.used=true;modulePer.set(x.i,round+1);}}
-    const landscape=explorationOrder(atlas);
-    packet.mechanisms={basis:'Ordered lexical motif witnesses, not function classification or causal order; names may occur in strings/comments. Use exploreIndex with offset or files to navigate all tiles.',families:landscape.familyCounts,totalTiles:landscape.tiles,indexedTiles:landscape.rows.length,row:'[file index, tile start, grammar label, [[raw-ish identifier, UTF-16 offset],...]]'};
     // One representative of each grammar family before additional examples.
     const familySeen=new Set();
     for(const a of landscape.rows)for(const [label,chain] of a.grammar)if(!familySeen.has(label)&&add(packet.mechanismLandmarks,[a.i,a.start,label,chain],CONTEXT_LIMIT*.91))familySeen.add(label);
     const per=new Map(),represented=new Map();
-    for(const a of landscape.rows){
+    // Big bundles already lose internal heterogeneity in file-level signatures.
+    // Reserve a small prefix for both ends of the four largest bundles.
+    const large=fs.map((f,i)=>({i,n:f.tiles.length})).filter(f=>f.n>=8).sort((a,b)=>b.n-a.n).slice(0,4);
+    const priority=large.flatMap(f=>landscape.rows.filter(a=>a.i===f.i).slice(0,4));
+    const chosen=new Set(priority);
+    for(const a of priority.concat(landscape.rows.filter(a=>!chosen.has(a)))){
       if((per.get(a.i)||0)>=12)continue;
       const names=a.names.slice(0,4).map(v=>v[0]);
       if(!names.length&&!a.grammar.length&&!a.api.length)continue;
