@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         AI Pill OS - Pocket
 // @namespace    https://github.com/JadanPoll/AI_Pill_OS
-// @version      0.7.53
+// @version      0.7.54
 // @updateURL    https://raw.githubusercontent.com/JadanPoll/AI_Pill_OS/main/Pocket.user.js
 // @downloadURL  https://raw.githubusercontent.com/JadanPoll/AI_Pill_OS/main/Pocket.user.js
 // @description  Universal Safari pill: collect evidence, keep discoveries, and hand a question to a chosen chat.
@@ -26,7 +26,7 @@
 (() => {
   'use strict';
   if (window.top !== window) return;
-  const VERSION='0.7.53';
+  const VERSION='0.7.54';
   // Report initialization failures without depending on the main UI, storage or a CDN.
   function bootFailure(error,phase){
     const message=String(error?.message||error).slice(0,500);
@@ -974,7 +974,7 @@
   }
   async function prepareHandoff(){
     if(!store||handoffBusy)return;
-    if(modelPending){status('Wait for the model selection to be confirmed, or open the receiver.');return;}if(dictationPending){status('Finish dictation and review its transcript before asking.');return;}
+    if(modelPending){status('Wait for the model selection to be confirmed, or open the receiver.');return;}if(dictationPending){return queueDictatedAsk(dictationPending);}
     const question=$('draft').value.trim(),source=$('source').value.trim(),origin=sourceURL(),passage=quoted,explicit=attachments.slice();
     if(!question){status('Dictate or enter a question first.');return;}
     const askTapped=Date.now();handoffBusy=true;$('ask').disabled=true;
@@ -2058,19 +2058,38 @@
     $('open').dataset.mic=micState;$('mode-ask').dataset.mic=micState;
     if(!p&&/^(Mic armed|Mic unavailable|Transcript ready · review)/.test(out.textContent))out.textContent='';
     $('dictation-reset').hidden=!(p&&(Date.now()>p.expires+15000||r?.id===p.id&&r.phase==='needs-local-stop'));if(p&&r?.id===p.id&&r.sender===instance){
-      out.textContent=heartFresh||['transcript','failed','cancelled','uncertain'].includes(r.phase)?r.detail:'Mic state stale · check receiver';
+      out.textContent=p.sendIntent&&['starting','recording','stopping'].includes(r.phase)?'Finishing dictation and sending…':heartFresh||['transcript','failed','cancelled','uncertain'].includes(r.phase)?r.detail:'Mic state stale · check receiver';
       if(heartFresh&&r.phase==='starting'&&Date.now()-r.at>5000)out.textContent='Mic starting · Safari may require the receiver tab to be visible.';
       if(r.phase==='transcript'&&!p.retrieving){p.retrieving=true;void receiveMicResult(p,r);}
-      else if(['failed','cancelled','uncertain'].includes(r.phase)){dictationPending=null;b.setAttribute('aria-pressed','false');$('dictation-reset').hidden=true;}
+      else if(['failed','cancelled','uncertain'].includes(r.phase)){if(p.sendIntent){latencyMark('mic','source',p.id,'sendDeferred');status('Dictation not finalized · question not sent.');}dictationPending=null;b.setAttribute('aria-pressed','false');$('dictation-reset').hidden=true;}
     }else if(p&&Date.now()>p.expires+30000){out.textContent='Receiver did not confirm microphone state. Open it to verify recording stopped.';}
     paintMicPreview();
   }
+  function askContextSignature(){return JSON.stringify([sourceURL(),$('source').value,quoted,attachments.map(a=>a.id)]);}
+  async function queueDictatedAsk(p){
+    if(p.sendIntent){status('Finishing dictation and sending…');return;}
+    if(p.target!==target||p.worker!==selectedWorker){status('Receiver changed. Finish dictation before sending.');return;}
+    p.sendIntent={at:Date.now(),context:askContextSignature()};
+    latencyMark('mic','source',p.id,'sendTap',p.sendIntent.at);
+    status('Finishing dictation and sending…');
+    try{if(!p.stopping)await clientMic();}
+    catch(e){p.sendIntent=null;p.stopping=false;throw e;}
+  }
   async function receiveMicResult(p,r){
-    try{const v=await store.get(MIC_RESULT+p.id);if(!v||v.sender!==instance||v.target!==p.target||v.worker!==p.worker||typeof v.text!=='string')throw Error('Transcript receipt missing');
+    try{const v=await store.get(MIC_RESULT+p.id);if(!v||v.id!==p.id||v.sender!==instance||v.target!==p.target||v.worker!==p.worker||typeof v.text!=='string')throw Error('Transcript receipt missing');
+      if(dictationPending!==p)return;
       // Append, never overwrite text typed while the microphone was active.
       if(mode==='ask')$('draft').value=[$('draft').value.trim(),v.text].filter(Boolean).join(' ');else drafts.ask=[drafts.ask.trim(),v.text].filter(Boolean).join(' ');
       $('dictation-status').textContent=r.cleared?'':'Transcript ready · native draft remains; check receiver before Ask.';
-      latencyMark('mic','source',p.id,'finalInserted');dictationPending=null;try{await store.del(MIC_RESULT+p.id);}catch(e){linkLog('dictation-cleanup-error',{id:p.id,error:String(e?.message||e).slice(0,120)});}
+      latencyMark('mic','source',p.id,'finalInserted');dictationPending=null;
+      const intent=p.sendIntent;p.sendIntent=null;
+      if(intent){
+        const route=await readRouting();
+        if(r.cleared&&v.text.trim()&&mode==='ask'&&p.target===target&&p.worker===selectedWorker&&route.dest===p.target&&route.binding?.worker===p.worker&&intent.context===askContextSignature()&&Date.now()-intent.at<60000){
+          latencyMark('mic','source',p.id,'sendContinuation');await prepareHandoff();
+        }else{latencyMark('mic','source',p.id,'sendDeferred');status('Transcript preserved · review and send.');}
+      }
+      try{await store.del(MIC_RESULT+p.id);}catch(e){linkLog('dictation-cleanup-error',{id:p.id,error:String(e?.message||e).slice(0,120)});}
     }catch(e){p.retrieving=false;$('dictation-status').textContent='Transcript retrieval: '+String(e?.message||e);}
     paintMic();
   }
