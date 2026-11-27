@@ -1,6 +1,6 @@
 {
   "schema": "ai_pill_os.rsm_investigation",
-  "version": 27,
+  "version": 28,
   "updated": "2026-11-26",
   "parent_purpose": "Asymptotically reduce the mechanical distance from human intention to useful realization, preserving attention, agency, intellectual continuity and recoverability. Optimize the complete recurring human–AI loop, not a browser transport.",
   "scope": "Safari-first personal computing: direct touch for low-information operations, dictation and AI collaboration for high-information intentions, universal pill plus contextual mini-pills, local working state and context-aware canonical persistence.",
@@ -151,7 +151,11 @@
     "pill_registry_parser": "https://github.com/JadanPoll/AI_Pill_OS/blob/f3a1bfd0d24d135d53fe65144da81544dc951faf/AI_Pill.user.js",
     "pill_cross_site": "https://github.com/JadanPoll/AI_Pill_OS/blob/11bb07cdeb0e09c76e82f2576c08020d9cd27822/AI_Pill.user.js",
     "pill_gemini_acquisition": "https://github.com/JadanPoll/AI_Pill_OS/blob/d7ce6fb223789f4088b0aeb51e39f78f859abf5a/AI_Pill.user.js",
-    "pocket_0759": "https://github.com/JadanPoll/AI_Pill_OS/commit/760e7d883d11d99636af4623665ed2992cef615f"
+    "pocket_0759": "https://github.com/JadanPoll/AI_Pill_OS/commit/760e7d883d11d99636af4623665ed2992cef615f",
+    "pcode_pipeline": "https://github.com/JadanPoll/Reverse_Engineering_Research_And_Taxonomy/blob/main/PCODE_PIPELINE.md",
+    "pcode_grammar": "https://github.com/JadanPoll/Reverse_Engineering_Research_And_Taxonomy/blob/main/structural/pcode_grammar.py",
+    "pcode_taxonomy": "https://github.com/JadanPoll/Reverse_Engineering_Research_And_Taxonomy/blob/main/TAXONOMY.md",
+    "pill_queryless_lifting": "https://github.com/JadanPoll/AI_Pill_OS/commit/957b48ecd0d93ccd77c4abe4f2b4b57320159fd4"
   },
   "question_tree": [
     {
@@ -1258,6 +1262,30 @@
       "depends_on": [
         "I22"
       ]
+    },
+    {
+      "id": "I26",
+      "questions": [
+        "Q8.1.4",
+        "Q8.7.2"
+      ],
+      "status": "active_priority",
+      "why": "Curiosity-led question generation requires broad exposure, not just efficient lookup after a question is known. Gemini's orientation landmarks were concentrated in early portions of the largest bundles despite comprehensive acquisition.",
+      "model": "P-code-inspired lexical lifting: normalize known operation vocabulary, retain ordered local motif witnesses with original identifiers and offsets, spatially stratify tiles, and expose deterministic queryless pagination. Preserve raw source, existing exact searches and parsed module boundaries. Structural clues are not semantic classification; importance is question-relative.",
+      "belief": "Diverse spatial coverage and operation combinations may expose mechanisms missed by identifier rarity alone. Prior P-code grammar implementation approximates rule presence by unordered token-set membership; avoid conflating order, co-occurrence and causal relationships. Current motifs can cross functions or occur in strings/comments. No learned grammar induction or function-level proof yet.",
+      "certificate": "AI Pill v0.4.26 introduced exploreIndex and 18 ordered lexical motifs (within 1200 UTF-16 units), with full tile pagination; actual Pocket source 320525 characters/10 tiles yielded first four tile starts 32768,294912,65536,262144, all tiles retrieved once across pages, 16 motif families found, 26ms in tool-side execution. Ordered-span fixture and syntax passed. v0.4.27 adds budget accounting, original witness names and first/last-stratum priority for largest bundles; syntax passed; live Safari archive upgrade and discovery quality unverified.",
+      "evidence": [
+        "pcode_pipeline",
+        "pcode_grammar",
+        "pcode_taxonomy",
+        "pill_queryless_lifting"
+      ],
+      "next": "On an already retained Gemini or ChatGPT archive, update to v0.4.27 and Copy AI context; compare equal-budget old/new packets using independent investigators blinded to prior discoveries. Use exploreIndex only when useful. Assess recall, novelty, functional diversity, evidence precision and time/round trips, not motif counts. Do not add full AST function lifting or grammar induction until this cheaper representation reveals a consequential deficiency.",
+      "stop": "Representative unfamiliar software discovery yields useful source-grounded questions with less manual search and without degrading context budget or acquisition; only reopen for demonstrated missed mechanisms or cost.",
+      "reopen": "Concentrated coverage, false-positive motif overload, inability to discover unnamed computation, or poor marginal discovery value.",
+      "depends_on": [
+        "I22"
+      ]
     }
   ],
   "relationships": [
@@ -1348,6 +1376,7 @@
     }
   ],
   "active_queue": [
+    "I26",
     "I24",
     "I22",
     "I25",
@@ -1494,6 +1523,11 @@
       "date": "2026-11-26",
       "decision": "Close static discovery at user direction. v0.7.59 first QoL implementation pass, with guarded Gemini manual Send retained until live attachment evidence. Prefer real ordinary interactions over further source plans.",
       "method": "REM subtraction; RSM source certificates distinguished from runtime witnesses"
+    },
+    {
+      "date": "2026-11-26",
+      "decision": "User-directed meta improvement: static education about providers remains closed, while discovery substrate gains spatially stratified queryless exploration and P-code-inspired ordered lexical motifs. No extra UI, no source acquisition change, no private runtime integration.",
+      "method": "RSM-02.12 question landscape; transfer structural orientation from RE taxonomy; preserve source evidence and uncertainty; test marginal discovery utility."
     }
   ],
   "functional_intent": {
