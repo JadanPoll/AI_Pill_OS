@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         AI Pill OS - DevTools and Ask
 // @namespace    https://github.com/JadanPoll/AI_Pill_OS
-// @version      0.4.6
+// @version      0.4.7
 // @description  Inspect, record, export browser evidence; hand it to ChatGPT and run bounded read-only investigation requests.
 // @match        https://*/*
 // @match        http://*/*
@@ -17,7 +17,7 @@
 (() => {
   'use strict';
   if (window.top !== window || document.getElementById('ai-pill-os')) return;
-  const VERSION = '0.4.6', MAX = 100, MAX_REPORT = 100000;
+  const VERSION = '0.4.7', MAX = 100, MAX_REPORT = 100000;
   let host, root, status, preview, question, scope, includeText, planBox, pill;
   let picked = null, selection = '', armed = false, recording = false, observer = null;
   let events = [], dropped = 0, started = 0, lastReport = null, erudaReady = false;
@@ -319,8 +319,11 @@
     } catch(e) {setStatus('Plan rejected: '+safe(e.message));}
   }
   // Source browser: bounded, explicit fetch, no arbitrary URLs or execution.
-  const SOURCE_LIMIT = 2 * 1024 * 1024, FORMAT_LIMIT = 1024 * 1024, WINDOW = 12000;
+  const SOURCE_LIMIT = 16 * 1024 * 1024, FORMAT_LIMIT = 1024 * 1024, WINDOW = 12000;
   let sourceItems = [], sourceRaw = '', sourcePretty = null, sourceMeta = null, sourceOffset = 0, sourceMatch = -1, sourceQuery = '', sourceEpoch = 0, sourceAbort = null;
+  let sourceSearchResults=null,sourceSearchAbort=null,sourceSearchEpoch=0,sourceSearchFirst=null;
+  const observedSources=new Map();
+  try{new PerformanceObserver(list=>{for(const e of list.getEntries()){if(observedSources.size>=1500)break;const p=e.name.split(/[?#]/)[0];if(e.initiatorType==='script'||/\.(?:m?js|css)$/i.test(p))observedSources.set(e.name,e.initiatorType);}}).observe({type:'resource',buffered:true});}catch{}
   const byId = id => root.getElementById(id);
   function sourceStatus(message) { byId('source-status').textContent = message; }
   function sourceInventory() {
@@ -334,7 +337,8 @@
         out.push({kind,address:u.href,label:kind.toUpperCase()+' · '+u.pathname.split('/').pop()+' · '+u.hostname});
       } catch {}
     };
-    for (const e of document.querySelectorAll('script[src],link[rel="stylesheet"][href]')) add(e.localName==='script'?'js':'css',e.src||e.href);
+    for (const e of document.querySelectorAll('script[src],link[rel="stylesheet"][href],link[rel="modulepreload"][href],link[rel="preload"][as="script"][href]')) add(e.localName==='script'||e.rel!=='stylesheet'?'js':'css',e.src||e.href);
+    for(const [address,type] of observedSources)add(type==='script'||/\.(?:m?js)(?:[?#]|$)/i.test(address)?'js':'css',address);
     for (const e of performance.getEntriesByType('resource')) {
       const p = e.name.split(/[?#]/)[0];
       if (e.initiatorType==='script'||/\.(?:m?js)$/i.test(p)) add('js',e.name);
@@ -343,16 +347,17 @@
     return out.slice(0,1500);
   }
   function refreshSourceList(rebuild = false) {
-    if (rebuild) sourceItems=sourceInventory();
+    if (rebuild){sourceSearchEpoch++;sourceSearchAbort?.abort();sourceSearchAbort=null;sourceSearchResults=null;sourceSearchFirst=null;sourceItems=sourceInventory();byId('source-search').textContent='Search JS';}
     const filter=byId('source-filter').value.toLowerCase().trim(), select=byId('source-select'), previous=select.value;
     select.replaceChildren();
     sourceItems.forEach((item,i)=>{
-      if (!filter || (item.label+' '+url(item.address)).toLowerCase().includes(filter)) {
-        const opt=document.createElement('option');opt.value=String(i);opt.textContent=item.label;select.append(opt);
+      if (sourceSearchResults?sourceSearchResults.has(item.address):!filter || (item.label+' '+url(item.address)).toLowerCase().includes(filter)) {
+        const opt=document.createElement('option');opt.value=String(i);opt.textContent=item.label+(sourceSearchResults?' · '+sourceSearchResults.get(item.address).count+' matches':'');select.append(opt);
       }
     });
     if ([...select.options].some(x=>x.value===previous)) select.value=previous;
-    byId('source-count').textContent=select.options.length+' / '+sourceItems.length+' files';
+    byId('source-count').textContent=select.options.length+' / '+sourceItems.length+' files';byId('source-load').disabled=!select.options.length;
+    if(!select.options.length){sourceMeta=null;sourceRaw='';sourcePretty=null;renderSource();}
   }
   function currentSource() {return byId('source-pretty').checked && sourcePretty!==null ? sourcePretty : sourceRaw;}
   function sourceViewName() {return byId('source-pretty').checked && sourcePretty!==null ? 'formatted' : 'raw';}
@@ -376,43 +381,57 @@
     byId('source-reading').hidden=!sourceMeta;
     byId('source-chunks').hidden=t.length<=WINDOW;
   }
-  async function loadSource() {
-    const selected=byId('source-select').value;
-    if(selected==='')return sourceStatus('No matching file.');
+  async function fetchSource(item,signal){
+    const res=await fetch(item.address,{credentials:item.kind==='html'?'same-origin':'omit',signal,referrerPolicy:'no-referrer'});
+    if(!res.ok)throw Error('HTTP '+res.status);
+    if(Number(res.headers.get('content-length'))>SOURCE_LIMIT)throw Error('File exceeds 16 MiB limit');
+    let t='';
+    if(res.body?.getReader){
+      const reader=res.body.getReader(),decoder=new TextDecoder();let n=0;
+      try{while(true){const {done,value}=await reader.read();if(done)break;n+=value.byteLength;if(n>SOURCE_LIMIT){await reader.cancel();throw Error('File exceeds 16 MiB limit');}t+=decoder.decode(value,{stream:true});}t+=decoder.decode();}
+      finally{reader.releaseLock();}
+    }else{t=await res.text();if(new Blob([t]).size>SOURCE_LIMIT)throw Error('File exceeds 16 MiB limit');}
+    return {text:t,meta:{kind:item.kind,url:url(res.url||item.address),characters:t.length}};
+  }
+  function showSource(data,query=''){
+    sourceRaw=data.text;sourceMeta=data.meta;sourcePretty=null;sourceOffset=0;sourceMatch=-1;sourceQuery='';
+    byId('source-find').value=query;
+    const formatters={js:typeof js_beautify==='function'?js_beautify:null,css:typeof css_beautify==='function'?css_beautify:null,html:typeof html_beautify==='function'?html_beautify:null};
+    let note='Raw source available.';
+    if(!query&&sourceRaw.length<=FORMAT_LIMIT&&formatters[sourceMeta.kind]){try{sourcePretty=formatters[sourceMeta.kind](sourceRaw,{indent_size:2,wrap_line_length:100,preserve_newlines:true});note='Formatted locally; raw source retained.';}catch{note='Formatter failed; raw source available.';}}
+    else if(sourceRaw.length>FORMAT_LIMIT)note='Large bundle: raw search available.';
+    renderSource();if(query)findSource(1);else sourceStatus(note);
+  }
+  async function loadSource(){
+    const selected=byId('source-select').value;if(selected==='')return sourceStatus('No matching file.');
     const item=sourceItems[Number(selected)];if(!item)return;
-    const epoch=++sourceEpoch;
-    sourceAbort?.abort();sourceAbort=new AbortController();
-    const controller=sourceAbort, signal=controller.signal, timer=setTimeout(()=>controller.abort(),15000);
-    sourceRaw='';sourcePretty=null;sourceMeta=null;sourceOffset=0;sourceMatch=-1;sourceQuery='';
-    byId('source-find').value='';renderSource();
+    const epoch=++sourceEpoch;sourceAbort?.abort();sourceAbort=new AbortController();
+    const controller=sourceAbort,timer=setTimeout(()=>controller.abort(),20000);
+    const query=sourceSearchResults?.has(item.address)?byId('source-filter').value.trim():'';
+    sourceRaw='';sourcePretty=null;sourceMeta=null;sourceOffset=0;sourceMatch=-1;sourceQuery='';renderSource();
     sourceStatus('Loading selected file locally…');
-    try {
-      const res=await fetch(item.address,{credentials:'same-origin',signal,referrerPolicy:'no-referrer'});
-      if(!res.ok)throw Error('HTTP '+res.status);
-      if(Number(res.headers.get('content-length'))>SOURCE_LIMIT)throw Error('File exceeds 2 MiB limit');
-      let t='';
-      if(res.body?.getReader) {
-        const reader=res.body.getReader(), decoder=new TextDecoder();let n=0;
-        try {
-          while(true){const {done,value}=await reader.read();if(done)break;n+=value.byteLength;
-            if(n>SOURCE_LIMIT){await reader.cancel();throw Error('File exceeds 2 MiB limit');}
-            t+=decoder.decode(value,{stream:true});
-          }
-          t+=decoder.decode();
-        } finally {reader.releaseLock();}
-      } else {t=await res.text();if(t.length>SOURCE_LIMIT)throw Error('File exceeds size limit');}
-      if(epoch!==sourceEpoch)return;
-      sourceRaw=t;sourceMeta={kind:item.kind,url:url(res.url||item.address),characters:t.length};
-      const formatters={js:typeof js_beautify==='function'?js_beautify:null,css:typeof css_beautify==='function'?css_beautify:null,html:typeof html_beautify==='function'?html_beautify:null};
-      let note='Raw source available.';
-      if(t.length<=FORMAT_LIMIT && formatters[item.kind]){
-        try {sourcePretty=formatters[item.kind](t,{indent_size:2,wrap_line_length:100,preserve_newlines:true});note='Formatted locally; line numbers differ from original.';}
-        catch {note='Formatter failed; raw source available.';}
-      } else if(t.length>FORMAT_LIMIT) note='Large bundle: raw search available; formatting skipped above 1 MiB.';
-      else note='Formatter unavailable; raw search available.';
-      renderSource();sourceStatus(note+' Review before copying.');
-    }catch(e){if(epoch===sourceEpoch)sourceStatus('Load failed: '+safe(e.message)+' (CORS, CSP or network may block access).');}
+    try{const data=sourceSearchFirst?.address===item.address?sourceSearchFirst.data:await fetchSource(item,controller.signal);if(epoch===sourceEpoch)showSource(data,query);}
+    catch(e){if(epoch===sourceEpoch)sourceStatus('Load failed: '+safe(e.message)+' (CORS, CSP or network may block access).');}
     finally{clearTimeout(timer);}
+  }
+  function sourceMatches(t,q){const hay=t.toLowerCase(),needle=q.toLowerCase();let count=0,first=-1,pos=0;if(!needle)return {count,first};while((pos=hay.indexOf(needle,pos))!==-1){if(first<0)first=pos;count++;pos+=needle.length;}return {count,first};}
+  async function searchSources(){
+    if(sourceSearchAbort){sourceSearchAbort.abort();sourceSearchAbort=null;sourceSearchEpoch++;byId('source-search').textContent='Search JS';sourceStatus('Search stopped · partial results retained.');return;}
+    const q=byId('source-filter').value.trim();if(!q)return sourceStatus('Enter a source-code search term.');
+    sourceAbort?.abort();++sourceEpoch;sourceItems=sourceInventory();sourceSearchResults=new Map();sourceSearchFirst=null;
+    const items=sourceItems.filter(x=>x.kind==='js'),controller=new AbortController(),epoch=++sourceSearchEpoch;sourceSearchAbort=controller;
+    byId('source-search').textContent='Stop';refreshSourceList();
+    let cursor=0,completed=0,failures=[];
+    async function scan(){while(!controller.signal.aborted&&epoch===sourceSearchEpoch){const i=cursor++;if(i>=items.length)return;const item=items[i],local=new AbortController(),abort=()=>local.abort();controller.signal.addEventListener('abort',abort,{once:true});const timer=setTimeout(abort,20000);
+      try{const data=await fetchSource(item,local.signal);if(epoch!==sourceSearchEpoch||controller.signal.aborted)return;const hits=sourceMatches(data.text,q);if(hits.count){sourceSearchResults.set(item.address,hits);if(!sourceSearchFirst){sourceSearchFirst={address:item.address,data};}refreshSourceList();}}
+      catch(e){if(epoch===sourceSearchEpoch&&!controller.signal.aborted)failures.push(item.label+': '+safe(e.message,100));}
+      finally{clearTimeout(timer);controller.signal.removeEventListener('abort',abort);if(epoch===sourceSearchEpoch){completed++;sourceStatus('Searched '+completed+'/'+items.length+' JS files · '+sourceSearchResults.size+' matching · '+failures.length+' unavailable');}}
+    }}
+    await Promise.all([scan(),scan(),scan()]);
+    if(epoch!==sourceSearchEpoch)return;
+    sourceSearchAbort=null;byId('source-search').textContent='Search JS';refreshSourceList();
+    if(sourceSearchFirst){byId('source-select').value=String(sourceItems.findIndex(x=>x.address===sourceSearchFirst.address));showSource(sourceSearchFirst.data,q);}
+    sourceStatus('Searched '+completed+'/'+items.length+' JS files · '+sourceSearchResults.size+' matching · '+failures.length+' unavailable'+(failures.length?' · '+failures.slice(0,8).join(' ; '):'')+(failures.length>8?' ; more failures omitted':''));
   }
   function findSource(direction) {
     const q=byId('source-find').value.trim(), t=currentSource();
@@ -424,6 +443,18 @@
     if(pos<0)return sourceStatus('No matches for '+safe(q,80));
     sourceMatch=pos;sourceOffset=Math.max(0,pos-400);
     renderSource();sourceStatus('Match at character '+pos+' (search wraps).');
+  }
+  async function copyFullSource(){
+    if(!sourceMeta)return sourceStatus('Load a file first.');
+    const t=sourceRaw;
+    try{await navigator.clipboard.writeText(t);sourceStatus('Copied complete raw source · '+t.length.toLocaleString()+' characters.');}
+    catch(e){sourceStatus('Copy failed: '+safe(e.message)+' · use Save file for the complete raw source.');}
+  }
+  function saveFullSource(){
+    if(!sourceMeta)return sourceStatus('Load a file first.');
+    const name=(sourceMeta.kind==='html'?'page.html':sourceMeta.url.split('/').pop())||'source.txt';
+    const address=URL.createObjectURL(new Blob([sourceRaw],{type:'application/octet-stream'})),a=document.createElement('a');a.href=address;a.download=name;root.append(a);a.click();a.remove();setTimeout(()=>URL.revokeObjectURL(address),60000);
+    sourceStatus('Save requested · '+sourceRaw.length.toLocaleString()+' characters. Check browser downloads.');
   }
   async function copySource() {
     if(!sourceMeta)return sourceStatus('Load a file first.');
@@ -439,7 +470,7 @@
     refreshSourceList(true);
   }
   function closeSources() {
-    ++sourceEpoch;sourceAbort?.abort();
+    ++sourceEpoch;sourceAbort?.abort();++sourceSearchEpoch;sourceSearchAbort?.abort();sourceSearchAbort=null;
     byId('source-panel').hidden=true;pill.hidden=false;byId('open').hidden=true;
   }
   function erudaSettings() {
@@ -532,10 +563,10 @@
       el('section',{id:'pointer-panel',hidden:true},head(el('small',{},'Inspect · v'+VERSION),button('pointer-close','close','Cancel precision inspection')),el('div',{id:'pointer-pad','aria-label':'Relative pointer trackpad'},'Drag to move pointer'),row(el('small',{id:'pointer-label',class:'grow'})),row(plain('pointer-parent','Parent ↑',{title:'Select parent element'}),plain('pointer-select','Inspect',{class:'primary grow'}))),
       el('div',{id:'dev-bar',hidden:true},button('dev-alpha','opacity','Opacity'),button('dev-size','height','Panel height'),button('dev-sources','file','Sources'),button('dev-console','terminal','Open persistent console logs'),button('dev-close','close','Close debugger')),
       el('section',{id:'source-panel',hidden:true},head(button('source-close','back','Back to AI Pill'),heading('Sources'),button('source-refresh','refresh','Refresh file list')),
-        row(el('input',{id:'source-filter',class:'grow',type:'text',placeholder:'Filter files…','aria-label':'Filter filenames'}),el('span',{id:'source-count'})),
+        row(el('input',{id:'source-filter',class:'grow',type:'text',placeholder:'Filename or code…','aria-label':'Filter filenames or search JavaScript'}),plain('source-search','Search JS'),el('span',{id:'source-count'})),
         row(el('select',{id:'source-select',class:'grow','aria-label':'Source file'}),plain('source-load','Load',{class:'primary'})),
-        el('div',{id:'source-reading',hidden:true},row(el('input',{id:'source-find',class:'grow',type:'text',placeholder:'Find in file…','aria-label':'Find in file'}),button('find-prev','back','Previous match'),button('find-next','next','Next match'),button('source-copy','copy','Review and copy excerpt')),el('div',{id:'source-position'}),el('pre',{id:'source-code'}),el('div',{class:'row',id:'source-chunks'},button('source-prev','back','Previous chunk','Chunk'),button('source-next','next','Next chunk','Chunk')),details('Source options',check('source-pretty','Format source',true))),
-        el('div',{id:'source-status',role:'status'},'Choose a file. No automatic fetch or upload.')
+        el('div',{id:'source-reading',hidden:true},row(el('input',{id:'source-find',class:'grow',type:'text',placeholder:'Find in file…','aria-label':'Find in file'}),button('find-prev','back','Previous match'),button('find-next','next','Next match'),),row(plain('source-copy-full','Copy full file'),plain('source-save','Save file')),el('div',{id:'source-position'}),el('pre',{id:'source-code'}),el('div',{class:'row',id:'source-chunks'},button('source-prev','back','Previous chunk','Chunk'),button('source-next','next','Next chunk','Chunk')),details('Source options',check('source-pretty','Format source',true),plain('source-copy','Review visible excerpt'))),
+        el('div',{id:'source-status',role:'status'},'Type a filename to filter, or tap Search JS to search code. Nothing uploaded.')
       )
     );
     for(const type of ['keydown','keypress','keyup'])root.addEventListener(type,e=>{if(e.composedPath().some(el=>el instanceof Element&&el.matches('textarea,input,[contenteditable]')))e.stopPropagation();});
@@ -556,13 +587,13 @@
     $('dev-size').onclick=()=>cycleConfig('displaySize',[45,55,70,85]);
     $('dev-close').onclick=()=>eruda.hide();
     $('source-close').onclick=closeSources;$('source-refresh').onclick=()=>refreshSourceList(true);
-    $('source-filter').oninput=()=>refreshSourceList();$('source-load').onclick=loadSource;
+    $('source-filter').oninput=()=>{++sourceSearchEpoch;sourceSearchAbort?.abort();sourceSearchAbort=null;sourceSearchResults=null;sourceSearchFirst=null;$('source-search').textContent='Search JS';refreshSourceList();};$('source-filter').onkeydown=e=>{if(e.key==='Enter'){e.preventDefault();void searchSources();}};$('source-search').onclick=searchSources;$('source-load').onclick=loadSource;
     $('source-pretty').onchange=()=>{sourceOffset=0;sourceMatch=-1;sourceQuery='';renderSource();};
     $('find-prev').onclick=()=>findSource(-1);$('find-next').onclick=()=>findSource(1);
     $('source-find').onkeydown=e=>{if(e.key==='Enter'){e.preventDefault();findSource(1);}};
     $('source-prev').onclick=()=>{sourceOffset=Math.max(0,sourceOffset-WINDOW);renderSource();};
     $('source-next').onclick=()=>{sourceOffset+=WINDOW;renderSource();};
-    $('source-copy').onclick=copySource;
+    $('source-copy').onclick=copySource;$('source-copy-full').onclick=copyFullSource;$('source-save').onclick=saveFullSource;
   }
   if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',mount,{once:true});else mount();
 })();
