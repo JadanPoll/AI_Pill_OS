@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         AI Pill OS - DevTools and Ask
 // @namespace    https://github.com/JadanPoll/AI_Pill_OS
-// @version      0.4.29
+// @version      0.4.30
 // @description  LLM-directed investigation: run bounded JSON plans, collect evidence and export outcomes.
 // @match        https://*/*
 // @match        http://*/*
@@ -17,7 +17,7 @@
 (() => {
   'use strict';
   if (window.top !== window || document.getElementById('ai-pill-os')) return;
-  const VERSION = '0.4.29', MAX = 100, MAX_REPORT = 100000;
+  const VERSION = '0.4.30', MAX = 100, MAX_REPORT = 100000;
   let host, root, status, preview, includeText, planBox, pill;
   let picked = null, armed = false, recording = false, observer = null;
   let events = [], dropped = 0, started = 0, erudaReady = false;
@@ -613,7 +613,7 @@
     const now=inventory.filter(x=>x.kind==='js').flatMap(x=>{try{const p=sourceAcquisitionPolicy(new URL(x.address),archive.origin);return p.allowed?[p.address]:[];}catch{return [];}});
     const current=new Set(now);return {observed:current.size,newlyObserved:[...current].filter(x=>!old.has(x)).length,notCurrentlyObserved:[...old].filter(x=>!current.has(x)).length};
   }
-  const MODULE_INDEX_VERSION=3,REGION_INDEX_VERSION=3;
+  const MODULE_INDEX_VERSION=4,REGION_INDEX_VERSION=3;
   const orientationNoise=new Set([...vocabNoise,'__rspack_esm_ids','__webpack_modules__','__webpack_require__','exports','module','createElement','createContext','useContext','useEffect','useState','useReducer','useSyncExternalStore','setTimeout','setInterval','queueMicrotask','addEventListener','getBoundingClientRect','defaultMessage','formatMessage','className','currentColor','gradientUnits','maskUnits','fillRule','clipRule','strokeWidth','BackgroundImageFix','viewBox','location','history','subscribe','dispatch','getState','setState','File','Blob','TextEncoder','TextDecoder','Uint8Array','ArrayBuffer','URLSearchParams','AbortController','documentElement']);
   function readableClue(n){
     n=displayNameOf(n);
@@ -6844,7 +6844,7 @@ THE SOFTWARE.
 return module.exports;
   }
   let moduleParser=null;
-  const parsedModuleFormat=f=>['rspack-esm-parsed','webpack-chunk-parsed'].includes(f);
+  const parsedModuleFormat=f=>['rspack-esm-parsed','webpack-chunk-parsed','webpack-bootstrap-parsed'].includes(f);
   function detectModules(text){
     // Parse, never evaluate, the actual registry expression. Only direct properties
     // of that ObjectExpression can be module factories; nested methods are excluded.
@@ -6852,20 +6852,31 @@ return module.exports;
     const header=/\bexport\s+const\s+__webpack_modules__\s*=\s*(?=\{)/.exec(prefix);
     const rspack=header&&/^\s*(?:\/\*[\s\S]*?\*\/\s*)?export\s+const\s+__rspack_esm_ids\s*=\s*\[\s*\d+(?:\s*,\s*\d+)*\s*\]\s*;\s*$/.test(prefix.slice(0,header.index));
     const webpack=/^\s*(?:(?:"use strict"|'use strict')\s*;\s*)?\(\s*(?:this|self|window|globalThis)\.(webpackChunk[\w$]*)\s*=\s*(?:this|self|window|globalThis)\.\1\s*\|\|\s*\[\s*\]\s*\)\s*\.push\(\s*(?=\[)/.exec(prefix);
-    if(!rspack&&!webpack)return {format:'unsupported',modules:[],reason:'No supported Rspack ESM or Webpack chunk registry header'};
+    // Observed Webpack entry bundle: IIFE with a leading variable declaration
+    // whose final declarator is a numeric-keyed registry. Parse only that object.
+    const bootstrap=/^\s*\(\s*\(\s*\)\s*=>\s*\{\s*(?:(?:"use strict"|'use strict')\s*;\s*)?(?:var|let|const)\s+(?:[A-Za-z_$][\w$]*\s*,\s*)*([A-Za-z_$][\w$]*)\s*=\s*(?=\{\s*\d+\s*\()/.exec(prefix);
+    if(!rspack&&!webpack&&!bootstrap)return {format:'unsupported',modules:[],reason:'No supported Rspack ESM or Webpack chunk registry header'};
     const parser=moduleParser??=createModuleParser();
     let registry,namespace,format;
     if(rspack){registry=parser.parseExpressionAt(text,header.index+header[0].length,{ecmaVersion:'latest',sourceType:'module'});namespace='rspack-esm';format='rspack-esm-parsed';}
-    else{
+    else if(webpack){
       const chunk=parser.parseExpressionAt(text,webpack[0].length,{ecmaVersion:'latest',sourceType:'script'});
       if(chunk.type!=='ArrayExpression'||chunk.elements[0]?.type!=='ArrayExpression'||chunk.elements[1]?.type!=='ObjectExpression'||!/^\s*\)/.test(text.slice(chunk.end,chunk.end+64)))return {format:'unsupported',modules:[],reason:'Unsupported Webpack chunk payload'};
       registry=chunk.elements[1];namespace=webpack[1];format='webpack-chunk-parsed';
     }
-    if(registry.type!=='ObjectExpression'||registry.properties.length>12000||!registry.properties.length)return {format:'unsupported',modules:[],reason:'Unsupported registry expression or size'};
+    else{
+      registry=parser.parseExpressionAt(text,bootstrap[0].length,{ecmaVersion:'latest',sourceType:'script'});
+      // The suffix is outside the factory registry. A unique actual-looking
+      // chunk-global assignment is a namespace clue, not proof of build identity.
+      const suffix=text.slice(registry.end);
+      const names=[...new Set([...suffix.matchAll(/\b(?:self|window|globalThis|this)\.(webpackChunk[\w$]*)\s*=\s*(?:self|window|globalThis|this)\.\1\s*\|\|\s*\[\s*\]/g)].map(m=>m[1]))];
+      namespace=names.length===1?names[0]:null;format='webpack-bootstrap-parsed';
+    }
+    if(registry.type!=='ObjectExpression'||registry.properties.length>60000||!registry.properties.length)return {format:'unsupported',modules:[],reason:'Unsupported registry expression or size'};
     const candidates=[],ids=new Set();
     for(const p of registry.properties){
       const v=p.value,id=p.key?.type==='Identifier'?p.key.name:p.key?.type==='Literal'?String(p.key.value):null;
-      if(p.type!=='Property'||p.computed||p.kind!=='init'||!id||ids.has(id)||!['FunctionExpression','ArrowFunctionExpression'].includes(v?.type)||v.body?.type!=='BlockStatement')return {format:'unsupported',modules:[],reason:'Registry contains duplicate, computed or non-factory properties'};
+      if(p.type!=='Property'||p.computed||p.kind!=='init'||!id||format==='webpack-bootstrap-parsed'&&!/^\d+$/.test(id)||ids.has(id)||!['FunctionExpression','ArrowFunctionExpression'].includes(v?.type)||v.body?.type!=='BlockStatement')return {format:'unsupported',modules:[],reason:'Registry contains duplicate, computed or non-factory properties'};
       ids.add(id);candidates.push({id,start:p.start,end:p.end,bodyStart:v.body.start+1,bodyEnd:v.body.end-1,params:v.params.map(q=>q.type==='Identifier'?q.name:null)});
     }
     const modules=candidates.map((m,i)=>{
@@ -7062,7 +7073,7 @@ return module.exports;
       coverage:atlas.coverage,resourceOrigins:atlas.resourceOrigins||[],archive:{storage:archiveStorage,drift:retainedArchive?inventoryDrift(retainedArchive,sourceInventory({scriptsOnly:true})):null,scope:'Cumulative explicitly collected source on this origin; may span observations and deployments; browser storage may be cleared; export for durable backup.'},
       exclusions:atlas.inventory.filter(x=>x.status==='excluded').slice(0,12).map(({name,reason})=>[name,reason]),environment:{visibility:document.visibilityState,platform:navigator.platform||'',touchPoints:navigator.maxTouchPoints||0},
       glossary:{distinctTerms:df.size,distinctWords:words.size,uniqueTerms:[...df.values()].filter(n=>n===1).length,omittedOccurrences:fs.reduce((a,f)=>a+(f.vocabulary?.omittedOccurrences||0),0),fileRow:'[exact source name, byte length, signature identifiers, SHA-256]',regionRow:'[file index, start UTF-16 offset, identifiers]; inverse within-file tile frequency, APIs separated',alias:'Closure JSC$numeric_ prefixes normalized only for discovery and query aliases; raw source and returned occurrences unchanged',apiRow:'[API token, number of files, candidate file indices, capability families]',edgeRow:'[from file index, candidate target indices, total]; literal basename match only',entryRow:'[file index, candidate route paths, total]; static string clues',scope:'Filtered lexical identifiers. Counts and offsets remain in the retained map. File indices are zero-based.'},
-      contract,files:fs.map(f=>[f.source.name,f.source.bytes,[],f.source.sha256]),regions:[],mechanismLandmarks:[],browserAPIs:[],frameworkSignals:[],literalEdges:[],entryPoints:[],commandClues:[],modules:[],moduleCoverage:{recognizedFiles:moduleFiles.length,totalFiles:allFiles.length,candidateModules:moduleFiles.reduce((a,f)=>a+f.moduleIndex.modules.length,0),algorithmVersion:MODULE_INDEX_VERSION,method:'Acorn-parsed direct registry factory properties; unsupported files retain file/region scopes. Export and dependency hints remain lexical.',row:'[file index,module id,start,end,named exports,API clues,distinctive names]'},uncollected:{observedCount:atlas.inventory.filter(x=>x.status==='deferred'||x.status==='failed').length,observed:atlas.inventory.filter(x=>x.status==='deferred'||x.status==='failed').slice(0,24).map(x=>x.name),literalCandidates:frontier.length,candidateRow:'[parent file index, exact literal, path shape, sampled offset or null]; same-origin parents only, lexical clues; bare filename resolution inferred; use parent and literal in collectDependency',candidates:frontier.slice(0,24)},evidenceHistory:evidenceHistory.slice(-6)};
+      contract,files:fs.map(f=>[f.source.name,f.source.bytes,[],f.source.sha256]),regions:[],mechanismLandmarks:[],browserAPIs:[],frameworkSignals:[],literalEdges:[],entryPoints:[],commandClues:[],modules:[],moduleCoverage:{recognizedFiles:moduleFiles.length,totalFiles:allFiles.length,recognizedBytes:moduleFiles.reduce((n,f)=>n+f.source.bytes,0),totalBytes:allFiles.reduce((n,f)=>n+f.source.bytes,0),candidateModules:moduleFiles.reduce((a,f)=>a+f.moduleIndex.modules.length,0),algorithmVersion:MODULE_INDEX_VERSION,method:'Acorn-parsed direct registry factory properties; unsupported files retain file/region scopes. Export and dependency hints remain lexical.',row:'[file index,module id,start,end,named exports,API clues,distinctive names]'},uncollected:{observedCount:atlas.inventory.filter(x=>x.status==='deferred'||x.status==='failed').length,observed:atlas.inventory.filter(x=>x.status==='deferred'||x.status==='failed').slice(0,24).map(x=>x.name),literalCandidates:frontier.length,candidateRow:'[parent file index, exact literal, path shape, sampled offset or null]; same-origin parents only, lexical clues; bare filename resolution inferred; use parent and literal in collectDependency',candidates:frontier.slice(0,24)},evidenceHistory:evidenceHistory.slice(-6)};
     const landscape=explorationOrder(atlas),fullLandscape=atlas===corpus?landscape:explorationOrder(corpus);
     packet.catalogCoverage={retainedFiles:allFiles.length,presentedFiles:fs.length,selection:atlas===corpus?'all':'16 largest plus 64 evenly spaced source identities; references index the presented files only',fullCorpusNavigation:'exploreIndex and searchIndex query the entire retained archive; do not infer absence from this projection'};
     packet.mechanisms={basis:'Ordered lexical motif witnesses, not function classification or causal order; names may occur in strings/comments. Use exploreIndex with offset or files to navigate all tiles.',families:fullLandscape.familyCounts,totalTiles:fullLandscape.tiles,indexedTiles:fullLandscape.rows.length,row:'[file index, tile start, grammar label, [[original identifier, UTF-16 offset],...]]'};
@@ -7119,10 +7130,10 @@ return module.exports;
     const all=(x.all||[]).map(v=>v.toLowerCase()),any=(x.any||[]).map(v=>v.toLowerCase()),not=(x.not||[]).map(v=>v.toLowerCase()),positive=new Set([...all,...any]),keys=new Set([...positive,...not]),keyList=[...keys];
     const predicate=m=>all.every(k=>m.has(k))&&(!any.length||any.some(k=>m.has(k)))&&not.every(k=>!m.has(k));
     const scope=x.scope||'file',limit=x.limit??12,sourceByURL=new Map(archive.files.map(f=>[f.source.url,f])),wanted=new Set(x.files||[]),results=[],matchedFiles=new Set(),foundNames=new Set(),unsupported=[];
-    let searched=0,unitsSearched=0,rawMatches=0,uniqueOccurrences=0,missing=0;
+    let searched=0,unitsSearched=0,rawMatches=0,uniqueOccurrences=0,missing=0,recognizedBytes=0,totalBytes=0;
     for(const f of archive.atlas.files){
       if(wanted.size&&!wanted.has(f.source.name))continue;
-      foundNames.add(f.source.name);
+      foundNames.add(f.source.name);totalBytes+=f.source.bytes||0;
       const raw=sourceByURL.get(f.source.url);if(!raw||raw.sha256!==f.source.sha256){missing++;continue;}
       const text=raw.text,units=[];
       if(scope==='module'){
@@ -7130,7 +7141,7 @@ return module.exports;
         for(const m of ms)units.push({start:m.start,end:m.end,module:m});
       }else if(scope==='file')units.push({start:0,end:text.length});
       else for(let start=0;start<text.length;start+=1536){const end=Math.min(start+2048,text.length);units.push({start,end});if(end===text.length)break;}
-      searched++;unitsSearched+=units.length;
+      searched++;recognizedBytes+=f.source.bytes||0;unitsSearched+=units.length;
       const lower=text.toLowerCase();
       if(all.some(k=>!lower.includes(k))||any.length&&!any.some(k=>lower.includes(k)))continue;
       const hits=[];
@@ -7173,15 +7184,15 @@ return module.exports;
       return {file:r.file,sha256:r.sha256,start:r.start,end:r.end,matched:[...r.matched],occurrenceCount:h.length,windows:r.windows,examples,neighbors:[...neighborMap].slice(0,10),...(module?{module:{id:module.id,start:module.start,end:module.end,exports:module.exports.slice(0,12),imports:module.imports.slice(0,16),chunks:module.chunks.slice(0,12),signature:module.signature}}:{}),score:r.roleScore*10+r.matched.size};
     });
     const absent=[...wanted].filter(n=>!foundNames.has(n)),gaps=[...(missing?[missing+' selected files have no retained source']:[]),...(absent.length?['Requested files absent: '+absent.join(', ')]:[]),...(scope==='module'&&wanted.size&&unsupported.length?['Unsupported module format in requested files: '+unsupported.join(', ')]:[]),...(scope==='module'&&!searched?['No recognized modules in selected files']:[])];
-    return {op:'searchIndex',runId:archive.runId,scope,query:{all:x.all||[],any:x.any||[],not:x.not||[],files:x.files||[]},method:'Exact identifier/constituent-word lexical matches, includes strings/comments; reference kinds are heuristic; recognized module boundaries are parsed registry properties. Region results merge only successful windows sharing matched offsets; not causal links.',searched,regionsSearched:scope==='region'?unitsSearched:0,unitsSearched,rawMatches,uniqueOccurrences,uniqueFiles:matchedFiles.size,total:results.length,items,truncated:results.length>limit,...(scope==='module'?{moduleCoverage:{algorithmVersion:archive.atlas.moduleIndexVersion??null,recognizedFiles:searched,unsupportedFiles:unsupported.length,examples:unsupported.slice(0,8),basis:'Parsed registry properties only; unsupported files excluded from module scope'}}:{}),...(gaps.length?{incomplete:gaps.join('; ')}:{})};
+    return {op:'searchIndex',runId:archive.runId,scope,query:{all:x.all||[],any:x.any||[],not:x.not||[],files:x.files||[]},method:'Exact identifier/constituent-word lexical matches, includes strings/comments; reference kinds are heuristic; recognized module boundaries are parsed registry properties. Region results merge only successful windows sharing matched offsets; not causal links.',searched,regionsSearched:scope==='region'?unitsSearched:0,unitsSearched,rawMatches,uniqueOccurrences,uniqueFiles:matchedFiles.size,total:results.length,items,truncated:results.length>limit,...(scope==='module'?{moduleCoverage:{algorithmVersion:archive.atlas.moduleIndexVersion??null,recognizedFiles:searched,recognizedBytes,totalBytes,unsupportedFiles:unsupported.length,examples:unsupported.slice(0,8),basis:'Parsed registry properties only; unsupported files excluded from module scope'}}:{}),...(gaps.length?{incomplete:gaps.join('; ')}:{})};
   }
   function resolveArchiveModule(archive,x){
-    const byId=new Map(),roots=[],formats={},limit=12;
+    const byId=new Map(),roots=[],formats={},limit=12,unsupported=[];let recognizedBytes=0,totalBytes=0;
     for(const f of archive.atlas.files){
       const ix=f.moduleIndex;const format=ix?.format||'missing';formats[format]=(formats[format]||0)+1;
-      if(!parsedModuleFormat(format))continue;
+      totalBytes+=f.source.bytes||0;if(!parsedModuleFormat(format)){unsupported.push({file:f.source.name,bytes:f.source.bytes,reason:ix?.reason||'Missing derived index'});continue;}recognizedBytes+=f.source.bytes||0;
       for(const m of ix.modules){
-        const key=ix.namespace+'\\0'+m.id;let list=byId.get(key);
+        const key=m.id;let list=byId.get(key);
         if(!list)byId.set(key,list=[]);
         const row={f,m,namespace:ix.namespace};list.push(row);
         if(m.id===x.moduleId&&(!x.file||f.source.name===x.file)&&(!x.sha256||f.source.sha256===x.sha256))roots.push(row);
@@ -7189,10 +7200,10 @@ return module.exports;
     }
     const brief=({f,m,namespace})=>({file:f.source.name,sha256:f.source.sha256,namespace,id:m.id,start:m.start,end:m.end,exports:m.exports.slice(0,12),signature:m.signature});
     const items=roots.slice(0,limit).map(root=>({...brief(root),imports:root.m.imports.slice(0,24).map(id=>{
-      const candidates=byId.get(root.namespace+'\\0'+id)||[];
-      return {id,total:candidates.length,status:candidates.length===0?'not-indexed':candidates.length===1?'candidate':'ambiguous',candidates:candidates.slice(0,4).map(brief)};
+      const candidates=(byId.get(id)||[]).filter(c=>c.namespace===root.namespace||!c.namespace||!root.namespace);
+      return {id,total:candidates.length,status:candidates.length===0?'not-indexed':candidates.length>1?'ambiguous':!root.namespace||!candidates[0].namespace?'namespace-unverified':'candidate',candidates:candidates.slice(0,4).map(brief)};
     }),importsTotal:root.m.imports.length,chunks:root.m.chunks.slice(0,12)}));
-    return {op:'resolveModule',runId:archive.runId,moduleId:x.moduleId,total:roots.length,items,formats,truncated:roots.length>limit,method:'Parsed factory boundaries; lexical loader calls and same registry namespace identify candidates only. Duplicate IDs are not resolved silently; retained builds can differ.',...(roots.length?{}:{incomplete:'Module ID not located in supported retained registries'})};
+    return {op:'resolveModule',runId:archive.runId,moduleId:x.moduleId,total:roots.length,items,formats,coverage:{recognizedBytes,totalBytes,unsupported:unsupported.sort((a,b)=>b.bytes-a.bytes).slice(0,12)},truncated:roots.length>limit,method:'Parsed factory boundaries; lexical loader calls and compatible or unknown registry namespace identify candidates only. Duplicate IDs are not resolved silently; retained builds can differ.',...(roots.length?{}:{incomplete:'Module ID not located in supported retained registries'})};
   }
   async function readArchive(archive,x){
     const matches=archive.files.filter(f=>f.name===x.file&&(!x.sha256||f.sha256===x.sha256));
