@@ -60,6 +60,15 @@ Create a Shortcut named `Copy Screenshot` with two actions: Take Screenshot → 
 
 [Current RSM investigation tree](research/INVESTIGATION_TREE.json) and [capability atlas](capabilities.json) preserve the revised priorities and stopping conditions.
 
+### Discovery collection and continuation (v0.4.28)
+
+The Discord v0.4.27 report recorded 256/874 eligible JS files collected, zero fetch failures, 618 deferred, and an inventory cap. The old positional batch replaced the retained archive. This was an acquisition/continuity defect, not evidence that the lexical discovery layer failed.
+
+- Run `{"origin":"https://discord.com","description":"Complete retained source discovery","operations":[{"op":"snapshotSources"}]}` on Discord. The default attempts missing currently observed eligible resources within the existing 48 MiB cumulative source and 90-second cooperative acquisition limits; explicit `maxFiles` (1–256) remains available for a bounded attempt. Continue with the same operation; no offset arithmetic. Existing source and matching derived indexes are retained by canonical URL and digest metadata. A deliberate fresh snapshot uses `resume:false` (export previous evidence first). Legacy nonzero offsets are accepted as continuation requests, not positional slices.
+- JS inventory now has a separate 4096-entry observation bound; styles do not consume it. A retained corpus can span observations/deployments; same-URL reuse is not a freshness certificate. Previously observed but currently absent assets are not fetched implicitly. Coverage reports reused/new files, failed/deferred items, and remaining obstruction. A browser observation is not the application's complete source universe.
+- The 60,000-character orientation packet retains a bounded catalog for large corpora (largest files plus evenly spaced identities); full-corpus motif totals and local `exploreIndex`, `searchIndex`, `readSource`, and explicit evidence exports remain available. A sampled context is not a negative search result. Copied outcomes cap the manifest preview at 256 entries; export the discovery map for the full manifest.
+- Tool-side syntax compilation and a continuation fixture using the report's 874/256 shape passed, including inventory change/reordering, reuse without fetches and explicit fresh reset. This is not a live Safari network, memory, IndexedDB, or discovery-quality certificate. Verify on Discord with the existing archive and copy the outcome; do not restart from scratch unless necessary.
+
 ## Try the current implementation (v0.4.1)
 
 [Install / view raw AI_Pill.user.js](https://raw.githubusercontent.com/JadanPoll/AI_Pill_OS/main/AI_Pill.user.js) · [Source](AI_Pill.user.js).
