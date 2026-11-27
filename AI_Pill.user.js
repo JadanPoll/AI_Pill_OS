@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         AI Pill OS - DevTools and Ask
 // @namespace    https://github.com/JadanPoll/AI_Pill_OS
-// @version      0.4.30
+// @version      0.4.31
 // @description  LLM-directed investigation: run bounded JSON plans, collect evidence and export outcomes.
 // @match        https://*/*
 // @match        http://*/*
@@ -17,7 +17,7 @@
 (() => {
   'use strict';
   if (window.top !== window || document.getElementById('ai-pill-os')) return;
-  const VERSION = '0.4.30', MAX = 100, MAX_REPORT = 100000;
+  const VERSION = '0.4.31', MAX = 100, MAX_REPORT = 100000;
   let host, root, status, preview, includeText, planBox, pill;
   let picked = null, armed = false, recording = false, observer = null;
   let events = [], dropped = 0, started = 0, erudaReady = false;
@@ -613,7 +613,7 @@
     const now=inventory.filter(x=>x.kind==='js').flatMap(x=>{try{const p=sourceAcquisitionPolicy(new URL(x.address),archive.origin);return p.allowed?[p.address]:[];}catch{return [];}});
     const current=new Set(now);return {observed:current.size,newlyObserved:[...current].filter(x=>!old.has(x)).length,notCurrentlyObserved:[...old].filter(x=>!current.has(x)).length};
   }
-  const MODULE_INDEX_VERSION=4,REGION_INDEX_VERSION=3;
+  const MODULE_INDEX_VERSION=5,REGION_INDEX_VERSION=3;
   const orientationNoise=new Set([...vocabNoise,'__rspack_esm_ids','__webpack_modules__','__webpack_require__','exports','module','createElement','createContext','useContext','useEffect','useState','useReducer','useSyncExternalStore','setTimeout','setInterval','queueMicrotask','addEventListener','getBoundingClientRect','defaultMessage','formatMessage','className','currentColor','gradientUnits','maskUnits','fillRule','clipRule','strokeWidth','BackgroundImageFix','viewBox','location','history','subscribe','dispatch','getState','setState','File','Blob','TextEncoder','TextDecoder','Uint8Array','ArrayBuffer','URLSearchParams','AbortController','documentElement']);
   function readableClue(n){
     n=displayNameOf(n);
@@ -6853,7 +6853,7 @@ return module.exports;
     const rspack=header&&/^\s*(?:\/\*[\s\S]*?\*\/\s*)?export\s+const\s+__rspack_esm_ids\s*=\s*\[\s*\d+(?:\s*,\s*\d+)*\s*\]\s*;\s*$/.test(prefix.slice(0,header.index));
     const webpack=/^\s*(?:(?:"use strict"|'use strict')\s*;\s*)?\(\s*(?:this|self|window|globalThis)\.(webpackChunk[\w$]*)\s*=\s*(?:this|self|window|globalThis)\.\1\s*\|\|\s*\[\s*\]\s*\)\s*\.push\(\s*(?=\[)/.exec(prefix);
     // Observed Webpack entry bundle: IIFE with a leading variable declaration
-    // whose final declarator is a numeric-keyed registry. Parse only that object.
+    // whose first initialized declarator is a numeric-keyed registry. Parse its initializer only.
     const bootstrap=/^\s*\(\s*\(\s*\)\s*=>\s*\{\s*(?:(?:"use strict"|'use strict')\s*;\s*)?(?:var|let|const)\s+(?:[A-Za-z_$][\w$]*\s*,\s*)*([A-Za-z_$][\w$]*)\s*=\s*(?=\{\s*\d+\s*\()/.exec(prefix);
     if(!rspack&&!webpack&&!bootstrap)return {format:'unsupported',modules:[],reason:'No supported Rspack ESM or Webpack chunk registry header'};
     const parser=moduleParser??=createModuleParser();
@@ -6865,18 +6865,24 @@ return module.exports;
       registry=chunk.elements[1];namespace=webpack[1];format='webpack-chunk-parsed';
     }
     else{
-      registry=parser.parseExpressionAt(text,bootstrap[0].length,{ecmaVersion:'latest',sourceType:'script'});
+      // parseExpressionAt consumes a comma-separated SequenceExpression, even
+      // though this is a variable initializer (AssignmentExpression grammar).
+      // Use the pinned Acorn parser's own initializer production; no evaluation.
+      const init=new parser.Parser({ecmaVersion:'latest',sourceType:'script'},text,bootstrap[0].length);
+      init.nextToken();registry=init.parseMaybeAssign();
+      if(![',',';'].includes(init.type.label))return {format:'unsupported',modules:[],reason:'Bootstrap initializer followed by unexpected token '+init.type.label};
       // The suffix is outside the factory registry. A unique actual-looking
       // chunk-global assignment is a namespace clue, not proof of build identity.
       const suffix=text.slice(registry.end);
       const names=[...new Set([...suffix.matchAll(/\b(?:self|window|globalThis|this)\.(webpackChunk[\w$]*)\s*=\s*(?:self|window|globalThis|this)\.\1\s*\|\|\s*\[\s*\]/g)].map(m=>m[1]))];
       namespace=names.length===1?names[0]:null;format='webpack-bootstrap-parsed';
     }
-    if(registry.type!=='ObjectExpression'||registry.properties.length>60000||!registry.properties.length)return {format:'unsupported',modules:[],reason:'Unsupported registry expression or size'};
+    if(registry.type!=='ObjectExpression')return {format:'unsupported',modules:[],reason:'Expected registry ObjectExpression; parsed '+registry.type};
+    if(!registry.properties.length||registry.properties.length>60000)return {format:'unsupported',modules:[],reason:'Registry property count '+registry.properties.length+' outside 1–60000'};
     const candidates=[],ids=new Set();
     for(const p of registry.properties){
       const v=p.value,id=p.key?.type==='Identifier'?p.key.name:p.key?.type==='Literal'?String(p.key.value):null;
-      if(p.type!=='Property'||p.computed||p.kind!=='init'||!id||format==='webpack-bootstrap-parsed'&&!/^\d+$/.test(id)||ids.has(id)||!['FunctionExpression','ArrowFunctionExpression'].includes(v?.type)||v.body?.type!=='BlockStatement')return {format:'unsupported',modules:[],reason:'Registry contains duplicate, computed or non-factory properties'};
+      if(p.type!=='Property'||p.computed||p.kind!=='init'||!id||format==='webpack-bootstrap-parsed'&&!/^\d+$/.test(id)||ids.has(id)||!['FunctionExpression','ArrowFunctionExpression'].includes(v?.type)||v.body?.type!=='BlockStatement')return {format:'unsupported',modules:[],reason:'Invalid registry property at '+p.start+' (key '+String(id).slice(0,48)+', node '+p.type+', value '+(v?.type||'none')+', body '+(v?.body?.type||'none')+', duplicate '+ids.has(id)+')'};
       ids.add(id);candidates.push({id,start:p.start,end:p.end,bodyStart:v.body.start+1,bodyEnd:v.body.end-1,params:v.params.map(q=>q.type==='Identifier'?q.name:null)});
     }
     const modules=candidates.map((m,i)=>{
