@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         AI Pill OS - DevTools and Ask
 // @namespace    https://github.com/JadanPoll/AI_Pill_OS
-// @version      0.4.31
+// @version      0.4.32
 // @description  LLM-directed investigation: run bounded JSON plans, collect evidence and export outcomes.
 // @match        https://*/*
 // @match        http://*/*
@@ -17,7 +17,7 @@
 (() => {
   'use strict';
   if (window.top !== window || document.getElementById('ai-pill-os')) return;
-  const VERSION = '0.4.31', MAX = 100, MAX_REPORT = 100000;
+  const VERSION = '0.4.32', MAX = 100, MAX_REPORT = 100000;
   let host, root, status, preview, includeText, planBox, pill;
   let picked = null, armed = false, recording = false, observer = null;
   let events = [], dropped = 0, started = 0, erudaReady = false;
@@ -382,7 +382,7 @@
         {op:'inspect',use:'Inspect matching DOM elements',selector:'CSS selector',expect:{minMatches:1}},
         {op:'controls',use:'Find visible controls',expect:{minItems:1}},
         {op:'record',use:'Observe a real interaction',instruction:'Human-facing action',seconds:'integer 5–180',probe:'optional pocket-mic',expect:{minEvents:1,minCallsites:'optional integer',eventCounts:'optional map of event names to minimum counts'}},
-        {op:'snapshotSources',use:'Broad snapshot of observed JavaScript from same-origin and explicitly approved static-CDN resources, with full source and portable discovery map. Browser CORS/CSP enforced; no arbitrary URLs. Approved Gemini CDN query-free variants are explicitly labeled, not certified identical to observed scripts.',maxFiles:'optional 1–256 attempt budget; omitted collects all currently eligible within time/byte limits',resume:'optional boolean; default true, reuse retained URLs and collect missing currently observed assets; false starts a fresh archive',offset:'deprecated; nonzero requires resume and is not used for positional slicing',expect:{minFiles:'default all eligible assets in cumulative inventory'}},
+        {op:'snapshotSources',use:'Broad snapshot of observed JavaScript from same-origin and explicitly approved static-CDN resources, with full source and portable discovery map. Browser CORS/CSP enforced; no arbitrary URLs. Approved Claude static assets require query/fragment-free URLs; approved Gemini CDN query-free variants are explicitly labeled, equivalence unverified.',maxFiles:'optional 1–256 attempt budget; omitted collects all currently eligible within time/byte limits',resume:'optional boolean; default true, reuse retained URLs and collect missing currently observed assets; false starts a fresh archive',offset:'deprecated; nonzero requires resume and is not used for positional slicing',expect:{minFiles:'default all eligible assets in cumulative inventory'}},
         {op:'searchIndex',use:'Query retained source by case-insensitive exact identifier or constituent word; all=intersection, any=union, not=exclusion. File scope broad, module scope parsed supported bundle registries, region scope overlapping 2048-character windows. Results include unique occurrences, candidate reference kinds and unfamiliar nearby identifiers. No network.',all:['word'],any:['alternative'],not:['excluded'],scope:'optional file (default), module or region; module coverage explicit, use file/region if unsupported',files:['optional exact source names from context (extension not required)'],limit:'optional 1–30, default 12',expect:{minItems:'optional; defaults to 0 (empty observation is valid)'}},
         {op:'exploreIndex',use:'Queryless discovery across spatial strata of retained files, with local ordered grammar clues and evidence offsets. Page using nextOffset; no network.',files:['optional exact source names'],offset:'optional nonnegative integer, default 0',limit:'optional 1–30, default 12',expect:{minItems:'optional, default 0'}},
         {op:'resolveModule',use:'Locate parsed registry module ID and its direct lexical dependency candidates in the retained corpus. Candidate IDs may collide across builds; no network or execution.',moduleId:'literal string ID',file:'optional exact source name to pin root',sha256:'optional digest with file',expect:{minItems:1}},
@@ -605,6 +605,10 @@
     }
     if(appOrigin==='https://gemini.google.com'&&u.origin==='https://gemini.gstatic.com'&&u.pathname.startsWith('/_/mss/boq-gemini-web-uiserver/_/js/')&&/\/m=[A-Za-z0-9_,.-]+$/.test(u.pathname)){
       return {allowed:true,basis:components.query?'observed Gemini static CDN; query-free variant, equivalence unverified; CORS required':'observed Gemini static CDN; CORS required',address:u.origin+u.pathname,components,queryOmitted:components.query};
+    }
+    if(appOrigin==='https://claude.ai'&&u.origin==='https://assets-proxy.anthropic.com'&&/^\/claude-ai\/v2\/assets\/(?:[A-Za-z0-9_-]+\/)*[A-Za-z0-9_.-]+\.m?js$/.test(u.pathname)){
+      if(components.query||components.fragment)return reject('Claude static CDN URL contains query or fragment');
+      return {allowed:true,basis:'observed Claude static CDN; CORS required',address:u.origin+u.pathname,components,queryOmitted:false};
     }
     return reject('Outside approved static source origins');
   }
