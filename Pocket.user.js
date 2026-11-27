@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         AI Pill OS - Pocket
 // @namespace    https://github.com/JadanPoll/AI_Pill_OS
-// @version      0.7.57
+// @version      0.7.58
 // @updateURL    https://raw.githubusercontent.com/JadanPoll/AI_Pill_OS/main/Pocket.user.js
 // @downloadURL  https://raw.githubusercontent.com/JadanPoll/AI_Pill_OS/main/Pocket.user.js
 // @description  Universal Safari pill: collect evidence, keep discoveries, and hand a question to a chosen chat.
@@ -26,7 +26,7 @@
 (() => {
   'use strict';
   if (window.top !== window) return;
-  const VERSION='0.7.57';
+  const VERSION='0.7.58';
   // Report initialization failures without depending on the main UI, storage or a CDN.
   function bootFailure(error,phase){
     const message=String(error?.message||error).slice(0,500);
@@ -2585,6 +2585,21 @@
   const sendCandidates=()=>{const e=chatEditor();if(!e)return [];const gem=chatSurface()==='gemini',scope=gem?e.closest('input-area-v2'):e.closest('[data-chatgpt-composer]')||e.closest('form')||document;if(!scope)return [];return [...scope.querySelectorAll(gem?'button[aria-label="Send message"]':'button[aria-label="Send"],button[aria-label="Send message"],button[data-testid="send-button"],button[data-testid="composer-submit-button"]')].filter(b=>!b.hidden&&!b.closest('[hidden],[aria-hidden="true"]')&&b.getClientRects().length&&!/stop|voice|dictat/i.test((b.getAttribute('aria-label')||'')+' '+(b.dataset.testid||'')));};
   const sendControl=()=>{const matches=sendCandidates();return matches.length===1?matches[0]:null;};
   const canSend=(b,allowVisual=false)=>!!b&&!b.disabled&&b.getAttribute('aria-disabled')!=='true'&&b.isConnected&&!streamActive()&&(allowVisual||!composerAttachments(chatEditor()))&&!!editorText(chatEditor());
+  // Observe Gemini's native visual lifecycle; no private state access, no
+  // submission decision is made from this diagnostic. No image URLs or text.
+  function geminiVisualObservation(expectedCount){
+    const e=chatEditor(),scope=e?.closest('input-area-v2'),send=sendControl();
+    const out={expectedCount,scope:!!scope,sendEnabled:canSend(send,true),sendLabel:send?.getAttribute('aria-label')||null,attached:composerAttachments(e),previews:[]};
+    if(!scope)return out;
+    const selector='uploader-file-preview,gem-attachment,.file-preview,.attachment-preview-wrapper,.attachment-container,.file-preview-container,.uploader-file-preview-container,.is-loading,mat-spinner,mat-progress-bar,[role="progressbar"],[aria-busy="true"],[role="alert"],[aria-invalid="true"],input[type=file]';
+    const roots=[...scope.querySelectorAll(selector)];
+    const images=[...scope.querySelectorAll('img')].filter(n=>roots.some(p=>p.contains(n))||n.closest('.attachment-preview-wrapper,.uploader-file-preview-container'));
+    const shape=n=>({tag:n.localName,classes:String(n.className?.baseVal??n.className??'').slice(0,160),visible:!!n.getClientRects().length,busy:n.getAttribute('aria-busy'),invalid:n.getAttribute('aria-invalid'),role:n.getAttribute('role'),...(n.localName==='img'?{decoded:!!n.complete&&n.naturalWidth>0}:{}),...(n.matches('input[type=file]')?{files:n.files?.length??0}:{})});
+    out.previewNodes=roots.length;out.imageNodes=images.length;out.decodedImages=images.filter(n=>n.complete&&n.naturalWidth>0).length;
+    out.previews=[...new Set([...roots,...images])].slice(0,24).map(shape);
+    out.truncated=roots.length+images.length>24;
+    return out;
+  }
   function visualReadiness(expectedCount){
     const e=chatEditor(),a=e?.closest('[data-chatgpt-composer]')?.querySelector('[data-composer-attachments]');
     const imgs=a?[...a.querySelectorAll('img')].filter(n=>n.getClientRects().length&&!n.closest('[hidden],[aria-hidden="true"]')):[];
@@ -2672,11 +2687,16 @@
           // Native upload readiness is not established on Gemini. Preserve the
           // marker and prepared draft, but never auto-send the text alone.
           activeAsk={r,baseline,expected,started:Date.now(),user:null,seenBusy:false,answer:'',stableAt:0,assistantID:null,assistantNode:null,manualVisual:true,knownUserIds};
-          const until=Date.now()+6000;while(Date.now()<until&&!composerAttachments(chatEditor())&&sameTurn(baseline,fingerprint())&&!turns('user').some(n=>markedTurn(n,r)))await new Promise(resolve=>setTimeout(resolve,200));
+          const until=Date.now()+6000;
+          while(Date.now()<until&&sameTurn(baseline,fingerprint())&&!turns('user').some(n=>markedTurn(n,r))){
+            recordObservation(activeAsk,{geminiVisual:geminiVisualObservation(files.length)});
+            if(composerAttachments(chatEditor()))break;
+            await new Promise(resolve=>setTimeout(resolve,200));
+          }
           if(turns('user').some(n=>markedTurn(n,r)))return;
           const scope=chatEditor()?.closest('input-area-v2');
           const previews=scope?[...scope.querySelectorAll('img,input[type=file],uploader-file-preview,gem-attachment,.file-preview,.attachment-preview-wrapper,[role=progressbar],[aria-busy=true]')].slice(0,20).map(n=>({tag:n.tagName,classes:String(n.className?.baseVal??n.className??'').slice(0,160),ready:n.tagName==='IMG'?n.complete&&n.naturalWidth>0:null,files:n.files?.length??null})):[];
-          const attached=composerAttachments(chatEditor());testStage(r,'gemini-visual-prepared','Gemini attachment observation; manual Send required',{attached,previews,editorMatches:editorText(chatEditor())===expected});
+          const attached=composerAttachments(chatEditor());testStage(r,'gemini-visual-prepared','Gemini attachment observation; manual Send required',{attached,previews,geminiVisual:geminiVisualObservation(files.length),editorMatches:editorText(chatEditor())===expected});
           if(!await markRun(r,'prepared',attached?'Gemini attachment detected · review and send':'Gemini image not verified · attach manually, then send'))activeAsk=null;
           return;
         }
@@ -2735,7 +2755,7 @@
     if(chatURL(location.href)!==r.target){await finishAsk(a,'uncertain','Conversation changed during request');return;}
     const now=Date.now(),busyNow=streamActive(),current=fingerprint();
     const marked=validMarker(r)?turns('user').filter(n=>markedTurn(n,r)):null;
-    recordObservation(a,{userMatches:marked?marked.length===1:current.text===a.expected,userChanged:!sameTurn(a.baseline,current),markerMatches:marked?.length??null});
+    recordObservation(a,{userMatches:marked?marked.length===1:current.text===a.expected,userChanged:!sameTurn(a.baseline,current),markerMatches:marked?.length??null,...(a.manualVisual&&!a.user&&chatSurface()==='gemini'?{geminiVisual:geminiVisualObservation(r.visuals?.length||0)}:{})});
     if(busyNow&&!a.seenBusy)testStage(r,'generating','Response generation observed');
     a.seenBusy=a.seenBusy||busyNow;
     if(now-a.started>AUTO_TIMEOUT){await finishAsk(a,'uncertain','Response not confirmed within 20 minutes');return;}
