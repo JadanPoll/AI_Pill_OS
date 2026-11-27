@@ -1,6 +1,6 @@
 {
   "schema": "ai_pill_os.rsm_investigation",
-  "version": 17,
+  "version": 18,
   "updated": "2026-11-26",
   "parent_purpose": "Asymptotically reduce the mechanical distance from human intention to useful realization, preserving attention, agency, intellectual continuity and recoverability. Optimize the complete recurring human–AI loop, not a browser transport.",
   "scope": "Safari-first personal computing: direct touch for low-information operations, dictation and AI collaboration for high-information intentions, universal pill plus contextual mini-pills, local working state and context-aware canonical persistence.",
@@ -54,6 +54,11 @@
       "decision": "Keep portable visible JSON and a minimal human feedback loop; defer MCP. Apply REM-04.03 to the UI, not to the breadth of underlying investigator capabilities.",
       "clause": "RSM-02.05–02.08; REM-04.03; reverse-engineering question-before-tool and bounded context",
       "why": "The human discovered expectation and outcome-report friction. Foreground paste/run, visible progress and outcome, copy results, save full evidence. Keep specialized instruments under Tools; no mandatory onboarding or memorization."
+    },
+    {
+      "decision": "Distinguish bounding context from narrowing the discovery surface. Persist a broad, compact, question-independent atlas before question-specific descent; operational receipts serve failure diagnosis only.",
+      "clause": "RSM-02.07–02.08; RSM-05.01–05.02; RSM-01.04; Microsoft source atlas",
+      "why": "The most valuable future questions may be unknown during acquisition. Preserve navigable optionality even without raw source in context, while keeping direct evidence accessible for certification."
     }
   ],
   "sources": {
@@ -454,7 +459,8 @@
       "children": [
         "Q8.1.1",
         "Q8.1.2",
-        "Q8.1.3"
+        "Q8.1.3",
+        "Q8.1.4"
       ]
     },
     {
@@ -565,7 +571,7 @@
     {
       "id": "Q8.5.2",
       "parent": "Q8.5",
-      "question": "Can the investigator retrieve a compact outcome and only the relevant evidence ranges, ask a materially different follow-up, and stop on budget or repeated equivalent failure?"
+      "question": "Can the investigator navigate a retained, question-independent discovery surface to formulate new questions, retrieve targeted source/evidence when necessary, and stop when further work has little value?"
     },
     {
       "id": "Q8.5.3",
@@ -609,6 +615,12 @@
       "id": "Q8.7.2",
       "parent": "Q8.7",
       "question": "Which source acquisition and navigation work should be amortized in advance, and which interpretation/probe work should remain question-relative?"
+    },
+    {
+      "id": "Q8.1.4",
+      "parent": "Q8.1",
+      "question": "What compact but broad discovery representation lets a fresh investigator formulate worthwhile questions about an unfamiliar application even without the original source or prior question history?",
+      "why": "Preserve optionality and unknown-unknown discovery; a compact success/failure receipt or a current-question summary is not a discovery surface. Compare question-independent orientation against question-conditioned routing."
     }
   ],
   "investigations": [
@@ -1141,11 +1153,12 @@
         "Q8.1.1",
         "Q8.1.2",
         "Q8.1.3",
-        "Q8.7.2"
+        "Q8.7.2",
+        "Q8.1.4"
       ],
       "status": "active_priority",
       "why": "Acquire once and amortize later discovery; avoid repeated manual source retrieval and premature keyword selection.",
-      "model": "Immutable full-byte artifacts + content-digest deduplication + versioned manifest (observed URL, size, digest, origin, acquisition method, receipt and failures) + cheap generated navigation (line intervals for readable sources, byte/UTF-16 column coordinates and module boundaries for minified sources). Archive full relevant first-party application source breadth within explicit authorization; stage or batch transport, do not truncate originals. Source collection and interpretation are independent.",
+      "model": "Immutable full-byte artifacts + content-digest deduplication + versioned manifest (observed URL, size, digest, origin, acquisition method, receipt and failures) + cheap generated navigation (line intervals for readable sources, byte/UTF-16 column coordinates and module boundaries for minified sources). Archive full relevant first-party application source breadth within explicit authorization; stage or batch transport, do not truncate originals. Source collection and interpretation are independent. Separate three output types: operation outcome receipts, durable discovery atlas, and original evidence corpus. The atlas is a question-independent map of observable application structure: complete coarse regions/tiles including unclassified areas, recognizable landmarks, interfaces, dependencies, candidate subsystem roles and coverage gaps. Retain compact provisional labels and concrete anchor symbols/coordinates, not just filenames or task-relevant results. Mechanically generate broad coverage first, then enrich promising regions selectively. Preserve provenance and differentiate lexical clues, source-inspected mechanisms and runtime observations. A fresh investigator should be able to generate new meaningful questions from the atlas alone even if original files are temporarily inaccessible; source-level certification still requires originals.",
       "belief": "AI Pill v0.4.10 retrieves complete decoded JS text for selected files and literal dependencies, with 8-file/32 MiB bundle limits. It does not yet preserve original bytes or automatically persist an archive. Microsoft atlas demonstrates full-source reuse with source-faithful shards; raw collection does not establish runtime execution or semantic coverage.",
       "certificate": "User's v0.4.10 bundle retrieved dictation-audio-worklet.46ab6ab8.js, 1073 bytes, 29 ms operation, 30 ms total, no unmet expectations. Previous v0.4.8 inventory-only lookup failed. Source archive, hash verification, and automatic persistence not established.",
       "evidence": [
@@ -1153,9 +1166,9 @@
         "microsoft_audit",
         "pill_plan"
       ],
-      "stop": "One bounded application snapshot with exact-byte SHA-256 receipts, explicit inventory coverage and failed items, and range retrieval from canonical storage without re-fetching browser assets. Repeat acquisition reuses identical content; new build adds only missing artifacts. No raw private source upload until destination authorization and privacy are verified.",
+      "stop": "One bounded application snapshot with exact-byte SHA-256 receipts, explicit inventory coverage and failed items, and range retrieval from canonical storage without re-fetching browser assets. Repeat acquisition reuses identical content; new build adds only missing artifacts. No raw private source upload until destination authorization and privacy are verified. In a separate context with only the atlas, an investigator can identify several distinct consequential subsystem questions, locate concrete regions, and identify what evidence is missing without rerunning browser instrumentation. Test against inventory-only and outcome-only baselines; do not demand a predetermined number of questions as proof of quality.",
       "reopen": "Changed source build, missing dependency/realm, failed digest/receipt, repeated source-navigation friction.",
-      "next": "Compare Drive raw-file upload and verified private GitHub storage via supported connector or narrow authenticated relay; choose one canonical archive. Prototype full inventory snapshot plus bounded missing-only batches; derive cheap byte/line/module index after receipt.",
+      "next": "Prioritize a complete authorized source snapshot and a portable discovery atlas patterned after Microsoft zones/landmarks/tiles/paths. Index whole observed scope, not just known question keywords or callsites. Evaluate one-question-blind discovery pass and independent follow-up from atlas alone. Keep raw source and atlas separately accessible. Compare canonical private archive destinations without adding transport complexity; retain manual JSON handoff.",
       "depends_on": []
     },
     {
@@ -1217,7 +1230,7 @@
       ],
       "status": "active_priority",
       "why": "Test complete autonomous research utility rather than count constituent features.",
-      "model": "Representative loop: one authorization -> inventory/archive job -> compact partial outcome -> distinct dependency-resolution job -> verified artifact reference -> later independent range lookup -> source-linked certificate. Measure human interventions, elapsed time, bytes re-transferred, number of model turns and recovery cost; compare actual previous workflow.",
+      "model": "Representative loop: one authorization -> inventory/archive job -> compact partial outcome -> distinct dependency-resolution job -> verified artifact reference -> later independent range lookup -> source-linked certificate. Measure human interventions, elapsed time, bytes re-transferred, number of model turns and recovery cost; compare actual previous workflow. Evaluate discovery as a separate phase: archive and map the system before optimizing a specific question; select future questions from the portable atlas even without the raw files in context. Outcome summaries govern operational recovery, not the entire epistemic surface.",
       "belief": "The manual Microsoft archive amortized source retrieval; AI Pill can reduce the acquisition and iteration cost if the integrated loop works. Passing local syntax tests is not evidence of that utility.",
       "certificate": "Not yet executed; existing v0.4.10 success involved a human pasting the plan and attaching the result.",
       "evidence": [
@@ -1225,9 +1238,9 @@
         "microsoft_audit",
         "pill_plan"
       ],
-      "stop": "A real investigation runs with minimal human relay, compact result first, full source artifact only when useful; repeated investigations retrieve existing evidence without reacquisition. Human can identify wasted effort and revise plans. Fully autonomous transport is not a prerequisite for this phase.",
+      "stop": "A real investigation runs with minimal human relay. Broad source acquisition and discovery orientation are reusable; a fresh investigator can discover additional consequential questions without the original source in context or another instrumentation run. Retrieve original ranges when certification requires them. Compact operational outcomes expose failures without requiring full evidence transfer; human can identify wasted effort and revise plans. Fully autonomous transport is not a prerequisite.",
       "reopen": "Repeated human intervention, lost evidence, unsafe scope, or inferior whole-workflow cost.",
-      "next": "Evaluate real source acquisition and follow-up using the plan UI and compact outcome. Identify missing operations, coverage, persistence and friction before automating relay.",
+      "next": "Compare inventory-only, outcome-only and coarse atlas views on actual collected ChatGPT source; use an unfamiliar subsystem as a discovery witness, not merely another known microphone question. Then inspect source ranges to check whether generated questions and anchors are useful.",
       "depends_on": [
         "I22"
       ]
@@ -1417,6 +1430,11 @@
       "date": "2026-11-26",
       "decision": "User selects JSON over MCP for now. AI Pill v0.4.12 removes duplicate Ask UI, foregrounds a plan and Run, exposes copy/save only after results, retains manual instruments under Tools. UI cold-demo and forgotten-operation tests are required; actual Safari behavior remains unverified.",
       "method": "REM-04.03; RSM-02.05–02.08; reverse-engineering context/brief distinction"
+    },
+    {
+      "date": "2026-11-26",
+      "decision": "User corrects the earlier bounded-context interpretation: optimize a reusable surface of discovery, not just compact current-question outcomes. Microsoft zones/landmarks/tiles offer the precedent. Separate acquisition, broad orientation, question generation, and focused descent. No UI or transport change required for this conceptual correction.",
+      "method": "RSM question selection as investigation; REM amortization and subtractive UI"
     }
   ],
   "functional_intent": {
