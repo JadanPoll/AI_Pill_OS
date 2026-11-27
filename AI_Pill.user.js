@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         AI Pill OS - DevTools and Ask
 // @namespace    https://github.com/JadanPoll/AI_Pill_OS
-// @version      0.4.32
+// @version      0.4.33
 // @description  LLM-directed investigation: run bounded JSON plans, collect evidence and export outcomes.
 // @match        https://*/*
 // @match        http://*/*
@@ -17,7 +17,7 @@
 (() => {
   'use strict';
   if (window.top !== window || document.getElementById('ai-pill-os')) return;
-  const VERSION = '0.4.32', MAX = 100, MAX_REPORT = 100000;
+  const VERSION = '0.4.33', MAX = 100, MAX_REPORT = 100000;
   let host, root, status, preview, includeText, planBox, pill;
   let picked = null, armed = false, recording = false, observer = null;
   let events = [], dropped = 0, started = 0, erudaReady = false;
@@ -382,7 +382,7 @@
         {op:'inspect',use:'Inspect matching DOM elements',selector:'CSS selector',expect:{minMatches:1}},
         {op:'controls',use:'Find visible controls',expect:{minItems:1}},
         {op:'record',use:'Observe a real interaction',instruction:'Human-facing action',seconds:'integer 5–180',probe:'optional pocket-mic',expect:{minEvents:1,minCallsites:'optional integer',eventCounts:'optional map of event names to minimum counts'}},
-        {op:'snapshotSources',use:'Broad snapshot of observed JavaScript from same-origin and explicitly approved static-CDN resources, with full source and portable discovery map. Browser CORS/CSP enforced; no arbitrary URLs. Approved Claude static assets require query/fragment-free URLs; approved Gemini CDN query-free variants are explicitly labeled, equivalence unverified.',maxFiles:'optional 1–256 attempt budget; omitted collects all currently eligible within time/byte limits',resume:'optional boolean; default true, reuse retained URLs and collect missing currently observed assets; false starts a fresh archive',offset:'deprecated; nonzero requires resume and is not used for positional slicing',expect:{minFiles:'default all eligible assets in cumulative inventory'}},
+        {op:'snapshotSources',use:'Broad snapshot of observed JavaScript from same-origin and explicitly approved static-CDN resources, with full source and portable discovery map. Browser CORS/CSP enforced; no arbitrary URLs. Unfamiliar observed HTTPS JS origins can be approved locally through the human Source access panel; plans cannot grant approval. Query/fragment-free URLs required for new origins. Approved Gemini CDN query-free variants explicitly labeled, equivalence unverified.',maxFiles:'optional 1–256 attempt budget; omitted collects all currently eligible within time/byte limits',resume:'optional boolean; default true, reuse retained URLs and collect missing currently observed assets; false starts a fresh archive',offset:'deprecated; nonzero requires resume and is not used for positional slicing',expect:{minFiles:'default all eligible assets in cumulative inventory'}},
         {op:'searchIndex',use:'Query retained source by case-insensitive exact identifier or constituent word; all=intersection, any=union, not=exclusion. File scope broad, module scope parsed supported bundle registries, region scope overlapping 2048-character windows. Results include unique occurrences, candidate reference kinds and unfamiliar nearby identifiers. No network.',all:['word'],any:['alternative'],not:['excluded'],scope:'optional file (default), module or region; module coverage explicit, use file/region if unsupported',files:['optional exact source names from context (extension not required)'],limit:'optional 1–30, default 12',expect:{minItems:'optional; defaults to 0 (empty observation is valid)'}},
         {op:'exploreIndex',use:'Queryless discovery across spatial strata of retained files, with local ordered grammar clues and evidence offsets. Page using nextOffset; no network.',files:['optional exact source names'],offset:'optional nonnegative integer, default 0',limit:'optional 1–30, default 12',expect:{minItems:'optional, default 0'}},
         {op:'resolveModule',use:'Locate parsed registry module ID and its direct lexical dependency candidates in the retained corpus. Candidate IDs may collide across builds; no network or execution.',moduleId:'literal string ID',file:'optional exact source name to pin root',sha256:'optional digest with file',expect:{minItems:1}},
@@ -594,7 +594,27 @@
   }
   // Explicit static-CDN policy. Snapshot candidates must still be observed script
   // resources, never model-supplied URLs. Normal browser CORS/CSP remain in force.
-  function sourceAcquisitionPolicy(u,appOrigin){
+  const SOURCE_APPROVAL_KEY='ai-pill-static-source-origins-v1',SOURCE_APPROVAL_LIMIT=128;
+  function validExternalScript(u,appOrigin){
+    return u.protocol==='https:'&&u.origin!==appOrigin&&!u.username&&!u.password&&!u.search&&!u.hash&&/\.(?:m?js)$/i.test(u.pathname);
+  }
+  function validApprovalOrigin(value){
+    try{const u=new URL(value);return u.protocol==='https:'&&u.origin===value&&!u.username&&!u.password;}catch{return false;}
+  }
+  // @grant none: this is an origin-local preference, not a privileged security
+  // boundary against the page. Browser fetch restrictions remain authoritative.
+  let sourceDecisions=new Map(),sourceApprovalStorage='local',pendingSourceReview=null;
+  try{
+    const stored=JSON.parse(localStorage.getItem(SOURCE_APPROVAL_KEY)||'null');
+    if(stored?.appOrigin===location.origin&&Array.isArray(stored.decisions))for(const row of stored.decisions.slice(0,SOURCE_APPROVAL_LIMIT)){
+      if(Array.isArray(row)&&validApprovalOrigin(row[0])&&typeof row[1]==='boolean')sourceDecisions.set(row[0],row[1]);
+    }
+  }catch{sourceApprovalStorage='memory';}
+  function saveSourceDecisions(){
+    try{localStorage.setItem(SOURCE_APPROVAL_KEY,JSON.stringify({appOrigin:location.origin,decisions:[...sourceDecisions]}));sourceApprovalStorage='local';}
+    catch{sourceApprovalStorage='memory';}
+  }
+  function sourceAcquisitionPolicy(u,appOrigin,decisions=sourceDecisions){
     const components={query:!!u.search,fragment:!!u.hash,credentials:!!(u.username||u.password)};
     const reject=reason=>({allowed:false,reason,components});
     if(components.credentials)return reject('URL contains userinfo credentials');
@@ -610,7 +630,54 @@
       if(components.query||components.fragment)return reject('Claude static CDN URL contains query or fragment');
       return {allowed:true,basis:'observed Claude static CDN; CORS required',address:u.origin+u.pathname,components,queryOmitted:false};
     }
+    if(validExternalScript(u,appOrigin)){
+      if(decisions.get(u.origin)===true)return {allowed:true,basis:'user-approved observed static CDN; CORS required',address:u.origin+u.pathname,components,queryOmitted:false};
+      return reject(decisions.get(u.origin)===false?'External source origin declined locally':'External source origin needs approval');
+    }
     return reject('Outside approved static source origins');
+  }
+  function sourceReviewGroups(inventory,appOrigin,decisions,manual=false){
+    const groups=new Map(),empty=new Map();
+    for(const item of inventory){
+      if(item.kind!=='js')continue;
+      try{
+        const u=new URL(item.address);
+        if(!validExternalScript(u,appOrigin)||sourceAcquisitionPolicy(u,appOrigin,empty).allowed||!manual&&decisions.has(u.origin))continue;
+        let row=groups.get(u.origin);if(!row){row={origin:u.origin,count:0,examples:[]};groups.set(u.origin,row);}
+        row.count++;if(row.examples.length<2)row.examples.push(safe(u.pathname.split('/').pop(),100));
+      }catch{}
+    }
+    if(manual)for(const origin of decisions.keys())if(!groups.has(origin))groups.set(origin,{origin,count:0,examples:[]});
+    return [...groups.values()].sort((a,b)=>b.count-a.count||a.origin.localeCompare(b.origin));
+  }
+  function closeSourceReview(){
+    pendingSourceReview=null;byId('source-review').hidden=true;byId('source-review-list').replaceChildren();
+  }
+  function showSourceReview(plan=null,manual=false){
+    const groups=sourceReviewGroups(sourceInventory({scriptsOnly:true}),location.origin,sourceDecisions,manual);
+    if(!manual&&!groups.length)return false;
+    const visible=groups.slice(0,SOURCE_APPROVAL_LIMIT),list=byId('source-review-list');list.replaceChildren();
+    const controls=[];
+    for(const group of visible){
+      const input=el('input',{type:'checkbox',checked:sourceDecisions.get(group.origin)===true});
+      controls.push({origin:group.origin,input});
+      list.append(el('label',{style:'display:block;border-top:1px solid #e2e8f0;padding:6px 0;overflow-wrap:anywhere'},input,' '+group.origin+' · '+group.count+' observed',group.examples.length?el('small',{style:'display:block;margin-left:22px'},group.examples.join(' · ')):null));
+    }
+    pendingSourceReview={plan,controls};
+    byId('source-review-note').textContent=(groups.length?'Select trusted origins for observed query-free HTTPS JavaScript. Unchecked origins stay excluded. Decisions apply only to this website and can be changed in Tools → Source access.':'No additional eligible external script origins observed.')+(groups.length>visible.length?' Showing '+visible.length+' of '+groups.length+' origins.':'')+(sourceApprovalStorage==='memory'?' Storage unavailable; decisions last only for this page.':'');
+    byId('source-review-continue').textContent=plan?'Continue snapshot':'Save decisions';
+    byId('source-review').hidden=false;pill.hidden=false;byId('open').hidden=true;
+    return true;
+  }
+  function applySourceReview(){
+    const pending=pendingSourceReview;if(!pending)return;
+    // Capture only the origin rows discovered locally, not model-supplied URLs.
+    for(const {origin,input} of pending.controls){
+      if(sourceDecisions.has(origin)||sourceDecisions.size<SOURCE_APPROVAL_LIMIT)sourceDecisions.set(origin,input.checked);
+    }
+    saveSourceDecisions();closeSourceReview();
+    if(pending.plan)void runPlan(pending.plan,true);
+    else setStatus('Source decisions saved'+(sourceApprovalStorage==='memory'?' for this page only (storage unavailable).':'. Existing retained evidence is unchanged.'));
   }
   function inventoryDrift(archive,inventory){
     const old=new Set(archive.atlas.inventory.filter(x=>x.status!=='excluded').map(x=>x.url));
@@ -7306,7 +7373,7 @@ return module.exports;
     // Carry prior source identities forward, including assets no longer in the live inventory. Never fetch a non-current asset implicitly.
     for(const [address,prior] of oldRows){if(canonicalSeen.has(address))continue;const row={...prior,index:eligible.length,status:'deferred',reason:'Previously observed; not currently observed'};reuse(row);rows.push(row);eligible.push({item:null,row});}
     const candidates=eligible.filter(v=>v.item&&v.row.status!=='collected'),selected=candidates.slice(0,maxFiles);let next=0,finished=0;
-    bundle.atlas={schema:'ai_pill_os.discovery_atlas.v1',origin:location.origin,runId:bundle.runId,at:bundle.at,scope:'Observed JavaScript resources from current origin or explicitly approved static CDN; Gemini query-free variants explicitly identified, equivalence unverified; CORS/CSP enforced, no arbitrary URLs, credentials or source execution',method:'Complete UTF-8 source, SHA-256 of decoded HTTP response bytes; full contiguous lexical tiles and provisional API/name/dependency anchors. Not a JS parser or runtime witness.',inventory:rows,files:maps,limits:{inventory:SNAPSHOT_INVENTORY_LIMIT,attempts:Number.isFinite(maxFiles)?maxFiles:null,bundleBytes:SNAPSHOT_BYTES,perFileBytes:SOURCE_LIMIT,deadlineMs:90000},continuation:{mode:previous?'resume':'fresh',previousRunId:previous?.runId||null,legacyOffsetIgnored:x.offset||0,reused},coverage:null};
+    bundle.atlas={schema:'ai_pill_os.discovery_atlas.v1',origin:location.origin,runId:bundle.runId,at:bundle.at,scope:'Observed JavaScript resources from current origin or explicitly approved static CDN (built-in or origin-local user decision); Gemini query-free variants explicitly identified, equivalence unverified; CORS/CSP enforced, no arbitrary URLs, credentials or source execution',method:'Complete UTF-8 source, SHA-256 of decoded HTTP response bytes; full contiguous lexical tiles and provisional API/name/dependency anchors. Not a JS parser or runtime witness.',inventory:rows,files:maps,limits:{inventory:SNAPSHOT_INVENTORY_LIMIT,attempts:Number.isFinite(maxFiles)?maxFiles:null,bundleBytes:SNAPSHOT_BYTES,perFileBytes:SOURCE_LIMIT,deadlineMs:90000},continuation:{mode:previous?'resume':'fresh',previousRunId:previous?.runId||null,legacyOffsetIgnored:x.offset||0,reused},coverage:null};
     const worker=async()=>{while(next<selected.length){
       const {item,row}=selected[next++];
       if(Date.now()>=deadline||bundle.bytes>=SNAPSHOT_BYTES){row.reason=Date.now()>=deadline?'Snapshot deadline reached':'Bundle byte limit reached';finished++;continue;}
@@ -7360,10 +7427,12 @@ return module.exports;
   async function loadRecentRuns(){if(recentLoad)return recentLoad;recentLoad=(async()=>{try{const h=await archiveIO('recent-runs');if(Array.isArray(h)){const known=new Set(recentRuns.map(o=>o.runId));recentRuns=[...recentRuns,...h.filter(o=>o?.origin===location.origin&&!known.has(o.runId))].slice(0,20);syncRecentRuns();}}catch{}})();return recentLoad;}
   async function rememberRun(o){await loadRecentRuns();const copy=JSON.parse(JSON.stringify(o));recentRuns=[copy,...recentRuns.filter(v=>v.runId!==copy.runId)].slice(0,20);while(recentRuns.length>1&&JSON.stringify(recentRuns).length>1000000)recentRuns.pop();syncRecentRuns();byId('recent-select').value=copy.runId;try{await archiveIO('recent-runs',recentRuns);}catch(e){byId('recent-status').textContent='Recent results are in memory only: '+safe(e.message||e,100);}}
   async function copyRecentRun(){const o=recentRuns.find(x=>x.runId===byId('recent-select').value);if(o)await copyPrepared(JSON.stringify(o,null,2),'Investigation results',{id:'recent-copy',label:'Copy selected result'});}
-  async function runPlan(autoPlan){
+  async function runPlan(autoPlan,sourceReviewed=false){
     if(planActive||recording)return setStatus('Another recording or plan is active.');
+    closeSourceReview();
     resetCopyFeedback('plan-copy','Copy results');byId('plan-summary').textContent='';byId('plan-result').hidden=true;byId('evidence').hidden=true;preview.value='';setStatus('');planOutcome=null;planResult=null;
     let p;try{p=validatePlan(autoPlan||JSON.parse(planBox.value));}catch(e){byId('plan-copy').hidden=false;planResult=null;planOutcome={schema:'ai_pill_os.investigation_outcome.v1',version:VERSION,origin:location.origin,status:'rejected',error:safe(e.message,240)};byId('plan-save').hidden=true;byId('plan-map').hidden=true;byId('plan-copy').disabled=false;byId('plan-result').hidden=false;byId('plan-summary').textContent='Invalid plan · '+safe(e.message);preview.value=JSON.stringify(planOutcome,null,2);syncEvidence();byId('evidence').open=false;setStatus('Edit the plan or copy the error.');return;}
+    if(!sourceReviewed&&p.operations.some(x=>x.op==='snapshotSources')&&showSourceReview(p))return;
     planActive=true;const description=runDescription(p);activeRunDescription=description;byId('plan-summary').textContent='Running · '+description;byId('plan-copy').hidden=false;byId('run').disabled=true;byId('plan-clear').disabled=true;byId('plan-result').hidden=true;byId('evidence').hidden=true;byId('plan-save').disabled=true;byId('plan-copy').disabled=true;planResult=null;planOutcome=null;pill.hidden=true;byId('open').hidden=true;byId('tools').open=false;
     const t0=performance.now(),results=[],outcomes=[],bundle={schema:'ai_pill_os.investigation_bundle.v1',version:VERSION,runId:globalThis.crypto?.randomUUID?.()||Date.now().toString(36),origin:location.origin,at:new Date().toISOString(),description,plan:p,results,outcomes,files:[],bytes:0};
     try{
@@ -7644,10 +7713,11 @@ return module.exports;
         row(el('button',{id:'run',type:'button',class:'primary grow icon-btn'},icon('play'),el('span',{},'Run plan')),button('plan-clear','clear','Clear pasted plan; does not delete results','Clear')),
         el('section',{id:'plan-result',hidden:true},el('div',{id:'plan-summary',role:'status'}),row(el('button',{id:'plan-copy',type:'button',class:'primary grow icon-btn',disabled:true},icon('copy'),el('span',{},'Copy results')))),
         el('div',{id:'status',role:'status'},''),
+        el('section',{id:'source-review',hidden:true,style:'border:1px solid #cbd5e1;border-radius:8px;padding:8px;margin:6px 0'},el('strong',{},'Source access'),el('small',{id:'source-review-note',style:'display:block;margin:5px 0'}),el('div',{id:'source-review-list',style:'max-height:35vh;overflow:auto'}),row(plain('source-review-continue','Continue snapshot',{class:'primary grow'}),plain('source-review-cancel','Cancel'))),
         el('details',{id:'recent-runs',hidden:true},el('summary',{},'Recent runs'),row(el('select',{id:'recent-select',class:'grow','aria-label':'Recent investigations'})),row(el('button',{id:'recent-copy',type:'button',class:'grow icon-btn'},icon('copy'),el('span',{},'Copy selected result'))),el('small',{id:'recent-status'},'Local results (including excerpts) · last 20, up to about 1 MB')),
         el('details',{id:'evidence',hidden:true},el('summary',{},'Result details & exports'),el('div',{id:'export-row',class:'row',hidden:true},el('button',{id:'plan-save',type:'button',class:'grow icon-btn',disabled:true,hidden:true},icon('download'),el('span',{},'Save run evidence')),el('button',{id:'plan-map',type:'button',class:'grow icon-btn',hidden:true},icon('download'),el('span',{},'Save discovery map'))),el('div',{id:'preview-wrap',hidden:true},field('preview',5,null,{'aria-label':'Evidence preview'}),row(button('copy','copy','Copy visible evidence','Copy')))),
         el('details',{id:'tools'},el('summary',{},'Tools'),
-          row(plain('contract','Copy tool list'),button('sources','file','Browse sources','Sources'),button('console','terminal','Open persistent console logs','Console')),
+          row(plain('contract','Copy tool list'),button('sources','file','Browse sources','Sources'),button('console','terminal','Open persistent console logs','Console')),row(plain('source-access','Source access')),
           row(button('inspect','inspect','Inspect element','Inspect'),button('record','record','Record interaction','Record'),plain('snapshot','Page report')),
           details('Other instruments',row(button('eruda','code','Open Eruda debugger','DevTools'),button('copy-html','copy','Copy full live page HTML; may contain private data','HTML'),plain('direct-inspect','Direct tap inspect')),row(plain('html-delay','HTML in 7s'),plain('copy-timed-html','Copy captured HTML',{disabled:true})),row(plain('popup-arm','Capture popup'),plain('popup-copy','Copy popup',{disabled:true}))),
           check('text','Include element text in reports'))
@@ -7673,7 +7743,8 @@ return module.exports;
     $('inspect').onclick=startPointer;bindPointer();$('direct-inspect').onclick=()=>{armed=true;toggle(false);setStatus('Tap an element to inspect.');$('open').textContent='Cancel inspect · v'+VERSION;};
     $('open').addEventListener('click',()=>{armed=false;syncRecord();});
     $('record').onclick=()=>planActive?planFinish?.():recording?stop():record();$('snapshot').onclick=()=>show(report());
-    $('html-delay').onclick=e=>{if(e.isTrusted)armTimedHTML();};$('copy-timed-html').onclick=e=>{if(e.isTrusted)void copyTimedHTML();};$('popup-arm').onclick=e=>{if(e.isTrusted)armPopupCapture();};$('popup-copy').onclick=e=>{if(e.isTrusted)void copyPopup();};$('copy').onclick=copy;$('copy-html').onclick=e=>{if(e.isTrusted)void copyHTML();};$('ai-context').onclick=e=>{if(e.isTrusted)void copyAIContext();};$('contract').onclick=e=>{if(e.isTrusted)void copyPrepared(JSON.stringify(investigationContract(),null,2),'Investigation capabilities');};$('run').onclick=e=>{if(e.isTrusted)void runPlan();};$('plan-clear').onclick=e=>{if(e.isTrusted&&!planActive){planBox.value='';setStatus('Plan cleared.');}};$('recent-copy').onclick=e=>{if(e.isTrusted)void copyRecentRun();};$('recent-select').onchange=()=>resetCopyFeedback('recent-copy','Copy selected result');void loadRecentRuns();$('plan-save').onclick=savePlanBundle;$('plan-map').onclick=saveDiscoveryMap;$('plan-copy').onclick=copyPlanOutcome;$('plan-finish').onclick=()=>planFinish?.();$('eruda').onclick=devtools;
+    $('html-delay').onclick=e=>{if(e.isTrusted)armTimedHTML();};$('copy-timed-html').onclick=e=>{if(e.isTrusted)void copyTimedHTML();};$('popup-arm').onclick=e=>{if(e.isTrusted)armPopupCapture();};$('popup-copy').onclick=e=>{if(e.isTrusted)void copyPopup();};$('copy').onclick=copy;$('copy-html').onclick=e=>{if(e.isTrusted)void copyHTML();};$('ai-context').onclick=e=>{if(e.isTrusted)void copyAIContext();};$('contract').onclick=e=>{if(e.isTrusted)void copyPrepared(JSON.stringify(investigationContract(),null,2),'Investigation capabilities');};$('run').onclick=e=>{if(e.isTrusted)void runPlan();};$('plan-clear').onclick=e=>{if(e.isTrusted&&!planActive){closeSourceReview();planBox.value='';setStatus('Plan cleared.');}};$('recent-copy').onclick=e=>{if(e.isTrusted)void copyRecentRun();};$('recent-select').onchange=()=>resetCopyFeedback('recent-copy','Copy selected result');void loadRecentRuns();$('plan-save').onclick=savePlanBundle;$('plan-map').onclick=saveDiscoveryMap;$('plan-copy').onclick=copyPlanOutcome;$('plan-finish').onclick=()=>planFinish?.();$('eruda').onclick=devtools;
+    $('source-access').onclick=e=>{if(e.isTrusted&&!planActive)showSourceReview(null,true);};$('source-review-continue').onclick=e=>{if(e.isTrusted&&!planActive)applySourceReview();};$('source-review-cancel').onclick=e=>{if(e.isTrusted){closeSourceReview();setStatus('Source review cancelled.');}};
     $('sources').onclick=openSources;$('dev-sources').onclick=openSources;
     const openConsole=()=>{if(!document.getElementById('ai-pill-console')){setStatus('Install AI_Pill_Console.user.js first, then reload.');return;}document.dispatchEvent(new Event('ai-pill-console-open'));};
     $('console').onclick=openConsole;$('dev-console').onclick=openConsole;
