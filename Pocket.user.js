@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         AI Pill OS - Pocket
 // @namespace    https://github.com/JadanPoll/AI_Pill_OS
-// @version      0.7.56
+// @version      0.7.57
 // @updateURL    https://raw.githubusercontent.com/JadanPoll/AI_Pill_OS/main/Pocket.user.js
 // @downloadURL  https://raw.githubusercontent.com/JadanPoll/AI_Pill_OS/main/Pocket.user.js
 // @description  Universal Safari pill: collect evidence, keep discoveries, and hand a question to a chosen chat.
@@ -26,7 +26,7 @@
 (() => {
   'use strict';
   if (window.top !== window) return;
-  const VERSION='0.7.56';
+  const VERSION='0.7.57';
   // Report initialization failures without depending on the main UI, storage or a CDN.
   function bootFailure(error,phase){
     const message=String(error?.message||error).slice(0,500);
@@ -1766,7 +1766,8 @@
       micLabState={status:p.event==='unavailable'?'media API unavailable':'page bridge ready',events,
         active:!!p.active,armed:!!p.armed,pending:!!p.pending,expires:p.expires||null,
         reservation:p.reservation||[],borrowed:p.borrowed||0,hookStillPresent:!!p.hookStillPresent};
-      if(p.entry){stageEvent('page:'+p.event,{entry:p.entry});if(dictationRun&&(!p.entry.session||p.entry.session===dictationRun.id)){const id=dictationRun.id,e=p.entry,k=p.event;if(k==='gum.call'||k==='gum.reused'||k==='gum.resolved'||k==='gum.rejected')latencyMark('mic','receiver',id,k,e.at);if(e.sources?.some(x=>/^(native|borrowed):/.test(x))){if(k==='recorder.event.start'||k==='recorder.event.stop')latencyMark('mic','receiver',id,k,e.at);if(k==='recorder.event.dataavailable'&&e.bytes>0){const r=latencyRow('mic','receiver',id),prior=r.last.audioChunk?.[0];if(prior!==undefined)latencyMeasure('mic','receiver',id,'chunkGap',e.at-prior);latencyMark('mic','receiver',id,'audioChunk',e.at);}}}}
+      if(p.entry){stageEvent('page:'+p.event,{entry:p.entry});if(dictationRun&&p.entry.session===dictationRun.id){updateMicCapture(dictationRun,p.event,p.entry);}
+      if(dictationRun&&(!p.entry.session||p.entry.session===dictationRun.id)){const id=dictationRun.id,e=p.entry,k=p.event;if(k==='gum.call'||k==='gum.reused'||k==='gum.resolved'||k==='gum.rejected')latencyMark('mic','receiver',id,k,e.at);if(e.sources?.some(x=>/^(native|borrowed):/.test(x))){if(k==='recorder.event.start'||k==='recorder.event.stop')latencyMark('mic','receiver',id,k,e.at);if(k==='recorder.event.dataavailable'&&e.bytes>0){const r=latencyRow('mic','receiver',id),prior=r.last.audioChunk?.[0];if(prior!==undefined)latencyMeasure('mic','receiver',id,'chunkGap',e.at-prior);latencyMark('mic','receiver',id,'audioChunk',e.at);}}}}
       paintMicLab();
       if(p.event==='reservation.grant'&&p.entry?.mode==='reuse-probe'){micWarm={phase:'preparing',lease:micLabState.expires,started:Date.now()};clearTimeout(micWarmTimer);micWarmTimer=setTimeout(()=>startWarmDictation(micWarm.lease),0);}
       if(dictationRun?.warmup&&p.event==='gum.reused'&&p.entry?.warming)dictationRun.warmMuted=true;
@@ -1859,9 +1860,27 @@
     const nativePhase=micPhaseOf(phaseNodes,evidence,!!scope),recording=['starting','recording','finalizing'].includes(nativePhase);
     return {nativePhase,scope:scope?micNodeID(scope):null,start:!!micStartControl(),stop:!!micStopControl(),cancel:!!micCancelControl(),recording,evidence,controls,editor:!!editor,characters:editorText(editor).length,visibility:document.visibilityState,activation:navigator.userActivation?.isActive??null,session:audioSessionInfo()};
   }
+  function updateMicCapture(run,k,e){
+    if(!['recorder.event.start','recorder.event.dataavailable','recorder.event.stop'].includes(k)||!e.sources?.some(x=>/^(native|borrowed):/.test(x)))return;
+    const m=run.capture||(run.capture={chunks:0,bytes:0});
+    if(k==='recorder.event.start'){
+      if(m.recorder!==e.recorder){run.capture={recorder:e.recorder,startedAt:e.at,chunks:0,bytes:0};}
+      else {m.startedAt??=e.at;delete m.stoppedAt;}
+    }else if(m.recorder===e.recorder){
+      if(k==='recorder.event.stop')m.stoppedAt=e.at;
+      else if(e.bytes>0){m.chunks++;m.bytes+=e.bytes;m.lastChunkAt=e.at;}
+    }
+    if(k!=='recorder.event.dataavailable'||run.capture.chunks===1)wakeMicLane();
+  }
+  function micCapture(run,now=Date.now()){
+    const m=run?.capture;if(!m)return {state:'unobserved',chunks:0};
+    const age=m.lastChunkAt==null?null:now-m.lastChunkAt;
+    return {...m,state:m.stoppedAt?'stopped':m.startedAt?(age!==null&&age<=6000?'capturing':'recorder-started'):'unobserved',chunkAgeMs:age};
+  }
+  function micHasCapture(run){return !!run?.capture?.startedAt&&!run.capture.stoppedAt;}
   function micStage(run,phase,detail,extra={}){
-    const r={id:run.id,sender:run.sender,target:run.target,worker:instance,selfTest:!!run.selfTest,phase,detail,at:Date.now(),started:run.started,expires:run.expires,snapshot:micSnapshot(),reservation:reservationSnapshot(),...extra};
-    latencyMark('mic','receiver',run.id,phase);stageEvent('native:'+phase,{id:run.id,selfTest:!!run.selfTest,warmup:!!run.warmup,detail,nativePhase:r.snapshot.nativePhase,controls:r.snapshot.controls,characters:r.characters||0,firstPartialDelayMs:r.firstPartialDelayMs??null,reservation:reservationSnapshot().state,...(extra.stopEvidence?{stopEvidence:extra.stopEvidence}:{}),...(extra.reason?{reason:extra.reason}:{})});
+    const r={id:run.id,sender:run.sender,target:run.target,worker:instance,selfTest:!!run.selfTest,phase,detail,at:Date.now(),started:run.started,expires:run.expires,snapshot:micSnapshot(),capture:micCapture(run),reservation:reservationSnapshot(),...extra};
+    latencyMark('mic','receiver',run.id,phase);stageEvent('native:'+phase,{id:run.id,selfTest:!!run.selfTest,warmup:!!run.warmup,detail,nativePhase:r.snapshot.nativePhase,capture:r.capture,controls:r.snapshot.controls,characters:r.characters||0,firstPartialDelayMs:r.firstPartialDelayMs??null,reservation:reservationSnapshot().state,...(extra.stopEvidence?{stopEvidence:extra.stopEvidence}:{}),...(extra.reason?{reason:extra.reason}:{})});
     dictationReceipt=r;rememberMicReceipt(r);linkLog('dictation',{...r});lifeEvent('dictation-'+phase,r);
     if(run.selfTest){$('mic-test-status').textContent=detail;const active=['starting','recording','stopping','needs-local-stop'].includes(phase);$('mic-test').setAttribute('aria-pressed',String(active));$('mic-test').textContent=phase==='stopping'?'Finishing…':active?'Stop dictation':'Dictate';$('mic-test').disabled=phase==='stopping';if(phase==='recording'&&!run.warmup){const el=$('mic-test-result');el.hidden=false;if(!run.partialText)el.textContent='Listening · waiting for live text…';}}
     wakeTransport();
@@ -2019,10 +2038,10 @@
     // user's tap, rather than after a shared-storage await.
   }
   async function micStop(run,reason='user'){
-    if(dictationRun!==run||run.stopLooking||run.stopAt&&(reason!=='user'||dictationReceipt?.phase!=='needs-local-stop'))return;
+    if(dictationRun!==run||run.stopLooking||run.stopAt&&!(reason==='native-ready'&&!run.stopClickedAt||reason==='user'&&dictationReceipt?.phase==='needs-local-stop'))return;
     if(chatURL(location.href)!==run.target){micStage(run,'needs-local-stop','Receiver changed. Stop recording directly in the native page.');return;}
-    run.stopAt=Date.now();latencyMark('mic','receiver',run.id,'stopAccepted',run.stopAt);run.stopLooking=true;run.stopClickedAt=null;
-    const deadline=run.stopAt+1800,initial=stopEvidence();stageEvent('session.stop-intent',{id:run.id,reason,initial});
+    run.stopAt=run.stopAt||Date.now();latencyMark('mic','receiver',run.id,'stopAccepted',run.stopAt);run.stopLooking=true;run.stopClickedAt=null;
+    const deadline=Date.now()+1800,initial=stopEvidence();stageEvent('session.stop-intent',{id:run.id,reason,initial});
     try{
       // The first lookup and click remain synchronous with a local tap.
       // Retry discovery only, never repeat a successful click automatically.
@@ -2040,7 +2059,9 @@
         if(Date.now()>=deadline)break;
         await new Promise(resolve=>setTimeout(resolve,100));
       }
-      const evidence=stopEvidence(),snap=micSnapshot(),starting=snap.nativePhase==='starting',cancel=starting?micCancelControl('starting'):reason==='time limit'?micCancelControl('recording'):null;
+      const evidence=stopEvidence(),snap=micSnapshot(),starting=snap.nativePhase==='starting';
+      if(starting&&reason!=='time limit'&&micHasCapture(run)){run.awaitingNativeStop=true;micStage(run,'stopping','Audio captured · waiting for native Stop. Open receiver if needed.',{reason,stopEvidence:evidence});stageEvent('session.stop-deferred',{id:run.id,capture:micCapture(run),nativePhase:snap.nativePhase});return;}
+      const cancel=starting?micCancelControl('starting'):reason==='time limit'?micCancelControl('recording'):null;
       if(cancel){try{run.cancelledByPocket=true;run.stopClickedAt=Date.now();latencyMark('mic','receiver',run.id,'cancelClick');stageEvent('session.cancel-click',{id:run.id,reason,nativePhase:snap.nativePhase,evidence});cancel.click();micStage(run,'stopping',starting?'Cancelling stalled dictation · no question will be sent.':'Time limit · native cancel clicked; awaiting idle.',{reason,initial,evidence});}catch(e){run.cancelledByPocket=false;run.stopClickedAt=null;micStage(run,'needs-local-stop','Native cancel failed. Stop recording in receiver.',{reason,initial,evidence});}}
       else micStage(run,'needs-local-stop','Native Stop unavailable · retry or stop directly in receiver.',{reason,initial,evidence});
     }finally{run.stopLooking=false;}
@@ -2054,10 +2075,11 @@
       if(run.warmup){observeWarmDictation(run,snap,now);return;}
       const sig=JSON.stringify([snap.nativePhase,snap.scope,snap.controls,snap.evidence]);if(sig!==run.lastSignature){run.lastSignature=sig;const change={id:run.id,nativePhase:snap.nativePhase,scope:snap.scope,controls:snap.controls,evidence:snap.evidence,characters:snap.characters,visibility:snap.visibility};stageEvent('session.dom',change);linkLog('dictation-controls',change);lifeEvent('dictation-controls',change);}
       if(snap.nativePhase==='recording'&&!run.observed){run.observed=true;if(!run.stopAt)micStage(run,'recording','Native recording state observed. Speak, then Stop.');}
+      if(!run.observed&&!run.stopAt&&micHasCapture(run)&&micCapture(run,now).state==='capturing'&&dictationReceipt?.detail!=='Recording audio · live preview delayed.'){micStage(run,'recording','Recording audio · live preview delayed.',{nativeUIReady:false});}
       if(run.stopClickedAt&&now-run.stopClickedAt>5000&&snap.recording&&snap.stop&&dictationReceipt?.phase==='stopping'){micStage(run,'needs-local-stop','Stop clicked but recorder still active. Retry Stop or use native control.',{stopEvidence:stopEvidence()});}
       if(!run.stopAt&&now>=run.expires)await micStop(run,'time limit');
-      if(!run.observed&&!run.stopAt&&document.hidden&&now-run.started>5000&&!run.backgroundWaitNoted){run.backgroundWaitNoted=true;micStage(run,'starting','Mic activation pending in background · open receiver if needed.',{elapsedMs:now-run.started});}
-      if(!run.observed&&!run.stopAt&&now-run.started>15000){
+      if(!run.observed&&!run.stopAt&&!micHasCapture(run)&&document.hidden&&now-run.started>5000&&!run.backgroundWaitNoted){run.backgroundWaitNoted=true;micStage(run,'starting','Mic activation pending in background · open receiver if needed.',{elapsedMs:now-run.started});}
+      if(!run.observed&&!run.stopAt&&!micHasCapture(run)&&now-run.started>15000){
         if(snap.start&&!snap.recording){micStage(run,'failed','Recording state not observed. Check microphone permission and activation.');micRelease(run);}
         else if(!run.activationWarned){run.activationWarned=true;micStage(run,'needs-local-stop','Native dictation still starting · tap Stop to cancel or open receiver.',{nativePhase:snap.nativePhase,elapsedMs:now-run.started});}
         if(dictationRun!==run)return;
@@ -2070,7 +2092,7 @@
       if(run.cancelledByPocket&&idle&&now-run.idleAt>=500){
         await clearMicPartial(run);micStage(run,'cancelled',text?'Dictation cancelled · native draft preserved.':'Dictation cancelled · ready to retry.',{cancelConfirmed:true});micRelease(run);return;
       }
-      if(run.stopAt&&!run.stopClickedAt&&!run.stopLooking&&snap.nativePhase==='recording'&&!run.lateStopTried){run.lateStopTried=true;stageEvent('session.late-stop',{id:run.id});await micStop(run,'user');return;}
+      if(run.stopAt&&!run.stopClickedAt&&!run.stopLooking&&snap.nativePhase==='recording'&&!run.lateStopTried){run.lateStopTried=true;stageEvent('session.late-stop',{id:run.id});await micStop(run,'native-ready');return;}
       if(run.idleAt&&now-run.idleAt>20000){
         await clearMicPartial(run);
         micStage(run,text?'uncertain':'cancelled',text?'Native mic idle; transcript could not be verified. Draft preserved.':'Native mic idle; no transcript returned.',{partialUpdates:run.partialSeq||0});micRelease(run);return;
@@ -2079,7 +2101,7 @@
       if(!snap.recording&&snap.start&&text&&sameTurn(run.baseline,fingerprint())&&!streamActive()&&!composerAttachments(chatEditor())){
         if(text!==run.transcript){latencyMark('mic','receiver',run.id,'finalObserved',now);run.transcript=text;run.stableAt=now;return;}
         if(now-run.stableAt<1200)return;
-        if(!run.observed){micStage(run,'uncertain','Text appeared without verified recording. Native draft preserved.');micRelease(run);return;}
+        if(!run.observed){micStage(run,'uncertain','Text appeared without verified native recording UI. Native draft preserved.');micRelease(run);return;}
         // Return only the draft generated by the native dictation session.
         // Persist a one-use receipt before clearing this otherwise-empty
         // receiver composer, preserving existing user data on any ambiguity.
@@ -2131,7 +2153,8 @@
   function paintMic(){
     const b=$('dictate'),out=$('dictation-status'),heart=lastHeart?.target===target&&lastHeart.worker===selectedWorker?lastHeart:null,p=dictationPending,r=p?(heart?.micReceipts?.find(x=>x.id===p.id&&x.sender===instance)||heart?.dictationReceipt):heart?.dictationReceipt;
     const heartFresh=!!heart&&fresh(heart.at,Date.now()),ready=heartFresh&&heart.mic?.start&&!heart.mic?.recording&&!heart.stop&&!heart.draft&&!heart.operation;
-    const micState=p?(!heartFresh||r?.id===p.id&&r.phase==='needs-local-stop'?'attention':p.stopping?'stopping':r?.id===p.id&&r.phase==='recording'?'recording':'starting'):heartFresh&&heart.mic?.recording?'recording':ready?'armed':'off';
+    const capture=heartFresh&&p&&heart?.micCapture?.id===p.id&&heart.micCapture.sender===instance?heart.micCapture:null;
+    const micState=p?(!heartFresh?'attention':p.stopping?'stopping':capture?.state==='capturing'?'recording':r?.id===p.id&&r.phase==='needs-local-stop'?'attention':r?.id===p.id&&r.phase==='recording'?'recording':'starting'):heartFresh&&heart.mic?.recording?'recording':ready?'armed':'off';
     b.disabled=!p&&(!target||!selectedWorker||!ready);
     b.setAttribute('aria-pressed',String(!!p));b.dataset.mic=micState;b.title=p?'Stop native dictation':ready?(heart?.micReservation?.state==='live'?'Mic reserved in receiver · ready to test':'Mic ready to start'):'Mic unavailable';b.setAttribute('aria-label',b.title);
     $('open').dataset.mic=micState;$('mode-ask').dataset.mic=micState;
@@ -2139,7 +2162,9 @@
     $('dictation-reset').hidden=!(p&&(Date.now()>p.expires+15000||r?.id===p.id&&r.phase==='needs-local-stop'));if(p&&r?.id===p.id&&r.sender===instance){
       if(p.lastReceiptPhase!==r.phase){p.lastReceiptPhase=r.phase;latencyMark('mic','source',p.id,'receipt:'+r.phase);}
       out.textContent=p.sendIntent&&['starting','recording','stopping'].includes(r.phase)?'Finishing dictation and sending…':heartFresh||['transcript','failed','cancelled','uncertain'].includes(r.phase)?r.detail:'Mic state stale · check receiver';
-      if(heartFresh&&r.phase==='starting'&&Date.now()-p.started>5000)out.textContent='Mic starting · receiver may need attention.';
+      if(capture?.state==='capturing'&&heart.mic?.nativePhase==='starting'&&!p.stopping)out.textContent='Recording audio · live preview delayed.';
+      else if(heartFresh&&r.phase==='starting'&&Date.now()-p.started>5000)out.textContent='Mic starting · receiver may need attention.';
+      if(p.stopping&&r.phase==='stopping'&&capture?.state==='capturing'&&heart.mic?.nativePhase==='starting')out.textContent='Audio captured · open receiver to finish if needed.';
       if(r.phase==='transcript'&&!p.retrieving){p.retrieving=true;void receiveMicResult(p,r);}
       else if(['failed','cancelled','uncertain'].includes(r.phase)){if(p.sendIntent){latencyMark('mic','source',p.id,'sendDeferred');status('Dictation not finalized · question not sent.');}dictationPending=null;b.setAttribute('aria-pressed','false');$('dictation-reset').hidden=true;}
     }else if(p&&Date.now()>p.started+15000){out.textContent='Receiver has not confirmed Start · tap Stop to cancel or open receiver.';if(!p.startReceiptLate){p.startReceiptLate=true;latencyMark('mic','source',p.id,'startReceiptMissing');}}
@@ -2186,7 +2211,7 @@
   action('mic-test',()=>{$('self-test').dataset.test='mic';if(!selectedHere()){$('mic-test-status').textContent='Add this tab as a receiver first.';return;}if(dictationRun){if(dictationRun.warmup){const r=dictationRun,b=micCancelControl()||micStopControl();if(b&&!r.stopClickedAt){r.stopClickedAt=Date.now();r.stopAt=r.stopClickedAt;r.warmStopKind=micCancelControl()===b?'cancel':'stop';b.click();wakeMicLane();}else status('Wait for setup to finish or use native Stop.');}else if(dictationRun.selfTest)void micStop(dictationRun);else $('mic-test-status').textContent='Remote dictation is active. Stop from its source.';return;}if(!isGemini(chatURL(location.href)))ensureMicLab();micTestResult=null;$('mic-test-result').hidden=true;$('mic-test-result').textContent='';micStart({id:uid(),sender:instance,target:chatURL(location.href),worker:instance,selfTest:true,started:Date.now(),expires:Date.now()+MIC_MAX});});
   function chatObservation(here){
     const editor=chatEditor(),stopping=streamActive();
-    return {operation:dictationRun?'dictation':modelBusy?'model':activeAsk?'ask-observation':null,editor:!!editor,disabled:!!editor&&(editor.disabled===true||editor.getAttribute('aria-disabled')==='true'||editor.getAttribute('contenteditable')==='false'||!!editor.closest('fieldset[disabled]')),stop:stopping,draft:!!editor&&(!!editorText(editor)||composerAttachments(editor)),surface:chatSurface(),userTurns:turns('user').length,assistantTurns:turns('assistant').length,sendControl:!!sendControl(),latestTurnState:latestTurnState(),model:nativeModel(),modelReceipt,mic:micSnapshot(),micReservation:reservationSnapshot(),micWarmup:{...micWarm},micPipeline:micLabSnapshot(true),dictationReceipt,micReceipts:[...micReceipts.values()].map(({id,sender,target,worker,phase,at,detail,cleared})=>({id,sender,target,worker,phase,at,detail,cleared})),micPartial:micPartialMeta(),hidden:document.hidden,visibility:document.visibilityState};
+    return {operation:dictationRun?'dictation':modelBusy?'model':activeAsk?'ask-observation':null,editor:!!editor,disabled:!!editor&&(editor.disabled===true||editor.getAttribute('aria-disabled')==='true'||editor.getAttribute('contenteditable')==='false'||!!editor.closest('fieldset[disabled]')),stop:stopping,draft:!!editor&&(!!editorText(editor)||composerAttachments(editor)),surface:chatSurface(),userTurns:turns('user').length,assistantTurns:turns('assistant').length,sendControl:!!sendControl(),latestTurnState:latestTurnState(),model:nativeModel(),modelReceipt,mic:micSnapshot(),micReservation:reservationSnapshot(),micWarmup:{...micWarm},micPipeline:micLabSnapshot(true),dictationReceipt,micCapture:dictationRun?{id:dictationRun.id,sender:dictationRun.sender,...micCapture(dictationRun)}:null,micReceipts:[...micReceipts.values()].map(({id,sender,target,worker,phase,at,detail,cleared,capture})=>({id,sender,target,worker,phase,at,detail,cleared,capture})),micPartial:micPartialMeta(),hidden:document.hidden,visibility:document.visibilityState};
   }
   function fresh(t,now){return typeof t==='number'&&Number.isFinite(t)&&now-t>=0&&now-t<=LINK_TTL;}
   // A script release is not a transport protocol version. Heartbeat
