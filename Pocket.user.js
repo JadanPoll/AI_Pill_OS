@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         AI Pill OS - Pocket
 // @namespace    https://github.com/JadanPoll/AI_Pill_OS
-// @version      0.7.51
+// @version      0.7.52
 // @updateURL    https://raw.githubusercontent.com/JadanPoll/AI_Pill_OS/main/Pocket.user.js
 // @downloadURL  https://raw.githubusercontent.com/JadanPoll/AI_Pill_OS/main/Pocket.user.js
 // @description  Universal Safari pill: collect evidence, keep discoveries, and hand a question to a chosen chat.
@@ -26,7 +26,7 @@
 (() => {
   'use strict';
   if (window.top !== window) return;
-  const VERSION='0.7.51';
+  const VERSION='0.7.52';
   // Report initialization failures without depending on the main UI, storage or a CDN.
   function bootFailure(error,phase){
     const message=String(error?.message||error).slice(0,500);
@@ -1687,7 +1687,7 @@
     const local=latencyReport();
     return {schema:1,version:VERSION,sourceTab,instance,origin:location.origin,target:dest,at:Date.now(),visibility:document.visibilityState,focused:document.hasFocus(),
       latency:{...local,rows:local.rows.filter(r=>r.role==='source'&&(!r.target||r.target===dest)||r.role==='local')},
-      lifecycle:{counts:life.counts,events:life.events.filter(e=>/^(?:runtime-start|visibilitychange|focus|blur|freeze|resume|pageshow|pagehide|suspected-suspension|clock-discontinuity|storage-stall(?:-ended)?|longtask|javascript-error|unhandled-rejection)$/.test(e.kind)).map(e=>({at:e.at,instance:e.instance,kind:e.kind,visibility:e.visibility,focused:e.focused,classification:e.classification,wallGapMs:e.wallGapMs,monotonicGapMs:e.monotonicGapMs,persisted:e.persisted})),persistenceError:lifePersistError},
+      lifecycle:{counts:life.counts,events:life.events.filter(e=>/^(?:runtime-start|visibilitychange|focus|blur|freeze|resume|pageshow|pagehide|suspected-suspension|clock-discontinuity|storage-stall(?:-ended)?|longtask|javascript-error|unhandled-rejection)$/.test(e.kind)).map(e=>({at:e.at,instance:e.instance,kind:e.kind,visibility:e.visibility,focused:e.focused,classification:e.classification,wallGapMs:e.wallGapMs,monotonicGapMs:e.monotonicGapMs,persisted:e.persisted,navigationType:e.navigationType,wasDiscarded:e.wasDiscarded,previous:e.previous})),persistenceError:lifePersistError},
       connection:{state:linkState,proof:lastProof?{at:lastProof.at,observedAt:lastProof.observedAt,latencyMs:lastProof.latencyMs,hidden:lastProof.hidden,worker:lastProof.worker}:null,heartbeatAt:lastHeart?.at??null,worker:lastHeart?.worker??null,pulseSeq:pulseCount,maxGapMs:pulseMaxGap},
       checkpoint:{at:sourceCheckpointAt,error:sourceCheckpointError,pending:sourceCheckpointBusy}};
   }
@@ -1845,8 +1845,8 @@
   function micPartialMeta(){
     const run=dictationRun;return run?.partialSeq?{id:run.id,sender:run.sender,seq:run.partialSeq,characters:run.partialText.length,firstAt:run.firstPartialAt,at:run.lastPartialAt}:null;
   }
-  async function readMicPartial(p,heart){
-    const m=heart?.micPartial;if(!p||p.partialReading||p.retrieving||m?.id!==p.id||m.sender!==instance||m.seq===(p.partialSeq||0)||!fresh(heart.at,Date.now()))return;
+  async function readMicPartial(p,heart,direct=false){
+    const m=heart?.micPartial;if(!p||p.partialReading||p.retrieving||(!direct&&(m?.id!==p.id||m.sender!==instance||m.seq===(p.partialSeq||0)||!fresh(heart.at,Date.now()))))return;
     p.partialReading=true;
     try{const v=await store.get(MIC_PARTIAL+p.target);if(dictationPending!==p||p.retrieving||!v||v.id!==p.id||v.sender!==instance||v.target!==p.target||v.worker!==p.worker||typeof v.text!=='string'||!Number.isInteger(v.seq)||v.seq<=(p.partialSeq||0)||Date.now()>v.expires)return;
       p.partialSeq=v.seq;p.partialText=v.text;paintMicPreview();latencyMark('mic','source',p.id,'partialDisplayed');latencyMeasure('mic','source',p.id,'previewDelivery',Date.now()-v.at);
@@ -1878,7 +1878,7 @@
     const scope=micScope();
     if(scope!==run.previewScope){run.previewObserver?.disconnect();run.previewScope=scope;if(scope)run.previewObserver.observe(scope,{subtree:true,childList:true,characterData:true,attributes:true,attributeFilter:['aria-label','aria-pressed','data-dictation-button','data-placeholder']});}
     const snap=micSnapshot();
-    if(!snap.recording)return;
+    if(!snap.recording){if(run.observed||run.stopAt)wakeMicLane();return;}
     if(!run.observed){run.observed=true;if(!run.stopAt)micStage(run,'recording','Recording · live text below when available.');}
     // Earlier live DOM showed "Hide live transcription"; if the inverse
     // control exists, enable the user's explicitly requested preview.
@@ -1888,6 +1888,7 @@
     }
     const text=liveMicText();
     if(run.selfTest&&sameTurn(run.baseline,fingerprint()))void publishMicPartial(run,text,Date.now());
+    else if(!run.selfTest&&text!==(run.partialText||''))wakeMicLane();
   }
   function watchMicPreview(run){
     run.previewObserver=new MutationObserver(()=>{if(run.previewTimer)return;run.previewTimer=setTimeout(()=>{run.previewTimer=null;sampleMicPreview(run);},80);});
@@ -1980,6 +1981,8 @@
     if(dictationBusy)return;
     const c=await store.get(MIC_COMMAND+dest);
     if(c&&c.target===dest&&c.worker===instance&&typeof c.id==='string'&&c.commandId!==micLastCommand&&Date.now()<=c.commandExpires&&await allowedDestination({target:dest})){
+      // Do not consume a new command while an idle Ask scan owns the native lane.
+      if(c.action==='start'&&autoBusy&&!activeAsk)return;
       micLastCommand=c.commandId;
       if(c.action==='start'){if(!dictationRun)micStart(c);else if(dictationRun.id!==c.id)linkLog('dictation-start-blocked',{id:c.id,reason:'another session active'});}
       else if(c.action==='stop'&&dictationRun?.id===c.id&&dictationRun.sender===c.sender)await micStop(dictationRun);
@@ -2102,7 +2105,6 @@
         if(selectedWorker!==instance){paintLink('off','Same conversation, different receiver tab');return;}
         const ping=await store.get(LINK_PING+dest);
         if(chatURL(location.href)!==dest)return;
-        await processMicCommand(dest);
         await processModelRequest(dest);
         const now=Date.now(),ob=chatObservation(here);
         const echo=ping?.target===dest&&typeof ping.id==='string'&&typeof ping.sender==='string'&&ping.sender!==instance&&fresh(ping.at,now)?{id:ping.id,sender:ping.sender,issuedAt:ping.at}:null;
@@ -2164,7 +2166,7 @@
     if(store&&selected){try{const prefix=SOURCE_DIAG+encodeURIComponent(selected)+'.';const keys=(await timeout(store.keys())).filter(k=>k.startsWith(prefix));sourceDiagnosticsOmitted=Math.max(0,keys.length-12);const chosen=keys.slice(-12);sourceDiagnostics=(await Promise.all(chosen.map(async k=>{try{return await timeout(store.get(k));}catch(e){return {error:String(e?.message||e).slice(0,120)};}}))).filter(Boolean).sort((a,b)=>(b.at||0)-(a.at||0));}catch(e){sourceDiagnosticsError=String(e?.message||e).slice(0,160);}}
     if(store){try{const list=await timeout(readRegistry());receiverAudioReports=await Promise.all(list.map(async r=>{try{const heart=await timeout(store.get(LINK_HEART+r.target));return {target:r.target,name:conversationName(r.target),worker:heart?.worker??null,version:heart?.version??null,heartbeatAt:heart?.at??null,heartbeatAgeMs:heart?.at?Date.now()-heart.at:null,hidden:heart?.hidden??null,pulseSeq:heart?.watchdog?.seq??null,maxGapMs:heart?.watchdog?.maxGapMs??null,audio:heart?.watchdog?.audio??null,micReservation:heart?.micReservation??null,micPipeline:heart?.micPipeline??null,audioCounts:heart?.lifecycle?.audioCounts??null,audioExamples:heart?.lifecycle?.audioExamples??null};}catch(e){return {target:r.target,error:String(e?.message||e).slice(0,160)};}}));}catch(e){receiverAudioReports=[{error:String(e?.message||e).slice(0,160)}];}}
     const exactExecution=request?(executionTrace?.id===request.id?executionTrace:[history?.recent?.find(e=>e.id===request.id),history?.historical?.find(e=>e.id===request.id),requestTrace?.execution,savedTrace?.execution].filter(e=>e?.id===request.id).sort((a,b)=>(b.updated||b.started)-(a.updated||a.started))[0]||null):null;
-    return JSON.stringify({version:VERSION,exportedAt:new Date().toISOString(),reportId:uid(),instance,selectedWorker,target:linkTarget,receivers:receivers.map(r=>({target:r.target,name:conversationName(r.target)})),receiverHeart,receiverAudioReports,receiverMicJournal,receiverMicJournalError,sourceDiagnostics,sourceDiagnosticsError,sourceDiagnosticsOmitted,localSourceCheckpoint:here?null:{at:sourceCheckpointAt,error:sourceCheckpointError,pending:sourceCheckpointBusy},latency:latencyReport(),state:linkState,challenge,lastProof,lastHeart,ageMs:lastHeart?Date.now()-lastHeart.at:null,error:linkError,visibility:document.visibilityState,intervalMs:LINK_INTERVAL,expiryMs:LINK_TTL,mailbox:'metadata index; direct request keys',autoStartExpiryMs:AUTO_START_TTL,events:linkEvents,uiEvents,watchdog:pulseSnapshot(),priorPulse,lifecycle:lifeReport(),history,retention:{full:HISTORY_FULL,compact:HISTORY_COMPACT,failureExamples:HISTORY_EXAMPLES,distinctFailureSignatures:HISTORY_SIGNATURES,journal:'per tab, survives ordinary reload; sessionStorage'},live,environment:{surface:here?chatSurface():null,storage:modern?'GM async':legacy?'GM legacy':'unavailable',viewport:[innerWidth,innerHeight],visualViewport:window.visualViewport?[window.visualViewport.width,window.visualViewport.height]:null,hasFocus:document.hasFocus(),clipboard:!!navigator.clipboard,position:dock,navigation:lastNavigation,tabTitle:document.title,overlay:{mode:layerMode,error:layerError,zIndex:getComputedStyle(host).zIndex}},selfTest:lastSelfTest||savedTrace?.selfTest||null,nativeControls:{micReservation:reservationSnapshot(),micPipeline:micLabSnapshot(),modelTest:modelTestReceipt,modelReceipt,dictationReceipt,micTestCharacters:micTestResult?.length||0,pendingDictation:dictationPending?{id:dictationPending.id,target:dictationPending.target,worker:dictationPending.worker,stopping:!!dictationPending.stopping}:null},execution:exactExecution||(!request?(executionTrace||savedTrace?.execution||null):null),latestConversationExecution:request&&!exactExecution?(savedTrace?.execution||null):null,traceReadError,traceError,clipboard:lastCopy,request:request?{id:request.id,target:request.target,chatTitle:request.chatTitle||null,created:request.created,worker:request.autoWorker||null,promptCharacters:request.text?.length||0,marker:request.marker||null,visuals:request.visuals||[],seen:request.seen,copied:request.copied,returned:!!request.reply,manualReason:request.manualReason||null,run:request.run,receipts}:null,scope:'Exact request trace when available, recent UI and connection events, live worker DOM and receipt metadata. No custom prompt or answer body. Archive retains recent full executions, compact history, aggregate outcomes and bounded rare failure examples; journal survives ordinary refresh. Latest conversation execution is separate when it belongs to another request.'},null,2);}
+    return JSON.stringify({version:VERSION,exportedAt:new Date().toISOString(),reportId:uid(),instance,selectedWorker,target:linkTarget,receivers:receivers.map(r=>({target:r.target,name:conversationName(r.target)})),receiverHeart,receiverAudioReports,receiverMicJournal,receiverMicJournalError,sourceDiagnostics,sourceDiagnosticsError,sourceDiagnosticsOmitted,localSourceCheckpoint:here?null:{at:sourceCheckpointAt,error:sourceCheckpointError,pending:sourceCheckpointBusy},fastLane:{...fastLane,policy:{micReservedMs:500,micIdleMs:1500,sourcePreviewMs:500,sourceReplyProbeMs:500,explicitAnswerSettleMs:500,legacyAnswerSettleMs:6000}},latency:latencyReport(),state:linkState,challenge,lastProof,lastHeart,ageMs:lastHeart?Date.now()-lastHeart.at:null,error:linkError,visibility:document.visibilityState,intervalMs:LINK_INTERVAL,expiryMs:LINK_TTL,mailbox:'metadata index; direct request keys',autoStartExpiryMs:AUTO_START_TTL,events:linkEvents,uiEvents,watchdog:pulseSnapshot(),priorPulse,lifecycle:lifeReport(),history,retention:{full:HISTORY_FULL,compact:HISTORY_COMPACT,failureExamples:HISTORY_EXAMPLES,distinctFailureSignatures:HISTORY_SIGNATURES,journal:'per tab, survives ordinary reload; sessionStorage'},live,environment:{surface:here?chatSurface():null,storage:modern?'GM async':legacy?'GM legacy':'unavailable',viewport:[innerWidth,innerHeight],visualViewport:window.visualViewport?[window.visualViewport.width,window.visualViewport.height]:null,hasFocus:document.hasFocus(),clipboard:!!navigator.clipboard,position:dock,navigation:lastNavigation,tabTitle:document.title,overlay:{mode:layerMode,error:layerError,zIndex:getComputedStyle(host).zIndex}},selfTest:lastSelfTest||savedTrace?.selfTest||null,nativeControls:{micReservation:reservationSnapshot(),micPipeline:micLabSnapshot(),modelTest:modelTestReceipt,modelReceipt,dictationReceipt,micTestCharacters:micTestResult?.length||0,pendingDictation:dictationPending?{id:dictationPending.id,target:dictationPending.target,worker:dictationPending.worker,stopping:!!dictationPending.stopping}:null},execution:exactExecution||(!request?(executionTrace||savedTrace?.execution||null):null),latestConversationExecution:request&&!exactExecution?(savedTrace?.execution||null):null,traceReadError,traceError,clipboard:lastCopy,request:request?{id:request.id,target:request.target,chatTitle:request.chatTitle||null,created:request.created,worker:request.autoWorker||null,promptCharacters:request.text?.length||0,marker:request.marker||null,visuals:request.visuals||[],seen:request.seen,copied:request.copied,returned:!!request.reply,manualReason:request.manualReason||null,run:request.run,receipts}:null,scope:'Exact request trace when available, recent UI and connection events, live worker DOM and receipt metadata. No custom prompt or answer body. Archive retains recent full executions, compact history, aggregate outcomes and bounded rare failure examples; journal survives ordinary refresh. Latest conversation execution is separate when it belongs to another request.'},null,2);}
   action('link-report',copyConnectionReport);
   function extractPocketAnswer(last) {
     if(!last)return '';
@@ -2538,6 +2540,13 @@
       activeAsk=null;await markRun(r,attempted?'uncertain':'failed',String(e?.message||e).slice(0,220)+(attempted?' · Check chat; do not resend.':' · No send attempted.'));
     }
   }
+  function answerCompletion(n,surface=chatSurface()){
+    if(!n)return false;
+    if(surface==='gemini')return geminiComplete(n);
+    if(surface==='modern')return n.closest('[data-talvt-turn-state]')?.getAttribute('data-talvt-turn-state')==='complete';
+    return !!n.closest('article,[data-testid^="conversation-turn-"]')?.querySelector('button[data-testid="copy-turn-action-button"],button[data-testid="good-response-turn-action-button"],button[data-testid="bad-response-turn-action-button"]');
+  }
+  function answerSettleMs(surface,completed){return completed&&(surface==='modern'||surface==='gemini')?500:6000;}
   async function observeAsk(a){
     const r=a.r;
     if(!(await store.get(HANDOFF+r.id))||validReply(await store.get(REPLY+r.id),r)){activeAsk=null;testStage(r,'uncertain','Request receipt changed before observation completed. Check chat.');return;}
@@ -2571,16 +2580,19 @@
     if(!text)return;
     const id=turnID(candidate),sameCandidate=id? id===a.assistantID:candidate===a.assistantNode;
     if(!sameCandidate||text!==a.answer||!a.stableAt){a.answer=text;a.stableAt=now;a.assistantID=id;a.assistantNode=candidate;testStage(r,'candidate','Assistant response candidate observed',{answerCharacters:text.length,assistantId:id});return;}
-    const article=candidate.closest('article,[data-testid^="conversation-turn-"]');
-    const completed=gem?geminiComplete(candidate):modern?candidate.closest('[data-talvt-turn-state]')?.getAttribute('data-talvt-turn-state')==='complete':!!article?.querySelector('button[data-testid="copy-turn-action-button"],button[data-testid="good-response-turn-action-button"],button[data-testid="bad-response-turn-action-button"]');
+    const surface=chatSurface(),completed=answerCompletion(candidate,surface),settleMs=answerSettleMs(surface,completed);
     // Stable text alone is not proof of completion. Require either observed
     // streaming followed by idle or an explicit completed-turn control.
-    if(now-a.stableAt<6000||((modern||gem)?!completed:(!a.seenBusy&&!completed)))return;
-    testStage(r,'completion','Response completion verified',{explicitCompletion:completed,observedGeneration:a.seenBusy,stableMs:now-a.stableAt,assistantId:id});
+    if(now-a.stableAt<settleMs||((modern||gem)?!completed:(!a.seenBusy&&!completed)))return;
+    testStage(r,'completion','Response completion verified',{explicitCompletion:completed,observedGeneration:a.seenBusy,stableMs:now-a.stableAt,settleRequiredMs:settleMs,assistantId:id});
     if(text.length>LIMIT){await finishAsk(a,'uncertain','Answer exceeds Pocket text limit; copy from chat');return;}
     if((!modern&&streamActive())||!user.isConnected||!matchesRequest(user,r,a.expected)||chatURL(location.href)!==r.target)return;
     if(validReply(await store.get(REPLY+r.id),r)){activeAsk=null;return;}
     if(!(await store.get(HANDOFF+r.id))) {activeAsk=null;return;}
+    // Revalidate after asynchronous receipt reads: fast completion may not
+    // return a stale DOM snapshot or a different turn.
+    const verified=answerForUser(user);
+    if(chatURL(location.href)!==r.target||!user.isConnected||!matchesRequest(user,r,a.expected)||!verified||!verified.isConnected||(id?turnID(verified)!==id:verified!==candidate)||extractPocketAnswer(verified)!==text||((modern||gem)&&!answerCompletion(verified,surface))||(!modern&&streamActive()))return;
     const reply={id:r.id,target:r.target,sourcePage:r.sourcePage,created:new Date().toISOString(),text,provenance:gem?'gemini-observed-turn':'chatgpt-observed-turn',messageId:id};
     await store.set(REPLY+r.id,reply);
     const check=await store.get(REPLY+r.id);
@@ -2669,9 +2681,51 @@
     pollBusy=true;try{await refreshHandoff(loadEpoch);}catch(e){linkLog('error',{message:'Mailbox: '+String(e?.message||e).slice(0,180)});}finally{pollBusy=false;}
   }
   let transportTimer=null,transportBusy=false,transportWake=false,nextLink=0,nextPoll=0,nextAuto=0;
+  let nextMicLane=0,micLaneBusy=false,micLaneTimer=null,nextReplyProbe=0,replyProbeBusy=false;
+  const fastLane={micPolls:0,micWakeups:0,previewPolls:0,replyProbes:0,replyHits:0,askObserverWakeups:0,errors:0};
+  function fastMicInterval(worker){
+    return worker?(dictationRun||micLabState.active||micReserve?500:1500):500;
+  }
+  async function micLaneTick(){
+    if(micLaneBusy||!store)return;
+    const here=chatURL(location.href),worker=!!here&&here===target&&selectedWorker===instance;
+    if(!worker&&!dictationPending)return;
+    micLaneBusy=true;
+    try{
+      if(worker){fastLane.micPolls++;await processMicCommand(here);}
+      else if(!here&&dictationPending){fastLane.previewPolls++;await readMicPartial(dictationPending,null,true);}
+    }catch(e){fastLane.errors++;linkLog('mic-lane-error',{name:String(e?.name||'Error')});}
+    finally{micLaneBusy=false;}
+  }
+  function wakeMicLane(){
+    // DOM callbacks coalesce and still use the same single-flight guard.
+    if(micLaneTimer!==null)return;
+    micLaneTimer=setTimeout(()=>{micLaneTimer=null;fastLane.micWakeups++;nextMicLane=Date.now()+500;void micLaneTick();},120);
+  }
+  async function probeSourceReply(){
+    if(replyProbeBusy||!store||document.hidden||chatURL(location.href)||!sourceWatch||!pending||pending.reply)return;
+    const r=pending;replyProbeBusy=true;fastLane.replyProbes++;
+    try{const v=await store.get(REPLY+r.id);if(pending?.id===r.id&&validReply(v,r)){fastLane.replyHits++;await pollHandoff();}}
+    catch(e){fastLane.errors++;linkLog('reply-probe-error',{name:String(e?.name||'Error')});}
+    finally{replyProbeBusy=false;}
+  }
+  let askObservedRoot=null,askObserverTimer=null;
+  const askObserver=new MutationObserver(records=>{
+    if(!activeAsk||askObserverTimer!==null)return;
+    // Completion/state mutations, not a new storage scan for every token.
+    const interesting=records.some(m=>m.type==='attributes'||[...m.addedNodes,...m.removedNodes].some(n=>n.nodeType===1&&(n.matches?.('[data-talvt-turn-state], [data-turn-key], .response-footer, [aria-busy], button[data-testid="stop-button"], button[data-testid="copy-turn-action-button"]')||n.querySelector?.('[data-talvt-turn-state], .response-footer, button[data-testid="stop-button"], button[data-testid="copy-turn-action-button"]'))));
+    if(!interesting)return;
+    askObserverTimer=setTimeout(()=>{askObserverTimer=null;if(activeAsk){fastLane.askObserverWakeups++;void autoTick();}},200);
+  });
+  function bindAskObserver(){
+    const scope=activeAsk?(document.querySelector('main')||document.querySelector('[data-scroll-root]')||document.body):null;
+    if(scope===askObservedRoot)return;
+    askObserver.disconnect();askObservedRoot=scope;
+    if(scope)askObserver.observe(scope,{subtree:true,childList:true,attributes:true,attributeFilter:['data-talvt-turn-state','data-stream-active','aria-busy']});
+  }
   function wakeTransport(){
     if(!store)return;
-    nextLink=nextPoll=nextAuto=0;
+    nextLink=nextPoll=nextAuto=nextMicLane=nextReplyProbe=0;
     if(transportBusy){transportWake=true;return;}
     clearTimeout(transportTimer);transportTimer=setTimeout(transportTick,0);
   }
@@ -2684,14 +2738,17 @@
       if(document.hidden&&!worker&&!activeAsk&&!clientArmed&&!dictationRun&&!dictationPending)return;
       // Each lane has its own in-flight guard. A blocked autoTick must
       // not prevent the heartbeat or mailbox from making progress.
+      bindAskObserver();
+      if((worker||dictationPending)&&now>=nextMicLane){nextMicLane=now+fastMicInterval(worker);void micLaneTick();}
+      if(!here&&sourceWatch&&now>=nextReplyProbe){nextReplyProbe=now+500;void probeSourceReply();}
       if(now>=nextLink){nextLink=now+(active?2000:LINK_INTERVAL);void linkTick();}
-      if((worker||activeAsk)&&now>=nextAuto){nextAuto=now+(activeAsk?1000:2000);void autoTick();}
+      if((worker||activeAsk)&&now>=nextAuto){nextAuto=now+(activeAsk?500:2000);void autoTick();}
       if((!document.hidden||worker||clientArmed)&&now>=nextPoll){nextPoll=now+(active?1000:8000);void pollHandoff();}
     }finally{
       transportBusy=false;
       const here=chatURL(location.href),worker=!!here&&here===target&&selectedWorker===instance,active=!!activeAsk||!!dictationRun||!!dictationPending||!!modelPending||sourceWatch||!!(pending&&!pending.reply);
       if(transportWake){transportWake=false;wakeTransport();}
-      else if(!document.hidden||worker||activeAsk||clientArmed||dictationRun||dictationPending)transportTimer=setTimeout(transportTick,active?500:2000);
+      else if(!document.hidden||worker||activeAsk||clientArmed||dictationRun||dictationPending)transportTimer=setTimeout(transportTick,active||(worker&&(micLabState.active||micReserve))?500:worker?1000:2000);
     }
   }
   const navigation=performance.getEntriesByType('navigation')[0];
