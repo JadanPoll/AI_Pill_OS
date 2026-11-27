@@ -1,7 +1,7 @@
 {
   "schema": "ai_pill_os.rsm_investigation",
-  "version": 15,
-  "updated": "2026-11-25",
+  "version": 16,
+  "updated": "2026-11-26",
   "parent_purpose": "Asymptotically reduce the mechanical distance from human intention to useful realization, preserving attention, agency, intellectual continuity and recoverability. Optimize the complete recurring human–AI loop, not a browser transport.",
   "scope": "Safari-first personal computing: direct touch for low-information operations, dictation and AI collaboration for high-information intentions, universal pill plus contextual mini-pills, local working state and context-aware canonical persistence.",
   "method_trace": [
@@ -34,6 +34,21 @@
       "decision": "Reject a working constituent mechanism when the composed human workflow becomes worse",
       "clause": "RSM-02.09–02.12; RSM-05.01–05.02; REM-04.03",
       "why": "User rejected manual relay; optimize parent purpose and compare complete workflow rather than certify isolated transport."
+    },
+    {
+      "decision": "Acquire complete source once, index mechanically, and defer semantic interpretation until discovery or a question warrants it",
+      "clause": "RSM-01.04; RSM-04.08–04.09; RSM-05.01–05.02",
+      "why": "Preserve the substrate for unknown future questions; inexpensive complete acquisition and selective investigation are compatible."
+    },
+    {
+      "decision": "Separate control lane, evidence/artifact lane and epistemic outcome",
+      "clause": "RSM-02.09–02.10; RSM-01.01–01.05",
+      "why": "Avoid mistaking plan execution for evidence collection or a model conclusion; target the complete autonomous loop."
+    },
+    {
+      "decision": "Select a single real hands-off acquisition/repair/retrieval canary",
+      "clause": "RSM-02.05–02.08; RSM-04.04–04.07",
+      "why": "Discriminate transport, persistence and retrieval failures before building an exhaustive tracer."
     }
   ],
   "sources": {
@@ -111,7 +126,11 @@
     "eisonai": "https://github.com/qoli/eisonAI",
     "select_to_ai": "https://github.com/arnav-goel10/select-to-ai",
     "swarm_heartbeat": "https://github.com/JadanPoll/SwarmX/blob/main/Tamperworker.user.js#L374-L403",
-    "labx_heartbeat": "https://github.com/JadanPoll/LabX/blob/main/hub/labx_bridge.user.js#L343-L359"
+    "labx_heartbeat": "https://github.com/JadanPoll/LabX/blob/main/hub/labx_bridge.user.js#L343-L359",
+    "microsoft_atlas": "https://github.com/JadanPoll/microsoft/blob/main/source_atlas/README.md",
+    "microsoft_audit": "https://github.com/JadanPoll/microsoft/blob/main/source_atlas/RESEARCH_PROCESS_AUDIT_2026-11-17.md",
+    "pill_plan": "https://github.com/JadanPoll/AI_Pill_OS/blob/45137542bc0bd7a61a16a8a77d3efa87b6435838/AI_Pill.user.js",
+    "pocket_0757": "https://github.com/JadanPoll/AI_Pill_OS/blob/64accf41281199b6058083afedc0c4a0e88d1475/Pocket.user.js"
   },
   "question_tree": [
     {
@@ -120,7 +139,8 @@
       "question": "Can I operate at the speed of thought?",
       "why": "Recover the goal independent of implementations.",
       "children": [
-        "Q7"
+        "Q7",
+        "Q8"
       ]
     },
     {
@@ -402,6 +422,184 @@
       "parent": "Q5",
       "question": "What minimal identity, context and state must remain continuous across quick answers, deeper conversations and deferred results?",
       "why": "Separate human intellectual continuity from implementation-specific tab IDs and exact provider thread identity."
+    },
+    {
+      "id": "Q8",
+      "parent": "Q0",
+      "question": "Can an intelligence investigate, understand, experiment with and improve a running software system without the human operating the evidence-collection and transport loop?",
+      "why": "Generalize the Microsoft research experience; optimize human attention, time to a defensible mechanism, and marginal cost of future investigations, not merely browser interaction speed.",
+      "children": [
+        "Q8.1",
+        "Q8.2",
+        "Q8.3",
+        "Q8.4",
+        "Q8.5",
+        "Q8.6",
+        "Q8.7"
+      ]
+    },
+    {
+      "id": "Q8.1",
+      "parent": "Q8",
+      "question": "What evidence can be acquired once, in full, and reused for questions we have not yet discovered?",
+      "children": [
+        "Q8.1.1",
+        "Q8.1.2",
+        "Q8.1.3"
+      ]
+    },
+    {
+      "id": "Q8.1.1",
+      "parent": "Q8.1",
+      "question": "Which observed scripts, loader manifests, dynamic chunks, workers, WASM and source maps belong to a versioned application snapshot; which are inaccessible or unobserved?"
+    },
+    {
+      "id": "Q8.1.2",
+      "parent": "Q8.1",
+      "question": "Can exact original bytes, provenance, digest, retrieval status and immutable artifact IDs be persisted to one authorized archive without manual relay or credential exposure?"
+    },
+    {
+      "id": "Q8.1.3",
+      "parent": "Q8.1",
+      "question": "Which cheap line/column, byte-window, module and dependency indexes let later investigators navigate complete minified and unminified files without re-ingesting them?"
+    },
+    {
+      "id": "Q8.2",
+      "parent": "Q8",
+      "question": "How does the investigator reach a particular live browser device, tab, document and execution realm, and receive a verifiable reply?",
+      "children": [
+        "Q8.2.1",
+        "Q8.2.2",
+        "Q8.2.3"
+      ]
+    },
+    {
+      "id": "Q8.2.1",
+      "parent": "Q8.2",
+      "question": "Can the existing Pocket mailbox and a narrow same-document bridge carry explicit, scoped investigation jobs and receipts independently of ordinary Ask traffic?"
+    },
+    {
+      "id": "Q8.2.2",
+      "parent": "Q8.2",
+      "question": "Can a connector-addressable, authenticated job queue avoid consumer-chat DOM dependence and convey artifact references without the human copying them; what is the cheapest supported implementation?"
+    },
+    {
+      "id": "Q8.2.3",
+      "parent": "Q8.2",
+      "question": "Which lifecycle limits remain under foreground/background switching, refresh, duplicate delivery, loss of connectivity and replacement of the selected target?"
+    },
+    {
+      "id": "Q8.3",
+      "parent": "Q8",
+      "question": "Which real execution boundaries make software understandable without full instruction tracing?",
+      "children": [
+        "Q8.3.1",
+        "Q8.3.2",
+        "Q8.3.3"
+      ]
+    },
+    {
+      "id": "Q8.3.1",
+      "parent": "Q8.3",
+      "question": "Can source/module loading and selected browser API call stacks be correlated to the canonical snapshot, with source coordinates and coverage limits?"
+    },
+    {
+      "id": "Q8.3.2",
+      "parent": "Q8.3",
+      "question": "Can scoped passive observation distinguish application state transitions, native action dispatch, transport and rendered UI, without recording credentials or unrelated message contents?"
+    },
+    {
+      "id": "Q8.3.3",
+      "parent": "Q8.3",
+      "question": "Which inaccessible execution realms or server-side mechanisms require a different supported observation tool, and which gaps materially limit conclusions?"
+    },
+    {
+      "id": "Q8.4",
+      "parent": "Q8",
+      "question": "Which capabilities permit a bounded experiment to run with little or no human participation?",
+      "children": [
+        "Q8.4.1",
+        "Q8.4.2",
+        "Q8.4.3"
+      ]
+    },
+    {
+      "id": "Q8.4.1",
+      "parent": "Q8.4",
+      "question": "Can named, reviewed read-only operations and reversible probes compose into plans with deadlines, expected evidence, cancellation, and explicit cleanup?"
+    },
+    {
+      "id": "Q8.4.2",
+      "parent": "Q8.4",
+      "question": "Which tasks actually require a trusted user gesture, OS permission or consequential approval, versus merely requiring a correct semantic action?"
+    },
+    {
+      "id": "Q8.4.3",
+      "parent": "Q8.4",
+      "question": "Can an experiment be varied automatically across discriminating conditions, with independent evidence rather than UI appearance as acceptance?"
+    },
+    {
+      "id": "Q8.5",
+      "parent": "Q8",
+      "question": "Can the loop learn from failure and choose the next investigation without human relay?",
+      "children": [
+        "Q8.5.1",
+        "Q8.5.2",
+        "Q8.5.3"
+      ]
+    },
+    {
+      "id": "Q8.5.1",
+      "parent": "Q8.5",
+      "question": "Can results distinguish transport delivery, operation execution, coverage, expectation satisfaction, artifact persistence and actual scientific conclusion?"
+    },
+    {
+      "id": "Q8.5.2",
+      "parent": "Q8.5",
+      "question": "Can the investigator retrieve a compact outcome and only the relevant evidence ranges, ask a materially different follow-up, and stop on budget or repeated equivalent failure?"
+    },
+    {
+      "id": "Q8.5.3",
+      "parent": "Q8.5",
+      "question": "Can a successful discovery become a source-linked certificate with assumptions and reopening conditions, not an ever-growing diagnostic log?"
+    },
+    {
+      "id": "Q8.6",
+      "parent": "Q8",
+      "question": "What authorization and isolation are required for user-directed agents to operate safely with almost no supervision?",
+      "children": [
+        "Q8.6.1",
+        "Q8.6.2"
+      ]
+    },
+    {
+      "id": "Q8.6.1",
+      "parent": "Q8.6",
+      "question": "How are explicit user scope, authenticated job identity, target binding, allowed capabilities, budgets and revocation separated from untrusted page content or model output?"
+    },
+    {
+      "id": "Q8.6.2",
+      "parent": "Q8.6",
+      "question": "How do we avoid persisting secrets, private page bodies, raw audio, credentials or authenticated request payloads and prevent automatic arbitrary code execution?"
+    },
+    {
+      "id": "Q8.7",
+      "parent": "Q8",
+      "question": "Does this complete research workflow materially outperform manual Microsoft-style acquisition and investigation?",
+      "children": [
+        "Q8.7.1",
+        "Q8.7.2"
+      ]
+    },
+    {
+      "id": "Q8.7.1",
+      "parent": "Q8.7",
+      "question": "Can a single authorized session run a whole-source acquisition, diagnose one real missing dependency, dispatch a distinct follow-up, receive an archive receipt, and later retrieve a range without another human action?"
+    },
+    {
+      "id": "Q8.7.2",
+      "parent": "Q8.7",
+      "question": "Which source acquisition and navigation work should be amortized in advance, and which interpretation/probe work should remain question-relative?"
     }
   ],
   "investigations": [
@@ -926,6 +1124,107 @@
       "reopen": "New working precedent, supported integration, or actual repeated friction sufficient to justify cost.",
       "next": "Inspect EisonAI for actual iPad Safari/native inference boundary; Aski and Lumen for quick-answer presentation and context resolution; OpenClip and select-to-ai for intent/action factoring. Compare exact code paths and authorization, deployment and cost; do not port desktop UI or assume background tab execution.",
       "depends_on": []
+    },
+    {
+      "id": "I22",
+      "questions": [
+        "Q8.1",
+        "Q8.1.1",
+        "Q8.1.2",
+        "Q8.1.3",
+        "Q8.7.2"
+      ],
+      "status": "active_priority",
+      "why": "Acquire once and amortize later discovery; avoid repeated manual source retrieval and premature keyword selection.",
+      "model": "Immutable full-byte artifacts + content-digest deduplication + versioned manifest (observed URL, size, digest, origin, acquisition method, receipt and failures) + cheap generated navigation (line intervals for readable sources, byte/UTF-16 column coordinates and module boundaries for minified sources). Archive full relevant first-party application source breadth within explicit authorization; stage or batch transport, do not truncate originals. Source collection and interpretation are independent.",
+      "belief": "AI Pill v0.4.10 retrieves complete decoded JS text for selected files and literal dependencies, with 8-file/32 MiB bundle limits. It does not yet preserve original bytes or automatically persist an archive. Microsoft atlas demonstrates full-source reuse with source-faithful shards; raw collection does not establish runtime execution or semantic coverage.",
+      "certificate": "User's v0.4.10 bundle retrieved dictation-audio-worklet.46ab6ab8.js, 1073 bytes, 29 ms operation, 30 ms total, no unmet expectations. Previous v0.4.8 inventory-only lookup failed. Source archive, hash verification, and automatic persistence not established.",
+      "evidence": [
+        "microsoft_atlas",
+        "microsoft_audit",
+        "pill_plan"
+      ],
+      "stop": "One bounded application snapshot with exact-byte SHA-256 receipts, explicit inventory coverage and failed items, and range retrieval from canonical storage without re-fetching browser assets. Repeat acquisition reuses identical content; new build adds only missing artifacts. No raw private source upload until destination authorization and privacy are verified.",
+      "reopen": "Changed source build, missing dependency/realm, failed digest/receipt, repeated source-navigation friction.",
+      "next": "Compare Drive raw-file upload and verified private GitHub storage via supported connector or narrow authenticated relay; choose one canonical archive. Prototype full inventory snapshot plus bounded missing-only batches; derive cheap byte/line/module index after receipt.",
+      "depends_on": []
+    },
+    {
+      "id": "I23",
+      "questions": [
+        "Q8.2",
+        "Q8.2.1",
+        "Q8.2.2",
+        "Q8.2.3",
+        "Q8.6"
+      ],
+      "status": "active_priority",
+      "why": "Remove human command and evidence transport from each iteration.",
+      "model": "Separate authenticated control lane (target binding, job ID, capability scope, lease/deadline, claim/receipt, terminal outcome) from artifact lane (immutable reference + digest + verified persistence). AI Pill page realm has no GM grants; Pocket holds cross-origin GM namespace and heartbeat. A narrow bridge may reuse existing Pocket transport for local dispatch; a connector-accessible queue or supported agent runner is required for direct remote invocation from an investigator. Do not conflate browser DOM output with an authenticated control channel.",
+      "belief": "Current manual plans and export work; no directly callable browser tool or verified automatic ChatGPT-to-AI-Pill command lane. Existing Pocket mailbox is browser-local and cannot by itself make this chat an endpoint. Safari scheduling, manager isolation, origin policy, and explicit permissions remain independent constraints.",
+      "certificate": "Source inspected: AI_Pill.user.js @grant none; Pocket.user.js GM get/set/list/delete grants, per-request mailbox keys and heartbeat. Both use pocket-mic-trace-v1 for passive microphone evidence. Existing grant separation and storage namespace should not be casually expanded.",
+      "evidence": [
+        "pill_plan",
+        "pocket_0757",
+        "microsoft_audit"
+      ],
+      "stop": "After one explicit scoped authorization, a real investigator submits a harmless job, correct browser target claims once, execution yields matching compact result, follow-up is dispatched without human copying, and refresh/duplicate delivery does not replay completed side effects. Actual background and foreground timing recorded.",
+      "reopen": "Stale target, transport loss, inaccessible browser realm, authorization or provider contract changes.",
+      "next": "Compare existing Pocket local job protocol with connector-reachable job mailbox and supported agent runtime. Select smallest demonstrable control path with authenticated scope; use read-only source acquisition as first job, not arbitrary eval or hidden authenticated requests.",
+      "depends_on": []
+    },
+    {
+      "id": "I24",
+      "questions": [
+        "Q8.3",
+        "Q8.4",
+        "Q8.5"
+      ],
+      "status": "conditional",
+      "why": "Make native software mechanisms discoverable and experiments composable once command/evidence transport is proven.",
+      "model": "Named probe/action capabilities with preconditions, cleanup and evidence contracts; per-operation expected vs actual outcomes. Passive source/module/load/API caller metadata before invasive changes; bounded experiment and retry policy. Differentiate delivered/executed, evidence captured, expectations met, persisted, and inference certified.",
+      "belief": "Mic bridge already exposes selected caller stacks and timing; v0.4.10 validates typed expectations and summarizes per-operation outcomes. Coverage of bridge events in AI Pill, ordinary message submission, response stream and source modules is not yet established.",
+      "certificate": "Real source retrieval outcome verified; full guided-record/auto-caller collection and hands-off execution remain unverified. Microsoft research audit establishes the value of direct source obstruction and separate runtime witnesses, not blanket portability.",
+      "evidence": [
+        "pill_plan",
+        "pocket_0757",
+        "microsoft_atlas",
+        "microsoft_audit"
+      ],
+      "stop": "Trace one ordinary user-authorized ChatGPT Ask across submission, native transport and completion; retrieve complete newly identified assets once, inspect relevant ranges, form a falsifiable conclusion and choose one meaningful intervention or stop. No unbounded probes or permanent research controls for every hypothesis.",
+      "reopen": "New consequential feature, unresolved source/runtime discrepancy, or recurring UI-dependent failure.",
+      "next": "Start after I22/I23 can exchange jobs and evidence; instrument passive native boundaries, with IDs/metadata only and explicit coverage. Retain existing UI adapter fallback. Use competing outcomes to choose subsequent experiments.",
+      "depends_on": [
+        "I22",
+        "I23"
+      ]
+    },
+    {
+      "id": "I25",
+      "questions": [
+        "Q8.7",
+        "Q8.7.1",
+        "Q8.5.2",
+        "Q8.5.3"
+      ],
+      "status": "conditional",
+      "why": "Test complete autonomous research utility rather than count constituent features.",
+      "model": "Representative loop: one authorization -> inventory/archive job -> compact partial outcome -> distinct dependency-resolution job -> verified artifact reference -> later independent range lookup -> source-linked certificate. Measure human interventions, elapsed time, bytes re-transferred, number of model turns and recovery cost; compare actual previous workflow.",
+      "belief": "The manual Microsoft archive amortized source retrieval; AI Pill can reduce the acquisition and iteration cost if the integrated loop works. Passing local syntax tests is not evidence of that utility.",
+      "certificate": "Not yet executed; existing v0.4.10 success involved a human pasting the plan and attaching the result.",
+      "evidence": [
+        "microsoft_atlas",
+        "microsoft_audit",
+        "pill_plan"
+      ],
+      "stop": "One real source-discovery investigation completes after initial authorization without manual file handling, copying or tab switches. A later model can recover the original artifact and locate a new mechanism without reacquisition. Stop adding machinery unless failures materially change that result.",
+      "reopen": "Repeated human intervention, lost evidence, unsafe scope, or inferior whole-workflow cost.",
+      "next": "Use missing worklet dependency as regression witness and a previously unindexed ordinary message path as discovery witness; compare actual not synthetic browser results.",
+      "depends_on": [
+        "I22",
+        "I23",
+        "I24"
+      ]
     }
   ],
   "relationships": [
@@ -988,9 +1287,36 @@
       "from": "I17",
       "to": "I12",
       "type": "supports"
+    },
+    {
+      "from": "I22",
+      "to": "I24",
+      "type": "enables"
+    },
+    {
+      "from": "I23",
+      "to": "I24",
+      "type": "enables"
+    },
+    {
+      "from": "I22",
+      "to": "I25",
+      "type": "enables"
+    },
+    {
+      "from": "I23",
+      "to": "I25",
+      "type": "enables"
+    },
+    {
+      "from": "I24",
+      "to": "I25",
+      "type": "enables"
     }
   ],
   "active_queue": [
+    "I22",
+    "I23",
     "I16",
     "I21",
     "I12",
@@ -1009,7 +1335,9 @@
     "I8",
     "I9",
     "I10",
-    "I11"
+    "I11",
+    "I24",
+    "I25"
   ],
   "global_stop": "A recurring real workflow must beat the direct existing workflow on human interventions, attention interruption and recovery cost while preserving useful output and agency. No obligation to realize every possible capability. Stop adding mechanisms once sufficient for the parent goal; reopen on actual recurrent friction. Manual relay is not a success criterion.",
   "limitations": "Source review and user-relayed prior experiments only. Drive root metadata inspected privately; no private IDs/content copied into public repository. No new device execution, provider automation, data migration or installation. Browser manager/version and support/authorization for any automated inference must be established separately.",
@@ -1073,6 +1401,11 @@
       "date": "2026-11-26",
       "decision": "User removes Point as a primary control; capture lives behind Notes and Ask. Reuse LabX and SwarmX independent heartbeat/state concepts for real hidden-tab communication; no inference integration yet.",
       "method": "REM subtractive interaction; RSM constituent verification"
+    },
+    {
+      "date": "2026-11-26",
+      "decision": "User reorients around AI Pill as an autonomous investigation runtime, drawing on Microsoft full-source archival and rough source ranges. Add Q8 landscape and I22–I25; prioritize source corpus amortization and authenticated bidirectional control/artifact lanes. No new architecture assumed proven; source retrieval and outcome reports demonstrated with manual relay only.",
+      "method": "RSM-02.09–02.10; RSM-05.01–05.02; RSM-04.07"
     }
   ],
   "functional_intent": {
