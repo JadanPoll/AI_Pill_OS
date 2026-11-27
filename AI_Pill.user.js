@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         AI Pill OS - DevTools and Ask
 // @namespace    https://github.com/JadanPoll/AI_Pill_OS
-// @version      0.4.25
+// @version      0.4.26
 // @description  LLM-directed investigation: run bounded JSON plans, collect evidence and export outcomes.
 // @match        https://*/*
 // @match        http://*/*
@@ -17,7 +17,7 @@
 (() => {
   'use strict';
   if (window.top !== window || document.getElementById('ai-pill-os')) return;
-  const VERSION = '0.4.25', MAX = 100, MAX_REPORT = 100000;
+  const VERSION = '0.4.26', MAX = 100, MAX_REPORT = 100000;
   let host, root, status, preview, includeText, planBox, pill;
   let picked = null, armed = false, recording = false, observer = null;
   let events = [], dropped = 0, started = 0, erudaReady = false;
@@ -304,7 +304,7 @@
   }
   function dependencyShape(path){return !validDependencyPath(path)?'unsupported':path.startsWith('/')?'origin-relative':path.startsWith('assets/')?'asset-relative':path.includes('/')?'parent-relative':'bare-sibling-inferred';}
   // Expectations are typed minimums, not arbitrary expressions or code.
-  const expectationKeys={inspect:['minMatches'],controls:['minItems'],sources:['minItems'],resources:['minItems'],record:['minEvents','minCallsites','eventCounts'],collectSources:['minFiles'],collectDependency:['minFiles'],snapshotSources:['minFiles'],searchIndex:['minItems'],readSource:['minItems']};
+  const expectationKeys={inspect:['minMatches'],controls:['minItems'],sources:['minItems'],resources:['minItems'],record:['minEvents','minCallsites','eventCounts'],collectSources:['minFiles'],collectDependency:['minFiles'],snapshotSources:['minFiles'],searchIndex:['minItems'],exploreIndex:['minItems'],readSource:['minItems']};
   function validateExpect(x){
     if(x.expect===undefined)return;
     const e=x.expect;if(!e||typeof e!=='object'||Array.isArray(e))throw Error('expect must be an object');
@@ -324,8 +324,8 @@
     if(result.executionError)issues.push({code:'execution_error',reason:result.executionError});
     else if(x.op==='inspect'){min('matches',result.matches?.length||0,e.minMatches??1);useful=observed.matches>0;}
     else if(['controls','sources','resources'].includes(x.op)){min('items',result.data?.length||0,e.minItems??1);useful=observed.items>0;}
-    else if(['searchIndex','readSource'].includes(x.op)){
-      min('items',result.total??result.items?.length??0,e.minItems??(x.op==='searchIndex'?0:1));useful=x.op==='searchIndex'||observed.items>0||e.minItems===0;
+    else if(['searchIndex','exploreIndex','readSource'].includes(x.op)){
+      min('items',x.op==='exploreIndex'?(result.items?.length||0):(result.total??result.items?.length??0),e.minItems??(['searchIndex','exploreIndex'].includes(x.op)?0:1));useful=['searchIndex','exploreIndex'].includes(x.op)||observed.items>0||e.minItems===0;
       if(result.incomplete)issues.push({code:'index_incomplete',reason:result.incomplete});
     }
     else if(x.op==='snapshotSources'){
@@ -364,13 +364,13 @@
     }
     const unmet=checks.filter(c=>!c.pass);
     const status=result.executionError?'failed':unmet.length||issues.length?(useful?'partial':'failed'):'passed';
-    return {index,op:x.op,...(x.id?{id:x.id}:{}),status,execution:result.executionError?'failed':'completed',observation:result.executionError?'unavailable':issues.length?'incomplete':x.op==='searchIndex'&&observed.items===0?'empty':'available',expectation:result.executionError?'not evaluated':unmet.length?'unmet':checks.length?'met':'not specified',elapsedMs,observed,checks,issues,...(itemRows.length?{items:itemRows.map(({name,status,error,bytes,candidate,basis})=>({name,status:error?'failed':status,...(error?{error}:{}),...(bytes!==undefined?{bytes}:{}),...(candidate?{candidate}:{}),...(basis?{basis}:{})}))}:{})};
+    return {index,op:x.op,...(x.id?{id:x.id}:{}),status,execution:result.executionError?'failed':'completed',observation:result.executionError?'unavailable':issues.length?'incomplete':['searchIndex','exploreIndex'].includes(x.op)&&observed.items===0?'empty':'available',expectation:result.executionError?'not evaluated':unmet.length?'unmet':checks.length?'met':'not specified',elapsedMs,observed,checks,issues,...(itemRows.length?{items:itemRows.map(({name,status,error,bytes,candidate,basis})=>({name,status:error?'failed':status,...(error?{error}:{}),...(bytes!==undefined?{bytes}:{}),...(candidate?{candidate}:{}),...(basis?{basis}:{})}))}:{})};
   }
   function buildOutcome(bundle){
     const operations=bundle.outcomes||[],counts={passed:0,partial:0,failed:0,skipped:0};
     for(const x of operations)counts[x.status]++;
     const status=counts.passed===operations.length&&!bundle.error?'passed':counts.passed||counts.partial?'partial':'failed';
-    return {schema:'ai_pill_os.investigation_outcome.v1',version:bundle.version,runId:bundle.runId,origin:bundle.origin,at:bundle.at,description:bundle.description,status,counts,elapsedMs:bundle.elapsedMs,operations,answers:(bundle.results||[]).filter(x=>['searchIndex','readSource','collectDependency'].includes(x.op)).map(x=>({...x})),archive:bundle.archive||undefined,files:bundle.files.map(({name,bytes,source})=>({name,bytes,url:source?.url})),bytes:bundle.bytes,...(bundle.atlas?{discovery:{schema:bundle.atlas.schema,coverage:bundle.atlas.coverage,exports:{discoveryMap:true,fullEvidence:true}}}:{}),...(bundle.error?{error:bundle.error}:{})};
+    return {schema:'ai_pill_os.investigation_outcome.v1',version:bundle.version,runId:bundle.runId,origin:bundle.origin,at:bundle.at,description:bundle.description,status,counts,elapsedMs:bundle.elapsedMs,operations,answers:(bundle.results||[]).filter(x=>['searchIndex','exploreIndex','readSource','collectDependency'].includes(x.op)).map(x=>({...x})),archive:bundle.archive||undefined,files:bundle.files.map(({name,bytes,source})=>({name,bytes,url:source?.url})),bytes:bundle.bytes,...(bundle.atlas?{discovery:{schema:bundle.atlas.schema,coverage:bundle.atlas.coverage,exports:{discoveryMap:true,fullEvidence:true}}}:{}),...(bundle.error?{error:bundle.error}:{})};
   }
   function investigationContract(){
     return {schema:'ai_pill_os.plan_contract.v1',version:VERSION,origin:location.origin,
@@ -384,6 +384,7 @@
         {op:'record',use:'Observe a real interaction',instruction:'Human-facing action',seconds:'integer 5–180',probe:'optional pocket-mic',expect:{minEvents:1,minCallsites:'optional integer',eventCounts:'optional map of event names to minimum counts'}},
         {op:'snapshotSources',use:'Broad snapshot of observed JavaScript from same-origin and explicitly approved static-CDN resources, with full source and portable discovery map. Browser CORS/CSP enforced; no arbitrary URLs. Approved Gemini CDN query-free variants are explicitly labeled, not certified identical to observed scripts.',maxFiles:'optional 1–256 (default 256)',offset:'optional inventory offset (default 0)',expect:{minFiles:'default all eligible assets in remaining inventory'}},
         {op:'searchIndex',use:'Query retained source by case-insensitive exact identifier or constituent word; all=intersection, any=union, not=exclusion. File scope broad, module scope parsed supported bundle registries, region scope overlapping 2048-character windows. Results include unique occurrences, candidate reference kinds and unfamiliar nearby identifiers. No network.',all:['word'],any:['alternative'],not:['excluded'],scope:'optional file (default), module or region; module coverage explicit, use file/region if unsupported',files:['optional exact source names from context (extension not required)'],limit:'optional 1–30, default 12',expect:{minItems:'optional; defaults to 0 (empty observation is valid)'}},
+        {op:'exploreIndex',use:'Queryless discovery across spatial strata of retained files, with local ordered grammar clues and evidence offsets. Page using nextOffset; no network.',files:['optional exact source names'],offset:'optional nonnegative integer, default 0',limit:'optional 1–30, default 12',expect:{minItems:'optional, default 0'}},
         {op:'readSource',use:'Read retained original source at UTF-16 offsets, no network. Verify optional digest.',file:'exact source name from context',start:0,length:4000,sha256:'optional 64 lowercase hex characters; omit for unique name in retained snapshot, supply to disambiguate or pin',expect:{minItems:1}},
         {op:'collectSources',use:'Collect complete decoded observed JS source into the run bundle (does not extend retained snapshot)',files:['exact source name'],alternative:{from:'recordedCallers'},expect:{minFiles:'default all requested'}},
         {op:'collectDependency',use:'Retrieve a same-origin literal JS dependency anchored in a retained or observed parent. Bare paths infer a sibling, not a verified import. Exact literal required, no arbitrary URLs. Saves to run bundle, not retained snapshot.',parent:'exact source name',path:'literal path, e.g. annotations_module.js, ./chunk.js, /static/chunk.js, assets/workers/example.js',expect:{minFiles:1}}
@@ -396,13 +397,13 @@
     if(p.description!==undefined&&(typeof p.description!=='string'||!p.description.trim()||p.description.length>160))throw Error('Description must be 1–160 characters.');
     let records=0,snapshots=0;
     for(const x of p.operations){
-      if(!x||!['inspect','controls','sources','resources','collectSources','collectDependency','snapshotSources','searchIndex','readSource','record'].includes(x.op))throw Error('Unsupported operation: '+safe(x?.op));
+      if(!x||!['inspect','controls','sources','resources','collectSources','collectDependency','snapshotSources','searchIndex','exploreIndex','readSource','record'].includes(x.op))throw Error('Unsupported operation: '+safe(x?.op));
       if(x.id!==undefined&&(typeof x.id!=='string'||!x.id.trim()||x.id.length>80))throw Error('Invalid operation id');
       validateExpect(x);
       if(x.op==='inspect'&&(typeof x.selector!=='string'||x.selector.length>200||!x.selector.trim()))throw Error('Invalid selector');
       if(x.op==='record'&&(++records>1||typeof x.instruction!=='string'||!x.instruction.trim()||x.instruction.length>240||!Number.isInteger(x.seconds)||x.seconds<5||x.seconds>180||x.probe!==undefined&&x.probe!=='pocket-mic'))throw Error('Record requires instruction, 5–180 seconds, optional pocket-mic probe; one recording per plan.');
       if(x.op==='snapshotSources'&&(++snapshots>1||p.origin!==location.origin||x.maxFiles!==undefined&&(!Number.isInteger(x.maxFiles)||x.maxFiles<1||x.maxFiles>SNAPSHOT_FILES)||x.offset!==undefined&&(!Number.isInteger(x.offset)||x.offset<0||x.offset>1500)))throw Error('Snapshot requires explicit current origin; maxFiles 1–256; offset 0–1500; one snapshot per plan.');
-      if(['searchIndex','readSource'].includes(x.op)){
+      if(['searchIndex','exploreIndex','readSource'].includes(x.op)){
         if(p.origin!==location.origin)throw Error('Retained evidence operations require explicit current origin.');
         if(x.op==='searchIndex'){
           const terms=['all','any','not'];
@@ -412,6 +413,10 @@
           if(x.limit!==undefined&&(!Number.isInteger(x.limit)||x.limit<1||x.limit>30))throw Error('searchIndex.limit must be integer 1–30');
           if(x.files!==undefined&&(!Array.isArray(x.files)||x.files.length>12||!x.files.length))throw Error('searchIndex.files must contain 1–12 exact source names');
           if(x.files!==undefined)for(const name of x.files)if(!validSourceName(name))throw Error('Invalid searchIndex.files entry: '+safe(name,120));
+        }else if(x.op==='exploreIndex'){
+          if(x.offset!==undefined&&(!Number.isSafeInteger(x.offset)||x.offset<0))throw Error('exploreIndex.offset must be nonnegative integer');
+          if(x.limit!==undefined&&(!Number.isInteger(x.limit)||x.limit<1||x.limit>30))throw Error('exploreIndex.limit must be 1–30');
+          if(x.files!==undefined&&(!Array.isArray(x.files)||!x.files.length||x.files.length>12||!x.files.every(validSourceName)))throw Error('exploreIndex.files must contain 1–12 exact source names');
         }else{
           if(!validSourceName(x.file))throw Error('readSource.file must be an exact source name from context or search result');
           if(!Number.isInteger(x.start)||x.start<0)throw Error('readSource.start must be a nonnegative integer UTF-16 offset');
@@ -603,7 +608,7 @@
     const now=inventory.filter(x=>x.kind==='js').flatMap(x=>{try{const p=sourceAcquisitionPolicy(new URL(x.address),archive.origin);return p.allowed?[p.address]:[];}catch{return [];}});
     const current=new Set(now);return {observed:current.size,newlyObserved:[...current].filter(x=>!old.has(x)).length,notCurrentlyObserved:[...old].filter(x=>!current.has(x)).length};
   }
-  const MODULE_INDEX_VERSION=2,REGION_INDEX_VERSION=1;
+  const MODULE_INDEX_VERSION=2,REGION_INDEX_VERSION=2;
   const orientationNoise=new Set([...vocabNoise,'__rspack_esm_ids','__webpack_modules__','__webpack_require__','exports','module','createElement','createContext','useContext','useEffect','useState','useReducer','useSyncExternalStore','setTimeout','setInterval','queueMicrotask','addEventListener','getBoundingClientRect','defaultMessage','formatMessage','className','currentColor','gradientUnits','maskUnits','fillRule','clipRule','strokeWidth','BackgroundImageFix','viewBox','location','history','subscribe','dispatch','getState','setState','File','Blob','TextEncoder','TextDecoder','Uint8Array','ArrayBuffer','URLSearchParams','AbortController','documentElement']);
   function readableClue(n){
     n=displayNameOf(n);
@@ -6894,6 +6899,88 @@ return module.exports;
     }
     return rows.map(terms=>[...terms].sort((a,b)=>df.get(a[0])-df.get(b[0])||wordsOf(b[0]).length-wordsOf(a[0]).length||a[1]-b[1]).slice(0,16).map(([n,o])=>[n,o,df.get(n)]));
   }
+  // Lightweight lexical lifting. Exact token evidence, ordered within a
+  // bounded source neighborhood, not a control-flow or semantic claim.
+  const liftTokens={
+    wait:'await then Promise resolve reject',guard:'if switch throw',cancel:'AbortController AbortSignal abort aborted cancel cancelPendingSubmit',
+    timer:'setTimeout setInterval timeout deadline clearTimeout clearInterval',identity:'requestId conversationId messageId clientTurnId generationId uploadId',
+    io:'fetch XMLHttpRequest WebSocket EventSource sendBeacon safeGet safePost',stream:'ReadableStream getReader read TextDecoder enqueue',
+    state:'dispatch setState updateState setItem',watch:'addEventListener subscribe watch MutationObserver IntersectionObserver',
+    release:'removeEventListener unsubscribe disconnect close stop dispose revokeObjectURL',persist:'indexedDB localStorage sessionStorage transaction put',
+    encode:'JSON stringify serialize encode TextEncoder',decode:'parse deserialize decode TextDecoder',
+    media:'getUserMedia MediaRecorder AudioContext AudioWorkletNode MediaStreamTrackProcessor',
+    bytes:'ArrayBuffer Uint8Array DataView Blob File',worker:'Worker SharedWorker postMessage MessageChannel BroadcastChannel',
+    render:'createElement appendChild replaceChildren render requestAnimationFrame',prepare:'prepare prefetch preload prepareSend requestSubmitWhenReady',
+    resume:'resume reconnect refetchChatGptConversation restore restoreDraft',retry:'retry backoff retryAfter',
+    crypto:'crypto subtle encrypt decrypt digest importKey',visibility:'visibilitychange visibilityState pagehide pageshow hasFocus'
+  };
+  const liftByToken=new Map();
+  for(const [family,names] of Object.entries(liftTokens))for(const n of names.split(' ')){const a=liftByToken.get(n)||[];a.push(family);liftByToken.set(n,a);}
+  const liftRules=[
+    ['async-guard',['wait','guard']],['guarded-identity',['identity','guard']],['cancellable-io',['cancel','io']],
+    ['bounded-recovery',['timer','resume']],['retry-with-delay',['retry','timer']],['deferred-preparation',['prepare','wait']],
+    ['event-cleanup',['watch','release']],['lifecycle-recovery',['visibility','resume']],['stream-decoding',['stream','decode']],
+    ['durable-state',['persist','state']],['encode-persist',['encode','persist']],['worker-messaging',['worker','bytes']],
+    ['media-lifecycle',['media','release']],['media-processing',['media','bytes']],['byte-crypto',['bytes','crypto']],
+    ['scheduled-render',['timer','render']],['async-cancellation',['wait','cancel']],['event-state',['watch','state']]
+  ];
+  const liftEnds=new Map();
+  for(const [label,seq] of liftRules){const a=liftEnds.get(seq.at(-1))||[];a.push([label,seq]);liftEnds.set(seq.at(-1),a);}
+  function regionGrammar(text,tiles){
+    return tiles.map(t=>{
+      const last=new Map(),best=new Map();
+      // Reset at tile boundary; retain the closest witness per rule per tile.
+      for(const m of text.slice(t.start,t.end).matchAll(/[A-Za-z_$][A-Za-z0-9_$]*/g)){
+        const n=displayNameOf(m[0]),families=liftByToken.get(n);if(!families)continue;
+        const hit=[n,t.start+m.index];
+        for(const f of families)for(const [label,seq] of liftEnds.get(f)||[]){
+          const chain=seq.slice(0,-1).map(k=>last.get(k)).concat([hit]);
+          if(chain.some(v=>!v)||chain.some((v,i)=>i>0&&v[1]<=chain[i-1][1]))continue;
+          const span=hit[1]-chain[0][1];if(span>1200)continue;
+          const old=best.get(label);if(!old||span<old.span)best.set(label,{span,chain});
+        }
+        for(const f of families)last.set(f,hit);
+      }
+      return [...best].map(([label,v])=>[label,v.chain]);
+    });
+  }
+  // Spatial coverage first, then informative local neighborhoods. Every tile
+  // remains addressable. No source-order global identifier suppression.
+  function explorationOrder(atlas,wanted=new Set()){
+    const lists=[],familyCounts={};let missing=0,files=0,tiles=0;
+    for(const [i,f] of atlas.files.entries()){
+      if(wanted.size&&!wanted.has(f.source.name))continue;files++;tiles+=f.tiles.length;
+      if(!Array.isArray(f.regionSignatures)||!Array.isArray(f.regionGrammar)||f.regionSignatures.length!==f.tiles.length||f.regionGrammar.length!==f.tiles.length){missing++;continue;}
+      const rows=f.tiles.map((t,j)=>{
+        const names=(f.regionSignatures[j]||[]).slice(0,6);
+        const grammar=f.regionGrammar[j]||[];
+        for(const [label] of grammar)familyCounts[label]=(familyCounts[label]||0)+1;
+        return {i,j,start:t.start,end:t.end,names,grammar,api:(t.api||[]).map(a=>[a.group,a.symbol,a.offset]),score:names.reduce((a,[n,o,df])=>a+Math.log((f.tiles.length+1)/(df+1)),0)+Math.min(grammar.length,5)*2};
+      });
+      const bins=Math.min(8,rows.length),best=new Map();
+      for(const row of rows){
+        const b=Math.min(bins-1,Math.floor(row.j*bins/rows.length)),old=best.get(b);
+        if(!old||row.score>old.score)best.set(b,row);
+      }
+      // Alternating far-apart strata makes even a short prefix cover the file.
+      const anchors=[...best.values()].sort((a,b)=>a.j-b.j),first=[];
+      while(anchors.length){first.push(anchors.shift());if(anchors.length)first.push(anchors.pop());}
+      const used=new Set(first.map(r=>r.j));
+      lists.push(first.concat(rows.filter(r=>!used.has(r.j)).sort((a,b)=>b.score-a.score||a.j-b.j)));
+    }
+    // Round robin over files, favor heterogeneous large bundles on later rounds.
+    lists.sort((a,b)=>b.length-a.length||(a[0]?.i??0)-(b[0]?.i??0));
+    const ordered=[];for(let round=0;round<Math.max(0,...lists.map(a=>a.length));round++)for(const list of lists)if(list[round])ordered.push(list[round]);
+    return {rows:ordered,familyCounts,missing,files,tiles};
+  }
+  function exploreArchive(archive,x){
+    const wanted=new Set(x.files||[]),v=explorationOrder(archive.atlas,wanted),offset=x.offset??0,limit=x.limit??12;
+    const found=new Set(archive.atlas.files.map(f=>f.source.name)),absent=[...wanted].filter(n=>!found.has(n));
+    const items=v.rows.slice(offset,offset+limit).map(a=>{
+      const f=archive.atlas.files[a.i];return {file:f.source.name,sha256:f.source.sha256,start:a.start,end:a.end,names:a.names.map(([n,o])=>[n,o]),grammar:a.grammar,apis:a.api.slice(0,8)};
+    });
+    return {op:'exploreIndex',runId:archive.runId,method:'Queryless spatially stratified lexical neighborhoods. Grammar candidates are ordered token witnesses within 1200 UTF-16 units, may cross function boundaries or occur in comments/strings; not verified behavior.',files:v.files,tiles:v.tiles,grammarCoverage:v.familyCounts,total:v.rows.length,offset,items,nextOffset:offset+items.length<v.rows.length?offset+items.length:null,...(v.missing||absent.length?{incomplete:v.missing+' files missing derived index; '+absent.length+' requested names absent'}:{})};
+  }
   let discoveryUpgrade=null;
   async function ensureDiscoveryIndexes(archive,save=true){
     const a=archive.atlas,needsModule=a.moduleIndexVersion!==MODULE_INDEX_VERSION||!a.files.every(f=>f.moduleIndex&&['rspack-esm-parsed','unsupported'].includes(f.moduleIndex.format)),needsRegion=a.regionIndexVersion!==REGION_INDEX_VERSION;
@@ -6905,7 +6992,7 @@ return module.exports;
         const byURL=new Map(archive.files.map(f=>[f.source?.url,f]));let count=0;
         for(const f of a.files){
           const raw=byURL.get(f.source.url);
-          if(raw&&raw.sha256===f.source.sha256)f.regionSignatures=regionSignatures(raw.text,f.tiles);
+          if(raw&&raw.sha256===f.source.sha256){f.regionSignatures=regionSignatures(raw.text,f.tiles);f.regionGrammar=regionGrammar(raw.text,f.tiles);}
           if(++count%4===0){const msg='Ranking source neighborhoods · '+count+'/'+a.files.length;if(planActive)planBubble(msg);else setStatus(msg);await new Promise(r=>setTimeout(r,0));}
         }
         a.regionIndexVersion=REGION_INDEX_VERSION;
@@ -6951,7 +7038,7 @@ return module.exports;
       coverage:atlas.coverage,resourceOrigins:atlas.resourceOrigins||[],archive:{storage:archiveStorage,drift:retainedArchive?inventoryDrift(retainedArchive,sourceInventory()):null,scope:'Latest explicitly collected snapshot on this origin; browser storage may be cleared; export for durable backup.'},
       exclusions:atlas.inventory.filter(x=>x.status==='excluded').slice(0,12).map(({name,reason})=>[name,reason]),environment:{visibility:document.visibilityState,platform:navigator.platform||'',touchPoints:navigator.maxTouchPoints||0},
       glossary:{distinctTerms:df.size,distinctWords:words.size,uniqueTerms:[...df.values()].filter(n=>n===1).length,omittedOccurrences:fs.reduce((a,f)=>a+(f.vocabulary?.omittedOccurrences||0),0),fileRow:'[exact source name, byte length, signature identifiers, SHA-256]',regionRow:'[file index, start UTF-16 offset, identifiers]; inverse within-file tile frequency, APIs separated',alias:'Closure JSC$numeric_ prefixes normalized only for discovery and query aliases; raw source and returned occurrences unchanged',apiRow:'[API token, number of files, candidate file indices, capability families]',edgeRow:'[from file index, candidate target indices, total]; literal basename match only',entryRow:'[file index, candidate route paths, total]; static string clues',scope:'Filtered lexical identifiers. Counts and offsets remain in the retained map. File indices are zero-based.'},
-      contract,files:fs.map(f=>[f.source.name,f.source.bytes,[],f.source.sha256]),regions:[],browserAPIs:[],frameworkSignals:[],literalEdges:[],entryPoints:[],commandClues:[],modules:[],moduleCoverage:{recognizedFiles:moduleFiles.length,totalFiles:fs.length,candidateModules:moduleFiles.reduce((a,f)=>a+f.moduleIndex.modules.length,0),algorithmVersion:MODULE_INDEX_VERSION,method:'Acorn-parsed direct registry factory properties; unsupported files retain file/region scopes. Export and dependency hints remain lexical.',row:'[file index,module id,start,end,named exports,API clues,distinctive names]'},uncollected:{observed:atlas.inventory.filter(x=>x.status==='deferred'||x.status==='failed').map(x=>x.name),literalCandidates:frontier.length,candidateRow:'[parent file index, exact literal, path shape, sampled offset or null]; same-origin parents only, lexical clues; bare filename resolution inferred; use parent and literal in collectDependency',candidates:frontier.slice(0,24)},evidenceHistory:evidenceHistory.slice(-6)};
+      contract,files:fs.map(f=>[f.source.name,f.source.bytes,[],f.source.sha256]),regions:[],mechanismLandmarks:[],browserAPIs:[],frameworkSignals:[],literalEdges:[],entryPoints:[],commandClues:[],modules:[],moduleCoverage:{recognizedFiles:moduleFiles.length,totalFiles:fs.length,candidateModules:moduleFiles.reduce((a,f)=>a+f.moduleIndex.modules.length,0),algorithmVersion:MODULE_INDEX_VERSION,method:'Acorn-parsed direct registry factory properties; unsupported files retain file/region scopes. Export and dependency hints remain lexical.',row:'[file index,module id,start,end,named exports,API clues,distinctive names]'},uncollected:{observed:atlas.inventory.filter(x=>x.status==='deferred'||x.status==='failed').map(x=>x.name),literalCandidates:frontier.length,candidateRow:'[parent file index, exact literal, path shape, sampled offset or null]; same-origin parents only, lexical clues; bare filename resolution inferred; use parent and literal in collectDependency',candidates:frontier.slice(0,24)},evidenceHistory:evidenceHistory.slice(-6)};
     let packetSize=JSON.stringify(packet).length;
     const add=(array,value,budget)=>{const delta=JSON.stringify(value).length+(array.length?1:0);if(packetSize+delta>budget-512)return false;array.push(value);packetSize+=delta;return true;};
     // Retain API diversity, even where business-logic identifiers dominated the file signature.
@@ -6965,21 +7052,23 @@ return module.exports;
     // Greedy interleaving preserves small entry points and gives large heterogeneous bundles more neighborhoods.
     for(let depth=0;depth<3;depth++)for(const [i,terms] of signatures.entries()){if(terms[depth])add(packet.files[i][2],terms[depth][0],CONTEXT_LIMIT*.68);}
     const modules=[];for(const [i,f] of fs.entries())for(const m of f.moduleIndex?.modules||[]){const named=m.exports.filter(readableClue),apis=m.apis.filter(n=>!orientationNoise.has(n));if(!named.length&&!apis.length)continue;modules.push({i,m,named,apis,score:named.length*6+apis.length*3});}
-    modules.sort((a,b)=>b.score-a.score||a.i-b.i||a.m.start-b.m.start);const modulePer=new Map();for(let round=0;round<8;round++)for(const x of modules){if(x.used||(modulePer.get(x.i)||0)!==round)continue;if(add(packet.modules,[x.i,x.m.id,x.m.start,x.m.end,x.named.slice(0,6),x.apis.slice(0,5),x.m.signature.slice(0,4)],CONTEXT_LIMIT*.86)){x.used=true;modulePer.set(x.i,round+1);}}
-    const neighborhoods=[];
-    for(const [i,f] of fs.entries()){
-      if(f.tiles.length<2)continue;
-      const fileNames=new Set(packet.files[i][2]),seen=new Set();
-      for(const [j,tile] of f.tiles.entries()){
-        const rows=f.regionSignatures?.[j]||tile.anchors.map(a=>[displayNameOf(a.symbol),a.offset,1]);
-        const picked=rows.filter(([n])=>!atlasTokenGroups.has(n)&&readableClue(n)&&!fileNames.has(n)&&!seen.has(n)).slice(0,4);
-        for(const [n] of picked)seen.add(n);
-        if(picked.length)neighborhoods.push({i,start:tile.start,names:picked.map(t=>t[0]),score:picked.reduce((a,[n,o,freq])=>a+Math.log((f.tiles.length+1)/(freq+1))+Math.log((N+1)/((df.get(n)||1)+1)),0)});
+    modules.sort((a,b)=>b.score-a.score||a.i-b.i||a.m.start-b.m.start);const modulePer=new Map();for(let round=0;round<8;round++)for(const x of modules){if(x.used||(modulePer.get(x.i)||0)!==round)continue;if(add(packet.modules,[x.i,x.m.id,x.m.start,x.m.end,x.named.slice(0,6),x.apis.slice(0,5),x.m.signature.slice(0,4)],CONTEXT_LIMIT*.76)){x.used=true;modulePer.set(x.i,round+1);}}
+    const landscape=explorationOrder(atlas);
+    packet.mechanisms={basis:'Ordered lexical motif witnesses, not function classification or causal order; names may occur in strings/comments. Use exploreIndex with offset or files to navigate all tiles.',families:landscape.familyCounts,totalTiles:landscape.tiles,indexedTiles:landscape.rows.length,row:'[file index, tile start, grammar label, [[raw-ish identifier, UTF-16 offset],...]]'};
+    // One representative of each grammar family before additional examples.
+    const familySeen=new Set();
+    for(const a of landscape.rows)for(const [label,chain] of a.grammar)if(!familySeen.has(label)&&add(packet.mechanismLandmarks,[a.i,a.start,label,chain],CONTEXT_LIMIT*.91))familySeen.add(label);
+    const per=new Map(),represented=new Map();
+    for(const a of landscape.rows){
+      if((per.get(a.i)||0)>=12)continue;
+      const names=a.names.slice(0,4).map(v=>v[0]);
+      if(!names.length&&!a.grammar.length&&!a.api.length)continue;
+      const clues=names.length?names:a.grammar.length?a.grammar.map(v=>v[0]).slice(0,4):a.api.map(v=>v[1]).slice(0,4);
+      if(add(packet.regions,[a.i,a.start,clues],CONTEXT_LIMIT)){
+        per.set(a.i,(per.get(a.i)||0)+1);represented.set(a.i,(represented.get(a.i)||0)+1);
       }
     }
-    neighborhoods.sort((a,b)=>b.score-a.score||a.i-b.i||a.start-b.start);
-    const per=new Map();
-    for(let round=0;round<12;round++)for(const n of neighborhoods){if((per.get(n.i)||0)!==round||n.used)continue;if(add(packet.regions,[n.i,n.start,n.names],CONTEXT_LIMIT)){n.used=true;per.set(n.i,round+1);}}
+    packet.mechanisms.representedFiles=represented.size;
     for(let depth=3;depth<12;depth++)for(const [i,terms] of signatures.entries())if(terms[depth])add(packet.files[i][2],terms[depth][0],CONTEXT_LIMIT);
     packet.presentation={budgetCharacters:CONTEXT_LIMIT,regionAlgorithmVersion:atlas.regionIndexVersion??null,regionCount:packet.regions.length,moduleLandmarks:packet.modules.length,apiTokens:packet.browserAPIs.length,literalEdgeGroups:packet.literalEdges.length,fullIndexAvailable:!!retainedArchive};
     return packet;
@@ -7209,7 +7298,7 @@ return module.exports;
           else if(x.op==='record')result=await guidedRecord(x);
           else if(x.op==='collectDependency')result=await collectDependency(x,bundle);
           else if(x.op==='snapshotSources'){result=await snapshotSources(x,bundle);if(bundle.atlas?.files.length){planBubble('Saving source index locally…');await retainSnapshot(bundle);bundle.archive={storage:archiveStorage,runId:retainedArchive?.runId};}}
-          else if(x.op==='searchIndex'||x.op==='readSource'){const a=await loadArchive();if(!a)throw Error('No retained snapshot. Prepare AI context first.');result=x.op==='searchIndex'?queryArchive(a,x):await readArchive(a,x);}
+          else if(['searchIndex','exploreIndex','readSource'].includes(x.op)){const a=await loadArchive();if(!a)throw Error('No retained snapshot. Prepare AI context first.');result=x.op==='searchIndex'?queryArchive(a,x):x.op==='exploreIndex'?exploreArchive(a,x):await readArchive(a,x);}
           else if(x.op==='collectSources'){
             const all=x.from==='recordedCallers'?[...new Set(results.flatMap(y=>y.media?.sites?.map(f=>f.file)||[]))]:x.files;
             result={op:x.op,results:await collectPlanSources(all.slice(0,PLAN_FILES),bundle),omitted:all.slice(PLAN_FILES)};
