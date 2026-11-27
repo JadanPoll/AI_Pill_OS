@@ -1,6 +1,6 @@
 {
   "schema": "ai_pill_os.rsm_investigation",
-  "version": 24,
+  "version": 25,
   "updated": "2026-11-26",
   "parent_purpose": "Asymptotically reduce the mechanical distance from human intention to useful realization, preserving attention, agency, intellectual continuity and recoverability. Optimize the complete recurring human–AI loop, not a browser transport.",
   "scope": "Safari-first personal computing: direct touch for low-information operations, dictation and AI collaboration for high-information intentions, universal pill plus contextual mini-pills, local working state and context-aware canonical persistence.",
@@ -1212,10 +1212,10 @@
         "Q8.4",
         "Q8.5"
       ],
-      "status": "conditional",
-      "why": "Make native software mechanisms discoverable and experiments composable once command/evidence transport is proven.",
-      "model": "Named probe/action capabilities with preconditions, cleanup and evidence contracts; per-operation expected vs actual outcomes. Passive source/module/load/API caller metadata before invasive changes; bounded experiment and retry policy. Differentiate delivered/executed, evidence captured, expectations met, persisted, and inference certified.",
-      "belief": "Mic bridge already exposes selected caller stacks and timing; v0.4.10 validates typed expectations and summarizes per-operation outcomes. Coverage of bridge events in AI Pill, ordinary message submission, response stream and source modules is not yet established.",
+      "status": "active_priority",
+      "why": "Use mature AI Pill as an investigation substrate for Pocket's native ChatGPT and Gemini integration; improve speed, reliable state observation, rich context and continuity without bypassing provider safeguards.",
+      "model": "Named probe/action capabilities with preconditions, cleanup and evidence contracts; per-operation expected vs actual outcomes. Passive source/module/load/API caller metadata before invasive changes; bounded experiment and retry policy. Differentiate delivered/executed, evidence captured, expectations met, persisted, and inference certified. Compare provider-specific native mechanisms beneath one common functional contract: authorized submission, attachment readiness, turn ownership, streaming/completion, recoverable result, microphone acquisition vs readiness, model selection. Preserve UI fallback and explicit guard conditions. Source evidence first, then passive runtime observations only where needed.",
+      "belief": "Mic bridge already exposes selected caller stacks and timing; v0.4.10 validates typed expectations and summarizes per-operation outcomes. Coverage of bridge events in AI Pill, ordinary message submission, response stream and source modules is not yet established. Pocket v0.7.57 inspected: startAsk requires empty verified composer, focus/insertText, exact turn ownership; Gemini image handoff deliberately stops at manual Send because attachment readiness is not certified. observeAsk polls native DOM and requires explicit completion plus stability (500ms modern/Gemini, 6000ms legacy); native model selector depends on menus; microphone lifecycle already has separate capture/UI states. These are concrete opportunities for observation rather than bypass.",
       "certificate": "Real source retrieval outcome verified; full guided-record/auto-caller collection and hands-off execution remain unverified. Microsoft research audit establishes the value of direct source obstruction and separate runtime witnesses, not blanket portability.",
       "evidence": [
         "pill_plan",
@@ -1223,9 +1223,9 @@
         "microsoft_atlas",
         "microsoft_audit"
       ],
-      "stop": "Trace one ordinary user-authorized ChatGPT Ask across submission, native transport and completion; retrieve complete newly identified assets once, inspect relevant ranges, form a falsifiable conclusion and choose one meaningful intervention or stop. No unbounded probes or permanent research controls for every hypothesis.",
+      "stop": "Identify and source-certify one or more consequential native integration boundaries for each provider, demonstrate one practical improvement with representative user flow and unchanged send/draft/ownership guards, then stop when remaining uncertainties do not affect Pocket usability.",
       "reopen": "New consequential feature, unresolved source/runtime discrepancy, or recurring UI-dependent failure.",
-      "next": "Run passive probes through reviewed JSON plans after sufficient source acquisition; do not wait for remote transport.",
+      "next": "First source-only ChatGPT query over retained snapshot: module search for addTurnCompletedListener, conversationStateCallbacks, streamingConversations; module search for composerController, submittedEditorDocument, submittedPromptForRestoration; file search for attachment/upload readiness symbols. Read relevant modules/ranges and establish actual domain (ordinary ChatGPT vs Codex or other). In parallel, capture Gemini Copy AI context for its own source inventory, identify native submit, response lifecycle and attachment mechanisms. Then choose one real user-authorized end-to-end ordinary Ask or image attachment probe with passive bounded metadata, not raw bodies/headers/auth, no replay or hidden sends. Do not reintroduce microphone experiments unless source reveals a discriminating new question.",
       "depends_on": [
         "I22"
       ]
@@ -1241,7 +1241,7 @@
       "status": "active_priority",
       "why": "Test complete autonomous research utility rather than count constituent features.",
       "model": "Representative loop: one authorization -> inventory/archive job -> compact partial outcome -> distinct dependency-resolution job -> verified artifact reference -> later independent range lookup -> source-linked certificate. Measure human interventions, elapsed time, bytes re-transferred, number of model turns and recovery cost; compare actual previous workflow. Evaluate discovery as a separate phase: archive and map the system before optimizing a specific question; select future questions from the portable atlas even without the raw files in context. Outcome summaries govern operational recovery, not the entire epistemic surface.",
-      "belief": "The manual Microsoft archive amortized source retrieval; AI Pill can reduce the acquisition and iteration cost if the integrated loop works. Passing local syntax tests is not evidence of that utility. Human feedback: iPadOS plan replacement tedious; identical completion summary can appear stale; LLM-supplied description enables result rediscovery. v0.4.19 adds Clear, named run/progress/completion receipts, bounded local Recent runs dropdown with copy (up to 20 and about 1MB, includes source excerpts), immediate old-summary removal, render yield before heavy tasks. Older plans compatible. Previous versions did not persist full copyable outcome history, so not retroactively reconstructed.",
+      "belief": "The manual Microsoft archive amortized source retrieval; AI Pill can reduce the acquisition and iteration cost if the integrated loop works. Passing local syntax tests is not evidence of that utility. Human feedback: iPadOS plan replacement tedious; identical completion summary can appear stale; LLM-supplied description enables result rediscovery. v0.4.19 adds Clear, named run/progress/completion receipts, bounded local Recent runs dropdown with copy (up to 20 and about 1MB, includes source excerpts), immediate old-summary removal, render yield before heavy tasks. Older plans compatible. Previous versions did not persist full copyable outcome history, so not retroactively reconstructed. User-reported Gemini YouTube v0.4.23 witness: five local queries ~1.3 s, no refetches, all passed; useful discovery in unsupported Closure format. Independent source excerpts not supplied in this turn; findings are reported witness, not directly certified architecture. Move from generic tool development to Pocket improvement.",
       "certificate": "Independent LLM used v0.4.16 cold-start packet, proposed and followed four plans through human JSON relay, found cross-tab session reconciliation, Codex host recovery, voice activity processing, temporary media handoff and two persistence mechanisms, and corrected initial domain/behavior hypotheses using source excerpts. No runtime interaction or fully autonomous transport demonstrated. Same source corpus reused in all four plans.",
       "evidence": [
         "microsoft_atlas",
@@ -1344,6 +1344,7 @@
     }
   ],
   "active_queue": [
+    "I24",
     "I22",
     "I25",
     "I16",
@@ -1365,7 +1366,6 @@
     "I9",
     "I10",
     "I11",
-    "I24",
     "I23"
   ],
   "global_stop": "A recurring real workflow must beat the direct existing workflow on human interventions, attention interruption and recovery cost while preserving useful output and agency. No obligation to realize every possible capability. Stop adding mechanisms once sufficient for the parent goal; reopen on actual recurrent friction. Manual relay is not a success criterion.",
@@ -1475,6 +1475,11 @@
       "date": "2026-11-26",
       "decision": "User-reported v0.4.20 live regression passes. YouTube cold-start witness exposed source-name/path validation mismatch, repeated API vocabulary, Closure prefixes and missing command clues. v0.4.22–23 fixes contract validation, adds digest, anchored path-shaped candidate frontier, independently versioned per-file tile frequency ranking, searchable aliases and exclusion examples. Exact Gemini plan passes static validation; actual YouTube query/dependency resolution pending. Unsupported module format correctly reported and not treated as failure.",
       "method": "REM-06.01–06.02; RSM-04.07; cross-application generality"
+    },
+    {
+      "date": "2026-11-26",
+      "decision": "Return to parent Pocket intent after reported successful YouTube portability witness. Activate I24 native ChatGPT/Gemini source-first investigation; prioritize precise completion and attachment readiness; preserve provider-native authorization, ownership and no uncertain-send replay. No userscript changes pending source evidence.",
+      "method": "RSM-02.09–02.10, RSM-04.07, RSM-01.04; REM evidence-driven intervention"
     }
   ],
   "functional_intent": {
