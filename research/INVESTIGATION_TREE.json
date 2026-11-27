@@ -1,6 +1,6 @@
 {
   "schema": "ai_pill_os.rsm_investigation",
-  "version": 28,
+  "version": 29,
   "updated": "2026-11-26",
   "parent_purpose": "Asymptotically reduce the mechanical distance from human intention to useful realization, preserving attention, agency, intellectual continuity and recoverability. Optimize the complete recurring human–AI loop, not a browser transport.",
   "scope": "Safari-first personal computing: direct touch for low-information operations, dictation and AI collaboration for high-information intentions, universal pill plus contextual mini-pills, local working state and context-aware canonical persistence.",
@@ -1184,7 +1184,7 @@
       ],
       "stop": "One bounded application snapshot with exact-byte SHA-256 receipts, explicit inventory coverage and failed items, and range retrieval from canonical storage without re-fetching browser assets. Repeat acquisition reuses identical content; new build adds only missing artifacts. No raw private source upload until destination authorization and privacy are verified. In a separate context with only the atlas, an investigator can identify several distinct consequential subsystem questions, locate concrete regions, and identify what evidence is missing without rerunning browser instrumentation. Test against inventory-only and outcome-only baselines; do not demand a predetermined number of questions as proof of quality.",
       "reopen": "Changed source build, missing dependency/realm, failed digest/receipt, repeated source-navigation friction.",
-      "next": "Update v0.4.23 in YouTube, copy context from retained corpus, rerun exact Gemini plan without hash. Require extensionless name readSource and searchIndex work, optional digest verified against retained file, region algorithm version 1, same snapshot ID. Dependency candidate may 404 or lack literal; report actual reason, not assume a chunk. Compare new packet with Gemini's previous critique, then test unrelated applications; defer Closure module recognition until a discriminating need/source witness arises.",
+      "next": "On Discord update to v0.4.28 and run snapshotSources without an offset to resume the retained 256-file archive. Verify reused/new counts, cumulative retrieval, cap/byte/deadline status and persisted readback after reload. Explicitly distinguish retained historical assets from currently observed assets. Then stop acquisition changes unless a consequential obstruction appears.",
       "depends_on": []
     },
     {
@@ -1280,7 +1280,7 @@
         "pcode_taxonomy",
         "pill_queryless_lifting"
       ],
-      "next": "On an already retained Gemini or ChatGPT archive, update to v0.4.27 and Copy AI context; compare equal-budget old/new packets using independent investigators blinded to prior discoveries. Use exploreIndex only when useful. Assess recall, novelty, functional diversity, evidence precision and time/round trips, not motif counts. Do not add full AST function lifting or grammar induction until this cheaper representation reveals a consequential deficiency.",
+      "next": "After Discord continuation, copy AI context and use exploreIndex pages to evaluate novelty, functional diversity, evidence precision and attention cost. Large context catalogs are explicit projections; full local searches remain available. Compare equal-budget packets only when it changes the design; no further static lifting until evidence reveals a deficiency.",
       "stop": "Representative unfamiliar software discovery yields useful source-grounded questions with less manual search and without degrading context budget or acquisition; only reopen for demonstrated missed mechanisms or cost.",
       "reopen": "Concentrated coverage, false-positive motif overload, inability to discover unnamed computation, or poor marginal discovery value.",
       "depends_on": [
@@ -1528,6 +1528,11 @@
       "date": "2026-11-26",
       "decision": "User-directed meta improvement: static education about providers remains closed, while discovery substrate gains spatially stratified queryless exploration and P-code-inspired ordered lexical motifs. No extra UI, no source acquisition change, no private runtime integration.",
       "method": "RSM-02.12 question landscape; transfer structural orientation from RE taxonomy; preserve source evidence and uncertainty; test marginal discovery utility."
+    },
+    {
+      "date": "2026-11-26",
+      "decision": "Discord v0.4.27 run e816d545-b974-4edc-9cda-0791cb41a751: 256/874 collected, 618 deferred, zero failures, inventory cap. v0.4.28 removes implicit attempt truncation, resumes by canonical URL with retained provenance, separates JS inventory bound (4096) from styles, and explicitly bounds large-corpus orientation projection while preserving full local retrieval. Tool-side syntax and 874/256 fixture passed; live Safari and discovery quality not certified.",
+      "method": "RSM-01.04/04.07; REM-06.01; preserve acquisition/interpretation separation and fix the complete recurring workflow"
     }
   ],
   "functional_intent": {
