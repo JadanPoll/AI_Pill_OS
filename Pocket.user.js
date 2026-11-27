@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         AI Pill OS - Pocket
 // @namespace    https://github.com/JadanPoll/AI_Pill_OS
-// @version      0.7.58
+// @version      0.7.59
 // @updateURL    https://raw.githubusercontent.com/JadanPoll/AI_Pill_OS/main/Pocket.user.js
 // @downloadURL  https://raw.githubusercontent.com/JadanPoll/AI_Pill_OS/main/Pocket.user.js
 // @description  Universal Safari pill: collect evidence, keep discoveries, and hand a question to a chosen chat.
@@ -26,7 +26,7 @@
 (() => {
   'use strict';
   if (window.top !== window) return;
-  const VERSION='0.7.58';
+  const VERSION='0.7.59';
   // Report initialization failures without depending on the main UI, storage or a CDN.
   function bootFailure(error,phase){
     const message=String(error?.message||error).slice(0,500);
@@ -917,7 +917,7 @@
     }
     const atChat=!!pending&&pending.target===here,hasReply=!!pending?.reply;
     const auto=pending?.autoWorker,run=pending?.run,expired=!!auto&&!run&&Date.now()-Date.parse(pending.created)>AUTO_START_TTL;
-    const interrupted=!!auto&&!!run&&!['failed','uncertain','done'].includes(run.phase)&&((atChat&&auto!==instance)||(Date.now()-run.at>AUTO_TIMEOUT));
+    const interrupted=!!auto&&!!run&&!['failed','uncertain','done','sent','prepared'].includes(run.phase)&&((atChat&&auto!==instance)||(Date.now()-run.at>AUTO_TIMEOUT));
     const manual=!auto||expired||run?.phase==='failed'||(!run&&atChat&&auto!==instance);
     const fallback=manual||interrupted||run?.phase==='uncertain'||run?.phase==='prepared';
     const connectionLost=!!auto&&!atChat&&!hasReply&&linkState==='stale';
@@ -947,7 +947,7 @@
       const sentTo=conversationName(pending.target,pending.chatTitle);
       $('handoff-open').title='Open '+sentTo+' in a Safari tab';
       $('handoff-open').setAttribute('aria-label',$('handoff-open').title);
-      $('handoff-status').textContent=hasReply?(atChat?'Answer returned':'Answer received'):pending.copied?'Question copied · awaiting answer':interrupted?'Submission may have occurred · check chat, do not resend':run?.phase==='uncertain'?'Check chat · '+run.detail:run?.phase==='failed'?'Manual fallback · '+run.detail:run?.phase==='prepared'?(run.detail||'Visual draft prepared · review and send in chat'):manual?(expired?'Chat asleep or unavailable · open chat to send':atChat?(canRecoverSend?'Question waiting to be sent':pending.manualReason||'Question needs attention'):pending.manualReason||'Open chat to send'):connectionLost?(run?'Chat connection paused · check selected tab':'Waiting for chat to wake · open chat if needed'):run?.phase==='sent'?'ChatGPT is responding…':run?.phase==='armed'?'Checking submission…':run?.phase==='claimed'?'Sending to ChatGPT…':'Queued for connected chat…';
+      $('handoff-status').textContent=hasReply?(atChat?'Answer returned':'Answer received'):pending.copied?'Question copied · awaiting answer':interrupted?'Submission may have occurred · check chat, do not resend':run?.phase==='uncertain'?'Check chat · '+run.detail:run?.phase==='failed'?'Manual fallback · '+run.detail:run?.phase==='prepared'?(run.detail||'Visual draft prepared · review and send in chat'):manual?(expired?'Chat asleep or unavailable · open chat to send':atChat?(canRecoverSend?'Question waiting to be sent':pending.manualReason||'Question needs attention'):pending.manualReason||'Open chat to send'):connectionLost?(run?.phase==='sent'?'Question accepted · receiver paused; answer can recover on reopen':run?'Chat connection paused · check selected tab':'Waiting for chat to wake · open chat if needed'):run?.phase==='sent'?'Waiting for answer…':run?.phase==='armed'?'Checking submission…':run?.phase==='claimed'?'Preparing question…':'Queued for connected chat…';
       // The selected destination is already shown immediately above the answer.
       // Repeat the title only when this response belongs to a different chat.
       if(hasReply&&!atChat){$('handoff-status').textContent=pending.target===target?'Answer':'Answer · '+sentTo;if(/^Question queued|^Question prepared/.test($('status').textContent))status('');}
@@ -2369,8 +2369,8 @@
             else pre.replaceWith(document.createTextNode('\n' + sentinel + '\n'));
         });
 
-        clone.querySelectorAll('button,svg,iframe,[role="button"],script,style,.sr-only').forEach(n=>n.remove());
-        const markdownEl = clone.querySelector('.markdown') || clone;
+        clone.querySelectorAll('button,svg,iframe,[role="button"],script,style,.sr-only,[hidden],[aria-hidden="true"]').forEach(n=>{if(!n.closest('.katex'))n.remove();});
+        const markdownEl = clone;
         const lines = [];
 
         function walk(node, out, depth = 0) {
@@ -2387,6 +2387,31 @@
             if (node.getAttribute?.('aria-hidden') === 'true') return;
             if (tag === 'P')  { out.push('\n'); node.childNodes.forEach(c => walk(c, out, depth)); out.push('\n'); return; }
             if (tag === 'BR') { out.push('\n'); return; }
+            if (tag === 'PRE') {
+                const code=node.querySelector('code')||node,raw=code.textContent||'';
+                const lang=(String(code.className||'').match(/(?:^|\s)language-([A-Za-z0-9_+-]+)/)||[])[1]||'';
+                const fence='`'.repeat(Math.max(3,1+Math.max(0,...(raw.match(/`+/g)||[]).map(v=>v.length))));
+                const sentinel='\x00PRE_'+preBlocks.length+'\x00';
+                preBlocks.push(fence+lang+'\n'+raw+'\n'+fence);
+                out.push('\n'+sentinel+'\n');return;
+            }
+            if (['STRONG','B','EM','I','DEL','S','CODE','A'].includes(tag)) {
+                const inner=[];node.childNodes.forEach(c=>walk(c,inner,depth));const v=inner.join('');
+                if(!v.trim()) {out.push(v);return;}
+                if(tag==='A'){
+                    const href=node.getAttribute('href')||'';
+                    // Keep authored web links, not internal object URLs or signed file URLs.
+                    if(/^https?:\/\/[^\s<>()]+$/i.test(href)&&!/[?#]/.test(href)&&!/^https?:\/\/[^/]*@/i.test(href))out.push('['+v.replace(/[\[\]]/g,'\\$&')+']('+href+')');
+                    else out.push(v);
+                }else if(tag==='CODE'){
+                    const f='`'.repeat(Math.max(1,1+Math.max(0,...(v.match(/`+/g)||[]).map(x=>x.length))));
+                    out.push(f+(/^(?:\s|`)|(?:\s|`)$/.test(v)?' '+v+' ':v)+f);
+                }else{
+                    const marker=tag==='STRONG'||tag==='B'?'**':tag==='EM'||tag==='I'?'*':'~~';
+                    const parts=v.match(/^(\s*)([\s\S]*?)(\s*)$/);out.push(parts[1]+marker+parts[2]+marker+parts[3]);
+                }
+                return;
+            }
             if (tag === 'HR') { out.push('\n---\n'); return; }
             if (['H1','H2','H3','H4','H5','H6'].includes(tag)) {
                 out.push('\n' + '#'.repeat(parseInt(tag[1])) + ' ');
@@ -2412,7 +2437,7 @@
                 node.querySelectorAll('tr').forEach((row, i) => {
                     const cells = Array.from(row.querySelectorAll('th, td')).map(cell => {
                         const cl = []; cell.childNodes.forEach(c => walk(c, cl, 0));
-                        return cl.join('').replace(/\n/g, ' ').trim();
+                        return cl.join('').replace(/\n/g, ' ').replace(/\|/g,'\\|').trim();
                     });
                     out.push('| ' + cells.join(' | ') + ' |\n');
                     if (i === 0) out.push('| ' + cells.map(() => '---').join(' | ') + ' |\n');
@@ -2424,8 +2449,9 @@
 
         walk(markdownEl, lines);
         let text = lines.join('');
-        preBlocks.forEach((b, i) => { text = text.replace(`\x00PRE_${i}\x00`, '\n' + b + '\n'); });
-        return text.replace(/\n{3,}/g, '\n\n').trim();
+        text=text.replace(/\n{3,}/g, '\n\n');
+        preBlocks.forEach((b, i) => { text = text.replace(`\x00PRE_${i}\x00`, ()=>'\n' + b + '\n'); });
+        return text.trim();
     }
 
   // ChatGPT text round trip. Explicit Ask is the authorization; old/manual
@@ -2751,15 +2777,22 @@
   function answerSettleMs(surface,completed){return completed&&(surface==='modern'||surface==='gemini')?500:6000;}
   async function observeAsk(a){
     const r=a.r;
-    if(!(await store.get(HANDOFF+r.id))||validReply(await store.get(REPLY+r.id),r)){activeAsk=null;testStage(r,'uncertain','Request receipt changed before observation completed. Check chat.');return;}
+    const existingReply=await store.get(REPLY+r.id);
+    if(validReply(existingReply,r)){activeAsk=null;rememberCompleted(r.id);return;}
+    if(!(await store.get(HANDOFF+r.id))){activeAsk=null;testStage(r,'uncertain','Request was removed; observation ended.');return;}
     if(chatURL(location.href)!==r.target){await finishAsk(a,'uncertain','Conversation changed during request');return;}
     const now=Date.now(),busyNow=streamActive(),current=fingerprint();
+    if(a.lastObservedAt&&now-a.lastObservedAt>5000){a.stableAt=0;testStage(r,'resumed-observation','Observation resumed after interruption',{gapMs:now-a.lastObservedAt});}
+    a.lastObservedAt=now;
     const marked=validMarker(r)?turns('user').filter(n=>markedTurn(n,r)):null;
     recordObservation(a,{userMatches:marked?marked.length===1:current.text===a.expected,userChanged:!sameTurn(a.baseline,current),markerMatches:marked?.length??null,...(a.manualVisual&&!a.user&&chatSurface()==='gemini'?{geminiVisual:geminiVisualObservation(r.visuals?.length||0)}:{})});
     if(busyNow&&!a.seenBusy)testStage(r,'generating','Response generation observed');
     a.seenBusy=a.seenBusy||busyNow;
-    if(now-a.started>AUTO_TIMEOUT){await finishAsk(a,'uncertain','Response not confirmed within 20 minutes');return;}
+    // First recover a visible terminal answer even after the observation window.
+    const expired=now-a.started>AUTO_TIMEOUT;
+    if(expired&&!a.user&&!marked?.length){await finishAsk(a,'uncertain','Response not confirmed within 20 minutes; will recover an existing matching turn');return;}
     if(!a.user){
+      if(a.manualVisual&&!marked?.length&&sameTurn(a.baseline,current)&&editorText(chatEditor())&&editorText(chatEditor())!==a.expected){await finishAsk(a,'uncertain','Prepared draft changed · automatic send cancelled; review in chat');return;}
       if(marked?.length||!sameTurn(a.baseline,current)){
         const all=turns('user'),baseIndex=all.findIndex(n=>a.baseline.id&&turnID(n)===a.baseline.id);
         const eligible=baseIndex>=0?all.slice(baseIndex+1):all.slice(-1);
@@ -2777,9 +2810,10 @@
     if(!user){await finishAsk(a,'uncertain','Original turn no longer visible · other chat activity is allowed');return;}
     const modern=chatSurface()==='modern',gem=chatSurface()==='gemini';
     const candidate=answerForUser(user);
-    if(!candidate||(!modern&&busyNow)){a.stableAt=0;return;}
+    if(!candidate||(!modern&&busyNow)){a.stableAt=0;if(expired)await finishAsk(a,'uncertain','Response not yet confirmed; will recover existing matching turn');return;}
+    if(expired&&!answerCompletion(candidate)){await finishAsk(a,'uncertain','Response not yet confirmed; will recover existing matching turn');return;}
     const text=extractPocketAnswer(candidate);
-    if(!text)return;
+    if(!text){if(expired)await finishAsk(a,'uncertain','No extractable response yet; will recover existing matching turn');return;}
     const id=turnID(candidate),sameCandidate=id? id===a.assistantID:candidate===a.assistantNode;
     if(!sameCandidate||text!==a.answer||!a.stableAt){a.answer=text;a.stableAt=now;a.assistantID=id;a.assistantNode=candidate;testStage(r,'candidate','Assistant response candidate observed',{answerCharacters:text.length,assistantId:id});return;}
     const surface=chatSurface(),completed=answerCompletion(candidate,surface),settleMs=answerSettleMs(surface,completed);
@@ -2826,7 +2860,7 @@
       // Do not occupy the execution slot for an old marker whose response
       // is absent, virtualized or not yet ready. Revisit on a future poll.
       if(!candidate||!extractPocketAnswer(candidate))continue;
-      const complete=chatSurface()==='gemini'?geminiComplete(candidate):chatSurface()==='modern'?candidate.closest('[data-talvt-turn-state]')?.getAttribute('data-talvt-turn-state')==='complete':!!candidate.closest('article,[data-testid^="conversation-turn-"]')?.querySelector('button[data-testid="copy-turn-action-button"],button[data-testid="good-response-turn-action-button"],button[data-testid="bad-response-turn-action-button"]');
+      const complete=answerCompletion(candidate);
       if(!complete)continue;
       const user={id:turnID(n),text:turnText(n),count:visible.length};
       activeAsk={r,baseline:fingerprint(),expected:normalizeChat(r.text),started:Date.now(),user,seenBusy:false,answer:'',stableAt:0,assistantID:null,assistantNode:null};
@@ -2961,12 +2995,12 @@
     observeLifecycle(kind);lifeEvent(kind,extra);if(/^(visibilitychange|pageshow|pagehide|focus|blur)$/.test(kind))void checkpointSource(target,true);
     if(activeAsk)recordObservation(activeAsk,{lifecycle:kind});
   }
-  document.addEventListener('visibilitychange',()=>{browserLifecycle('visibilitychange');linkLog('visibility',{state:document.visibilityState});wakeTransport();});
+  document.addEventListener('visibilitychange',()=>{browserLifecycle('visibilitychange');linkLog('visibility',{state:document.visibilityState});if(!document.hidden){lastReconcile=0;if(activeAsk)activeAsk.stableAt=0;}wakeTransport();});
   document.addEventListener('freeze',()=>browserLifecycle('freeze'));
   document.addEventListener('resume',()=>{browserLifecycle('resume');wakeTransport();});
   window.addEventListener('pageshow',e=>{browserLifecycle('pageshow',{persisted:e.persisted});linkLog('pageshow',{persisted:e.persisted});wakeTransport();});
   window.addEventListener('pagehide',e=>{stageEvent('runtime.pagehide',{persisted:e.persisted});releaseReservation('page hidden for navigation',false);if(micLabState.active)micLabCommand('release');browserLifecycle('pagehide',{persisted:e.persisted});linkLog('pagehide',{persisted:e.persisted});localPulse();if(!e.persisted&&awakeRequested)stopAwake('page unloaded');});
-  for(const kind of ['online','offline','focus','blur'])window.addEventListener(kind,()=>browserLifecycle(kind));
+  for(const kind of ['online','offline','focus','blur'])window.addEventListener(kind,()=>{browserLifecycle(kind);if(kind==='online'||kind==='focus'){lastReconcile=0;wakeTransport();}});
   // Error metadata only: no prompt text, message bodies, query strings or
   // stack contents. Existing Console script can provide detailed errors.
   const errorName=e=>String(e?.name||'Error').replace(/[^a-zA-Z0-9_-]/g,'').slice(0,60);
