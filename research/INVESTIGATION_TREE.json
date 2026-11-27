@@ -1,6 +1,6 @@
 {
   "schema": "ai_pill_os.rsm_investigation",
-  "version": 18,
+  "version": 19,
   "updated": "2026-11-26",
   "parent_purpose": "Asymptotically reduce the mechanical distance from human intention to useful realization, preserving attention, agency, intellectual continuity and recoverability. Optimize the complete recurring human–AI loop, not a browser transport.",
   "scope": "Safari-first personal computing: direct touch for low-information operations, dictation and AI collaboration for high-information intentions, universal pill plus contextual mini-pills, local working state and context-aware canonical persistence.",
@@ -144,7 +144,8 @@
     "reverse_engineering": "https://github.com/JadanPoll/Reverse_Engineering_Research_And_Taxonomy/blob/main/README.md",
     "reverse_engineering_context": "https://github.com/JadanPoll/Reverse_Engineering_Research_And_Taxonomy/blob/main/cli.py",
     "reverse_engineering_state": "https://github.com/JadanPoll/Reverse_Engineering_Research_And_Taxonomy/blob/main/investigation.py",
-    "reverse_engineering_stripped": "https://github.com/JadanPoll/Reverse_Engineering_Research_And_Taxonomy/blob/main/STRIPPED_ANALYSIS_DESIGN.md"
+    "reverse_engineering_stripped": "https://github.com/JadanPoll/Reverse_Engineering_Research_And_Taxonomy/blob/main/STRIPPED_ANALYSIS_DESIGN.md",
+    "pill_snapshot": "https://github.com/JadanPoll/AI_Pill_OS/blob/472993a659f2936d855a91b9c77bd313e10801c7/AI_Pill.user.js"
   },
   "question_tree": [
     {
@@ -1159,16 +1160,17 @@
       "status": "active_priority",
       "why": "Acquire once and amortize later discovery; avoid repeated manual source retrieval and premature keyword selection.",
       "model": "Immutable full-byte artifacts + content-digest deduplication + versioned manifest (observed URL, size, digest, origin, acquisition method, receipt and failures) + cheap generated navigation (line intervals for readable sources, byte/UTF-16 column coordinates and module boundaries for minified sources). Archive full relevant first-party application source breadth within explicit authorization; stage or batch transport, do not truncate originals. Source collection and interpretation are independent. Separate three output types: operation outcome receipts, durable discovery atlas, and original evidence corpus. The atlas is a question-independent map of observable application structure: complete coarse regions/tiles including unclassified areas, recognizable landmarks, interfaces, dependencies, candidate subsystem roles and coverage gaps. Retain compact provisional labels and concrete anchor symbols/coordinates, not just filenames or task-relevant results. Mechanically generate broad coverage first, then enrich promising regions selectively. Preserve provenance and differentiate lexical clues, source-inspected mechanisms and runtime observations. A fresh investigator should be able to generate new meaningful questions from the atlas alone even if original files are temporarily inaccessible; source-level certification still requires originals.",
-      "belief": "AI Pill v0.4.10 retrieves complete decoded JS text for selected files and literal dependencies, with 8-file/32 MiB bundle limits. It does not yet preserve original bytes or automatically persist an archive. Microsoft atlas demonstrates full-source reuse with source-faithful shards; raw collection does not establish runtime execution or semantic coverage.",
+      "belief": "AI Pill v0.4.10 retrieves complete decoded JS text for selected files and literal dependencies, with 8-file/32 MiB bundle limits. It does not yet preserve original bytes or automatically persist an archive. Microsoft atlas demonstrates full-source reuse with source-faithful shards; raw collection does not establish runtime execution or semantic coverage. v0.4.13 adds snapshotSources: same-origin observed JS, full valid UTF-8 response bytes represented as reversible text with SHA-256, broad lexical atlas with contiguous UTF-16 tiles, API/name/dependency anchors, inventory coverage and independent map export. Limits: 128 attempts, 32 MiB total, 16 MiB/file, cooperative 90-second deadline. No durable browser archive or automatic upload. Lexical anchors can occur in strings/comments and do not establish behavior. No complete module parser.",
       "certificate": "User's v0.4.10 bundle retrieved dictation-audio-worklet.46ab6ab8.js, 1073 bytes, 29 ms operation, 30 ms total, no unmet expectations. Previous v0.4.8 inventory-only lookup failed. Source archive, hash verification, and automatic persistence not established.",
       "evidence": [
         "microsoft_atlas",
         "microsoft_audit",
-        "pill_plan"
+        "pill_plan",
+        "pill_snapshot"
       ],
       "stop": "One bounded application snapshot with exact-byte SHA-256 receipts, explicit inventory coverage and failed items, and range retrieval from canonical storage without re-fetching browser assets. Repeat acquisition reuses identical content; new build adds only missing artifacts. No raw private source upload until destination authorization and privacy are verified. In a separate context with only the atlas, an investigator can identify several distinct consequential subsystem questions, locate concrete regions, and identify what evidence is missing without rerunning browser instrumentation. Test against inventory-only and outcome-only baselines; do not demand a predetermined number of questions as proof of quality.",
       "reopen": "Changed source build, missing dependency/realm, failed digest/receipt, repeated source-navigation friction.",
-      "next": "Prioritize a complete authorized source snapshot and a portable discovery atlas patterned after Microsoft zones/landmarks/tiles/paths. Index whole observed scope, not just known question keywords or callsites. Evaluate one-question-blind discovery pass and independent follow-up from atlas alone. Keep raw source and atlas separately accessible. Compare canonical private archive destinations without adding transport complexity; retain manual JSON handoff.",
+      "next": "Run snapshotSources on the user's live ChatGPT tab, inspect outcome and discovery map first, retain full evidence separately for source-level verification. Compare blind discovery utility against inventory-only results. Identify real Safari acquisition/export friction before extending archive infrastructure. Offset paging is only an inventory-relative continuation, not durable deduplication.",
       "depends_on": []
     },
     {
@@ -1240,7 +1242,7 @@
       ],
       "stop": "A real investigation runs with minimal human relay. Broad source acquisition and discovery orientation are reusable; a fresh investigator can discover additional consequential questions without the original source in context or another instrumentation run. Retrieve original ranges when certification requires them. Compact operational outcomes expose failures without requiring full evidence transfer; human can identify wasted effort and revise plans. Fully autonomous transport is not a prerequisite.",
       "reopen": "Repeated human intervention, lost evidence, unsafe scope, or inferior whole-workflow cost.",
-      "next": "Compare inventory-only, outcome-only and coarse atlas views on actual collected ChatGPT source; use an unfamiliar subsystem as a discovery witness, not merely another known microphone question. Then inspect source ranges to check whether generated questions and anchors are useful.",
+      "next": "Use the first real snapshot to measure coverage, map navigability, human friction and actual useful discoveries; preserve full evidence even when the initial review needs only map and outcomes.",
       "depends_on": [
         "I22"
       ]
@@ -1435,6 +1437,11 @@
       "date": "2026-11-26",
       "decision": "User corrects the earlier bounded-context interpretation: optimize a reusable surface of discovery, not just compact current-question outcomes. Microsoft zones/landmarks/tiles offer the precedent. Separate acquisition, broad orientation, question generation, and focused descent. No UI or transport change required for this conceptual correction.",
       "method": "RSM question selection as investigation; REM amortization and subtractive UI"
+    },
+    {
+      "date": "2026-11-26",
+      "decision": "Update older reverse-engineering README and historical stripped-analysis note; implement v0.4.13 snapshotSources with separate discovery map and complete-source export. Syntax, contiguous tile/line coverage and mixed outcome checks passed in a non-browser runtime. User will test actual Safari; no archive or autonomous transport claimed.",
+      "method": "RSM-02.07–02.08; REM-04.03; Microsoft discovery atlas"
     }
   ],
   "functional_intent": {
