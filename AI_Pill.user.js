@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         AI Pill OS - DevTools and Ask
 // @namespace    https://github.com/JadanPoll/AI_Pill_OS
-// @version      0.4.11
+// @version      0.4.12
 // @description  LLM-directed investigation: run bounded JSON plans, collect evidence and export outcomes.
 // @match        https://*/*
 // @match        http://*/*
@@ -17,7 +17,7 @@
 (() => {
   'use strict';
   if (window.top !== window || document.getElementById('ai-pill-os')) return;
-  const VERSION = '0.4.11', MAX = 100, MAX_REPORT = 100000;
+  const VERSION = '0.4.12', MAX = 100, MAX_REPORT = 100000;
   let host, root, status, preview, includeText, planBox, pill;
   let picked = null, armed = false, recording = false, observer = null;
   let events = [], dropped = 0, started = 0, erudaReady = false;
@@ -454,12 +454,12 @@
     if(!planResult)return setStatus('Run a plan first.');
     const address=URL.createObjectURL(new Blob([JSON.stringify(planResult)],{type:'application/json'})),a=document.createElement('a');
     a.href=address;a.download='ai-pill-investigation-'+new Date().toISOString().replace(/[:.]/g,'-')+'.json';root.append(a);a.click();a.remove();setTimeout(()=>URL.revokeObjectURL(address),60000);
-    setStatus('Save requested. Attach the investigation JSON to ChatGPT.');
+    setStatus('Save requested. Check browser downloads.');
   }
   async function runPlan(){
     if(planActive||recording)return setStatus('Another recording or plan is active.');
-    let p;try{p=validatePlan(JSON.parse(planBox.value));}catch(e){planResult=null;planOutcome={schema:'ai_pill_os.investigation_outcome.v1',version:VERSION,origin:location.origin,status:'rejected',error:safe(e.message,240)};byId('plan-save').disabled=true;byId('plan-copy').disabled=false;preview.value=JSON.stringify(planOutcome,null,2);syncEvidence();setStatus('Plan rejected: '+safe(e.message));return;}
-    planActive=true;byId('run').disabled=true;byId('plan-save').disabled=true;byId('plan-copy').disabled=true;planResult=null;planOutcome=null;pill.hidden=true;byId('open').hidden=true;byId('tools').open=false;
+    let p;try{p=validatePlan(JSON.parse(planBox.value));}catch(e){planResult=null;planOutcome={schema:'ai_pill_os.investigation_outcome.v1',version:VERSION,origin:location.origin,status:'rejected',error:safe(e.message,240)};byId('plan-save').hidden=true;byId('plan-copy').disabled=false;byId('plan-result').hidden=false;byId('plan-summary').textContent='Invalid plan · '+safe(e.message);preview.value=JSON.stringify(planOutcome,null,2);syncEvidence();byId('evidence').open=false;setStatus('Edit the plan or copy the error.');return;}
+    planActive=true;byId('run').disabled=true;byId('plan-result').hidden=true;byId('evidence').hidden=true;byId('plan-save').disabled=true;byId('plan-copy').disabled=true;planResult=null;planOutcome=null;pill.hidden=true;byId('open').hidden=true;byId('tools').open=false;
     const t0=performance.now(),results=[],outcomes=[],bundle={schema:'ai_pill_os.investigation_bundle.v1',version:VERSION,runId:globalThis.crypto?.randomUUID?.()||Date.now().toString(36),origin:location.origin,at:new Date().toISOString(),plan:p,results,outcomes,files:[],bytes:0};
     try{
       for(const [index,x] of p.operations.entries()){
@@ -482,10 +482,13 @@
     }catch(e){bundle.error=safe(e.message||e,200);for(let i=outcomes.length;i<p.operations.length;i++)outcomes.push({index:i,op:p.operations[i].op,id:p.operations[i].id,status:'skipped',issues:[{code:'plan_interrupted',reason:bundle.error}]});}
     finally{
       bundle.elapsedMs=Math.round(performance.now()-t0);planOutcome=buildOutcome(bundle);bundle.outcome=planOutcome;planResult=bundle;
-      planActive=false;byId('run').disabled=false;byId('plan-save').disabled=false;byId('plan-copy').disabled=false;byId('plan-bubble').hidden=true;byId('open').hidden=true;pill.hidden=false;
+      planActive=false;byId('run').disabled=false;byId('plan-save').hidden=false;byId('plan-save').disabled=false;byId('plan-copy').disabled=false;byId('plan-result').hidden=false;byId('plan-bubble').hidden=true;byId('open').hidden=true;pill.hidden=false;
       preview.value=JSON.stringify(planOutcome,null,2);syncEvidence();byId('evidence').open=false;
-      const c=planOutcome.counts,problems=outcomes.flatMap(o=>o.issues||[]),first=problems[0];
-      setStatus(planOutcome.status.toUpperCase()+' · '+c.passed+' passed, '+c.partial+' partial, '+c.failed+' failed, '+c.skipped+' skipped · '+bundle.files.length+' files'+(first?' · '+(first.file?first.file+': ':'')+first.reason:'')+'. Copy results or Save bundle.');
+      const c=planOutcome.counts,problems=outcomes.flatMap(o=>o.issues||[]),first=problems[0],unmet=outcomes.flatMap(o=>o.checks||[]).find(x=>!x.pass);
+      const title=planOutcome.status==='passed'?'All tasks passed':planOutcome.status==='partial'?'Partial success':'Investigation failed';
+      byId('plan-summary').textContent=title+' · '+c.passed+'/'+p.operations.length+' passed'+(c.partial?' · '+c.partial+' partial':'')+(c.failed?' · '+c.failed+' failed':'')+(c.skipped?' · '+c.skipped+' skipped':'')+' · '+bundle.files.length+' files';
+      const reason=first?(first.file?first.file+': ':'')+first.reason:unmet?unmet.key+': expected at least '+unmet.expected.min+', observed '+unmet.actual:bundle.error||'';
+      setStatus(reason||'');
     }
   }
   async function copyPlanOutcome(){if(!planOutcome)return setStatus('Run a plan first.');await copyPrepared(JSON.stringify(planOutcome,null,2),'Investigation results');}
@@ -632,7 +635,7 @@
     const t=currentSource(), end=Math.min(t.length,sourceOffset+WINDOW);
     const excerpt=JSON.stringify({schema:'ai_pill_os.source_excerpt',source:sourceMeta,view:sourceViewName(),startCharacter:sourceOffset,endCharacter:end,excerpt:t.slice(sourceOffset,end)},null,2);
     // Explicitly put evidence into existing review area, never transmit automatically.
-    preview.value=excerpt;syncEvidence();closeSources();setStatus('Source excerpt ready. Review and Copy.');
+    preview.value=excerpt;syncEvidence();byId('evidence').open=true;closeSources();setStatus('Source excerpt ready. Review and Copy.');
   }
   function openSources() {
     byId('source-panel').hidden=false;
@@ -722,15 +725,16 @@
       plain('open','AI v'+VERSION,{'aria-label':'Open AI Pill'}),
       el('section',{id:'panel',hidden:true},
         head(heading('Investigate'),button('close','close','Close')),
-        field('plan',5,'Paste investigation JSON…',{'aria-label':'Investigation plan',spellcheck:false,autocapitalize:'off',autocomplete:'off',style:'font:13px/1.4 ui-monospace,monospace'}),
-        row(plain('run','Run plan',{class:'primary grow'}),plain('plan-copy','Copy results',{disabled:true}),plain('plan-save','Save bundle',{disabled:true})),
+        field('plan',4,'Paste a plan from your AI…',{'aria-label':'Investigation plan',spellcheck:'false',autocapitalize:'off',autocomplete:'off',style:'font:13px/1.4 ui-monospace,monospace'}),
+        row(plain('run','Run plan',{class:'primary grow'})),
+        el('section',{id:'plan-result',hidden:true},el('div',{id:'plan-summary',role:'status',style:'font-weight:600;margin:6px 0;overflow-wrap:anywhere'}),row(plain('plan-copy','Copy results',{class:'primary grow',disabled:true}),plain('plan-save','Save full evidence',{disabled:true}))),
         el('details',{id:'evidence',hidden:true},el('summary',{},'Result details'),field('preview',5,null,{'aria-label':'Evidence preview'}),row(button('copy','copy','Copy visible evidence','Copy'))),
         el('details',{id:'tools'},el('summary',{},'Tools'),
-          row(plain('contract','Copy capabilities'),button('sources','file','Browse sources','Sources'),button('console','terminal','Open persistent console logs','Console')),
+          row(plain('contract','Copy tool list'),button('sources','file','Browse sources','Sources'),button('console','terminal','Open persistent console logs','Console')),
           row(button('inspect','inspect','Inspect element','Inspect'),button('record','record','Record interaction','Record'),plain('snapshot','Page report')),
           details('Other instruments',row(button('eruda','code','Open Eruda debugger','DevTools'),button('copy-html','copy','Copy full live page HTML; may contain private data','HTML'),plain('direct-inspect','Direct tap inspect')),row(plain('html-delay','HTML in 7s'),plain('copy-timed-html','Copy captured HTML',{disabled:true})),row(plain('popup-arm','Capture popup'),plain('popup-copy','Copy popup',{disabled:true}))),
           check('text','Include element text in reports')),
-        el('div',{id:'status',role:'status'},'Ready · paste a plan from your AI.')
+        el('div',{id:'status',role:'status'},'')
       ),
       el('section',{id:'plan-bubble',hidden:true,style:'width:min(340px,calc(100vw - 24px));background:#fff;border:1px solid #cbd5e1;border-radius:16px;box-shadow:0 4px 18px #0003;padding:12px'},el('div',{id:'plan-message',role:'status'}),plain('plan-finish','Finish recording',{hidden:true})),
       el('div',{id:'pointer-box',hidden:true}),el('div',{id:'pointer-cursor',hidden:true}),
