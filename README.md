@@ -69,7 +69,7 @@ The Discord v0.4.27 report recorded 256/874 eligible JS files collected, zero fe
 - The 60,000-character orientation packet retains a bounded catalog for large corpora (largest files plus evenly spaced identities); full-corpus motif totals and local `exploreIndex`, `searchIndex`, `readSource`, and explicit evidence exports remain available. A sampled context is not a negative search result. Copied outcomes cap the manifest preview at 256 entries; export the discovery map for the full manifest.
 - Tool-side syntax compilation and a continuation fixture using the report's 874/256 shape passed, including inventory change/reordering, reuse without fetches and explicit fresh reset. This is not a live Safari network, memory, IndexedDB, or discovery-quality certificate. Verify on Discord with the existing archive and copy the outcome; do not restart from scratch unless necessary.
 
-### Structural discovery (v0.4.29)
+### Structural discovery (v0.4.29–0.4.31)
 
 Discord live v0.4.28 retained 1,429/1,429 observed eligible scripts (24,197,823 bytes), reused 256, acquired 1,173, no failed/deferred, 9.765 s. Subsequent four search/explore operations took 1.255 s; eight original source reads took 0.155 s. Both used the same retained run ID and collected zero new files. These exposed locale loading, editor reconciliation, scroll anchors, error attribution and per-resource backoff. They did not verify runtime execution or independent reload persistence.
 
@@ -81,7 +81,9 @@ Live acceptance: after updating, run the following on the retained Discord archi
 {"origin":"https://discord.com","description":"Verify structural discovery against retained Discord code","operations":[{"op":"resolveModule","moduleId":"674658","file":"d98faba192fc7e37.js"},{"op":"resolveModule","moduleId":"590180"},{"op":"resolveModule","moduleId":"158390"},{"op":"searchIndex","any":["isProductFetchBackedOff"],"scope":"module","limit":6},{"op":"readSource","file":"web.1732a939a32a5e17.js","start":0,"length":1500},{"op":"exploreIndex","limit":12}]}
 ```
 
-Tool-side syntax and parser check using the exact supplied consumer, a Rspack fixture and a representative cross-file store/backoff fixture passed. Full Safari parser latency, coverage, migration and discovery quality not yet verified.
+Tool-side syntax and parser checks passed. Live v0.4.29 recognized 1,423 files and 8,918 factories but excluded the main 13 MB bootstrap. v0.4.30 revealed 11,096,234 / 24,197,823 recognized bytes (45.9%); the bootstrap registry initializer was rejected. Acorn's unrestricted expression parser consumes a following comma declarator as a SequenceExpression; v0.4.31 uses its initializer production instead and exposes precise rejection reasons.
+
+**Live acceptance passed (v0.4.31, run `3c3abc60-bb63-463e-ba07-2faf74270056`):** 4/4 operations, 6.050 s including index migration, 1,429/1,429 files, 24,197,823/24,197,823 bytes, 13,976 factories, zero additional source bytes. Consumer 674658 resolves store 590180 at [6003580,6006994) in `web.1732a939a32a5e17.js`, which resolves backoff 158390 at [352224,353251). Definition score 51 versus caller score 21; warm lookups 13 and 11 ms. All answers retain snapshot `cbd1b9c7-6462-407f-9968-5aa5f3b1402e`. Stop parser work unless a real investigation exposes a new obstruction. Coverage counts recognized source files, not all runtime behavior or every possible dependency. Explicit independent reload storage and revised cold-start context quality remain unisolated.
 
 ## Try the current implementation (v0.4.1)
 
