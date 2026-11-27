@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         AI Pill OS - DevTools and Ask
 // @namespace    https://github.com/JadanPoll/AI_Pill_OS
-// @version      0.4.24
+// @version      0.4.25
 // @description  LLM-directed investigation: run bounded JSON plans, collect evidence and export outcomes.
 // @match        https://*/*
 // @match        http://*/*
@@ -17,7 +17,7 @@
 (() => {
   'use strict';
   if (window.top !== window || document.getElementById('ai-pill-os')) return;
-  const VERSION = '0.4.24', MAX = 100, MAX_REPORT = 100000;
+  const VERSION = '0.4.25', MAX = 100, MAX_REPORT = 100000;
   let host, root, status, preview, includeText, planBox, pill;
   let picked = null, armed = false, recording = false, observer = null;
   let events = [], dropped = 0, started = 0, erudaReady = false;
@@ -382,7 +382,7 @@
         {op:'inspect',use:'Inspect matching DOM elements',selector:'CSS selector',expect:{minMatches:1}},
         {op:'controls',use:'Find visible controls',expect:{minItems:1}},
         {op:'record',use:'Observe a real interaction',instruction:'Human-facing action',seconds:'integer 5–180',probe:'optional pocket-mic',expect:{minEvents:1,minCallsites:'optional integer',eventCounts:'optional map of event names to minimum counts'}},
-        {op:'snapshotSources',use:'Broad snapshot of observed JavaScript from same-origin and explicitly approved static-CDN resources, with full source and portable discovery map. Browser CORS/CSP enforced; no arbitrary URLs.',maxFiles:'optional 1–256 (default 256)',offset:'optional inventory offset (default 0)',expect:{minFiles:'default all eligible assets in remaining inventory'}},
+        {op:'snapshotSources',use:'Broad snapshot of observed JavaScript from same-origin and explicitly approved static-CDN resources, with full source and portable discovery map. Browser CORS/CSP enforced; no arbitrary URLs. Approved Gemini CDN query-free variants are explicitly labeled, not certified identical to observed scripts.',maxFiles:'optional 1–256 (default 256)',offset:'optional inventory offset (default 0)',expect:{minFiles:'default all eligible assets in remaining inventory'}},
         {op:'searchIndex',use:'Query retained source by case-insensitive exact identifier or constituent word; all=intersection, any=union, not=exclusion. File scope broad, module scope parsed supported bundle registries, region scope overlapping 2048-character windows. Results include unique occurrences, candidate reference kinds and unfamiliar nearby identifiers. No network.',all:['word'],any:['alternative'],not:['excluded'],scope:'optional file (default), module or region; module coverage explicit, use file/region if unsupported',files:['optional exact source names from context (extension not required)'],limit:'optional 1–30, default 12',expect:{minItems:'optional; defaults to 0 (empty observation is valid)'}},
         {op:'readSource',use:'Read retained original source at UTF-16 offsets, no network. Verify optional digest.',file:'exact source name from context',start:0,length:4000,sha256:'optional 64 lowercase hex characters; omit for unique name in retained snapshot, supply to disambiguate or pin',expect:{minItems:1}},
         {op:'collectSources',use:'Collect complete decoded observed JS source into the run bundle (does not extend retained snapshot)',files:['exact source name'],alternative:{from:'recordedCallers'},expect:{minFiles:'default all requested'}},
@@ -585,14 +585,22 @@
   // Explicit static-CDN policy. Snapshot candidates must still be observed script
   // resources, never model-supplied URLs. Normal browser CORS/CSP remain in force.
   function sourceAcquisitionPolicy(u,appOrigin){
-    if(u.search||u.hash||u.username||u.password)return {allowed:false,reason:'Query/hash/credential-bearing URL'};
-    if(u.origin===appOrigin)return {allowed:true,basis:'same-origin'};
-    if(appOrigin==='https://gemini.google.com'&&u.origin==='https://gemini.gstatic.com'&&u.pathname.startsWith('/_/mss/boq-gemini-web-uiserver/_/js/')&&/\/m=[A-Za-z0-9_,.-]+$/.test(u.pathname))return {allowed:true,basis:'observed Gemini static CDN; CORS required'};
-    return {allowed:false,reason:'Outside approved static source origins'};
+    const components={query:!!u.search,fragment:!!u.hash,credentials:!!(u.username||u.password)};
+    const reject=reason=>({allowed:false,reason,components});
+    if(components.credentials)return reject('URL contains userinfo credentials');
+    if(u.origin===appOrigin){
+      if(components.query)return reject('Same-origin URL contains query parameters');
+      if(components.fragment)return reject('Same-origin URL contains fragment');
+      return {allowed:true,basis:'same-origin',address:u.origin+u.pathname,components,queryOmitted:false};
+    }
+    if(appOrigin==='https://gemini.google.com'&&u.origin==='https://gemini.gstatic.com'&&u.pathname.startsWith('/_/mss/boq-gemini-web-uiserver/_/js/')&&/\/m=[A-Za-z0-9_,.-]+$/.test(u.pathname)){
+      return {allowed:true,basis:components.query?'observed Gemini static CDN; query-free variant, equivalence unverified; CORS required':'observed Gemini static CDN; CORS required',address:u.origin+u.pathname,components,queryOmitted:components.query};
+    }
+    return reject('Outside approved static source origins');
   }
   function inventoryDrift(archive,inventory){
     const old=new Set(archive.atlas.inventory.filter(x=>x.status==='collected').map(x=>x.url));
-    const now=inventory.filter(x=>x.kind==='js').map(x=>x.address).filter(a=>{try{const u=new URL(a);return sourceAcquisitionPolicy(u,archive.origin).allowed;}catch{return false;}});
+    const now=inventory.filter(x=>x.kind==='js').flatMap(x=>{try{const p=sourceAcquisitionPolicy(new URL(x.address),archive.origin);return p.allowed?[p.address]:[];}catch{return [];}});
     const current=new Set(now);return {observed:current.size,newlyObserved:[...current].filter(x=>!old.has(x)).length,notCurrentlyObserved:[...old].filter(x=>!current.has(x)).length};
   }
   const MODULE_INDEX_VERSION=2,REGION_INDEX_VERSION=1;
@@ -7100,7 +7108,7 @@ return module.exports;
     const u=new URL(item.address),policy=sourceAcquisitionPolicy(u,location.origin);
     if(!policy.allowed)throw Error(policy.reason);
     let res;
-    try{res=await fetch(item.address,{mode:'cors',credentials:'omit',redirect:'error',signal,referrerPolicy:'no-referrer'});}
+    try{res=await fetch(policy.address,{mode:'cors',credentials:'omit',redirect:'error',signal,referrerPolicy:'no-referrer'});}
     catch(e){if(e?.name==='AbortError')throw e;throw Error('Source request failed ('+policy.basis+'); browser network/CORS/CSP/redirect failure not distinguishable here: '+safe(e?.message||e,100));}
     if(!res.ok)throw Error('HTTP '+res.status);
     const mime=res.headers.get('content-type')||'';
@@ -7117,19 +7125,20 @@ return module.exports;
     if(!text.trim()||/^\s*(?:<!doctype|<html\b)/i.test(text))throw Error('Empty or HTML response, not JavaScript');
     // UTF-8 fatal decoding with BOM retained is reversible for valid UTF-8.
     const sha256=Array.from(new Uint8Array(await crypto.subtle.digest('SHA-256',bytes)),b=>b.toString(16).padStart(2,'0')).join('');
-    return {text,bytes:bytes.byteLength,sha256,meta:{kind:'js',url:item.address,characters:text.length,encoding:'utf-8',mime,sha256,acquisition:policy.basis}};
+    return {text,bytes:bytes.byteLength,sha256,meta:{kind:'js',url:policy.address,characters:text.length,encoding:'utf-8',mime,sha256,acquisition:policy.basis,queryOmitted:policy.queryOmitted,fragmentOmitted:policy.components.fragment}};
   }
   async function snapshotSources(x,bundle){
-    const inventory=sourceInventory(),rows=[],eligible=[],offset=x.offset??0,maxFiles=x.maxFiles??SNAPSHOT_FILES,deadline=Date.now()+90000;
+    const inventory=sourceInventory(),rows=[],eligible=[],canonicalSeen=new Set(),offset=x.offset??0,maxFiles=x.maxFiles??SNAPSHOT_FILES,deadline=Date.now()+90000;
     for(const item of inventory.filter(x=>x.kind==='js').sort((a,b)=>a.address<b.address?-1:a.address>b.address?1:0)){
       const u=new URL(item.address),row={name:u.pathname.split('/').pop()||'(script)',url:url(item.address),status:'excluded'};
-      const policy=sourceAcquisitionPolicy(u,location.origin);row.resourceOrigin=u.origin;
+      const policy=sourceAcquisitionPolicy(u,location.origin);row.resourceOrigin=u.origin;row.urlComponents=policy.components;
       if(!policy.allowed)row.reason=policy.reason;
-      else{row.acquisition=policy.basis;row.url=u.href;row.status='deferred';row.reason='Outside requested batch';row.index=eligible.length;eligible.push({item,row});}
+      else if(canonicalSeen.has(policy.address))row.reason='Duplicate query-free resource address; variants not independently retrieved';
+      else{canonicalSeen.add(policy.address);row.acquisition=policy.basis;row.queryOmitted=policy.queryOmitted;row.url=policy.address;row.status='deferred';row.reason='Outside requested batch';row.index=eligible.length;eligible.push({item,row});}
       rows.push(row);
     }
     const selected=eligible.slice(offset,offset+maxFiles),maps=[];let next=0,finished=0;
-    bundle.atlas={schema:'ai_pill_os.discovery_atlas.v1',origin:location.origin,runId:bundle.runId,at:bundle.at,scope:'Observed JavaScript resources from current origin or explicitly approved static CDN; CORS/CSP enforced, no arbitrary URLs, credentials or source execution',method:'Complete UTF-8 source, SHA-256 of decoded HTTP response bytes; full contiguous lexical tiles and provisional API/name/dependency anchors. Not a JS parser or runtime witness.',inventory:rows,files:maps,limits:{inventory:1500,attempts:maxFiles,bundleBytes:SNAPSHOT_BYTES,perFileBytes:SOURCE_LIMIT,deadlineMs:90000},coverage:null};
+    bundle.atlas={schema:'ai_pill_os.discovery_atlas.v1',origin:location.origin,runId:bundle.runId,at:bundle.at,scope:'Observed JavaScript resources from current origin or explicitly approved static CDN; Gemini query-free variants explicitly identified, equivalence unverified; CORS/CSP enforced, no arbitrary URLs, credentials or source execution',method:'Complete UTF-8 source, SHA-256 of decoded HTTP response bytes; full contiguous lexical tiles and provisional API/name/dependency anchors. Not a JS parser or runtime witness.',inventory:rows,files:maps,limits:{inventory:1500,attempts:maxFiles,bundleBytes:SNAPSHOT_BYTES,perFileBytes:SOURCE_LIMIT,deadlineMs:90000},coverage:null};
     const worker=async()=>{while(next<selected.length){
       const {item,row}=selected[next++];
       if(Date.now()>=deadline||bundle.bytes>=SNAPSHOT_BYTES){row.reason=Date.now()>=deadline?'Snapshot deadline reached':'Bundle byte limit reached';finished++;continue;}
@@ -7139,7 +7148,7 @@ return module.exports;
       try{
         const data=await fetchSnapshotSource(item,c.signal);
         if(bundle.bytes+data.bytes>SNAPSHOT_BYTES){row.status='deferred';row.reason='Complete file would exceed bundle byte limit';continue;}
-        const map=indexSnapshotFile(data.text,{name:row.name,url:item.address,sha256:data.sha256,bytes:data.bytes});
+        const map=indexSnapshotFile(data.text,{name:row.name,url:data.meta.url,sha256:data.sha256,bytes:data.bytes,acquisition:data.meta.acquisition,queryOmitted:data.meta.queryOmitted});
         bundle.bytes+=data.bytes;bundle.files.push({name:row.name,source:data.meta,bytes:data.bytes,sha256:data.sha256,text:data.text});
         maps.push(map);Object.assign(row,{status:'collected',bytes:data.bytes,sha256:data.sha256,tiles:map.tiles.length});
       }catch(e){row.status='failed';row.reason=safe(e?.message||e,180);}
@@ -7151,10 +7160,10 @@ return module.exports;
     const remaining=eligible.filter(x=>x.row.index>=offset),pending=remaining.filter(x=>x.row.status==='deferred');
     const coverage={observed:rows.length,eligible:remaining.length,excluded:rows.length-eligible.length,inventoryEligible:eligible.length,offset,attempted:selected.filter(x=>x.row.status==='collected'||x.row.status==='failed').length,collected:count('collected'),failed:count('failed'),deferred:pending.length,nextOffset:pending.length?pending[0].row.index:null,inventoryMayBeCapped:inventory.length>=1500,tiles:maps.reduce((n,m)=>n+m.tiles.length,0),bytes:maps.reduce((n,m)=>n+m.source.bytes,0)};
     bundle.atlas.coverage=coverage;
-    const byOrigin=new Map();for(const row of rows){const k=row.resourceOrigin;const n=byOrigin.get(k)||{origin:k,observed:0,eligible:0,collected:0,failed:0,excluded:0};n.observed++;if(row.status==='excluded')n.excluded++;else{n.eligible++;if(row.status==='collected')n.collected++;if(row.status==='failed')n.failed++;}byOrigin.set(k,n);}bundle.atlas.resourceOrigins=[...byOrigin.values()];
+    const byOrigin=new Map();for(const row of rows){const k=row.resourceOrigin;const n=byOrigin.get(k)||{origin:k,observed:0,eligible:0,collected:0,failed:0,excluded:0,queryPresent:0,fragmentPresent:0,credentialsPresent:0,queryOmittedEligible:0,queryOmittedCollected:0};n.observed++;if(row.urlComponents?.query)n.queryPresent++;if(row.urlComponents?.fragment)n.fragmentPresent++;if(row.urlComponents?.credentials)n.credentialsPresent++;if(row.status!=='excluded'&&row.queryOmitted)n.queryOmittedEligible++;if(row.status==='collected'&&row.queryOmitted)n.queryOmittedCollected++;if(row.status==='excluded')n.excluded++;else{n.eligible++;if(row.status==='collected')n.collected++;if(row.status==='failed')n.failed++;}byOrigin.set(k,n);}bundle.atlas.resourceOrigins=[...byOrigin.values()];
     bundle.atlas.structure=structuralIndex(bundle.atlas);
     bundle.atlas.glossary={schema:'ai_pill_os.lexical_vocabulary.v1',method:'Each file vocabulary.terms row is [symbol,count,first UTF-16 offset]. Full filtered token scan, not semantic parse. Per-file cap 20000 distinct terms; omittedOccurrences counts excess unmatched occurrences.',maxTermsPerFile:VOCAB_LIMIT};
-    return {op:'snapshotSources',coverage,resourceOrigins:bundle.atlas.resourceOrigins,exclusions:rows.filter(x=>x.status==='excluded').map(({name,url,reason})=>({name,url,reason})),failures:eligible.filter(x=>x.row.status==='failed').map(x=>({name:x.row.name,url:x.row.url,reason:x.row.reason}))};
+    return {op:'snapshotSources',coverage,resourceOrigins:bundle.atlas.resourceOrigins,exclusions:rows.filter(x=>x.status==='excluded').map(({name,url,reason,urlComponents})=>({name,url,reason,urlComponents})),failures:eligible.filter(x=>x.row.status==='failed').map(x=>({name:x.row.name,url:x.row.url,reason:x.row.reason}))};
   }
   function saveDiscoveryMap(){
     const a=planResult?.atlas||retainedArchive?.atlas;if(!a)return setStatus('No discovery map collected.');
