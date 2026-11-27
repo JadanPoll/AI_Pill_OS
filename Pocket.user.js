@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         AI Pill OS - Pocket
 // @namespace    https://github.com/JadanPoll/AI_Pill_OS
-// @version      0.7.48
+// @version      0.7.49
 // @updateURL    https://raw.githubusercontent.com/JadanPoll/AI_Pill_OS/main/Pocket.user.js
 // @downloadURL  https://raw.githubusercontent.com/JadanPoll/AI_Pill_OS/main/Pocket.user.js
 // @description  Universal Safari pill: collect evidence, keep discoveries, and hand a question to a chosen chat.
@@ -26,7 +26,7 @@
 (() => {
   'use strict';
   if (window.top !== window) return;
-  const VERSION='0.7.48';
+  const VERSION='0.7.49';
   // Report initialization failures without depending on the main UI, storage or a CDN.
   function bootFailure(error,phase){
     const message=String(error?.message||error).slice(0,500);
@@ -76,6 +76,7 @@
   const host=document.createElement('div');host.id='ai-pill-pocket';
   const root=host.attachShadow({mode:'closed'});
   const $=id=>root.getElementById(id);
+  function setText(node,value){if(node.textContent!==value)node.textContent=value;}
   const icons={pocket:'<path d="M4 5h16v10a8 8 0 0 1-16 0zM8 10l4 4 4-4"/>',close:'<path d="m6 6 12 12M18 6 6 18"/>',copy:'<rect x="8" y="8" width="12" height="12" rx="2"/><path d="M16 8V4H4v12h4"/>',plus:'<path d="M12 4v16M4 12h16"/>',refresh:'<path d="M20 8a8 8 0 1 0 0 8M20 3v5h-5"/>'};
   Object.assign(icons,{bookmark:'<path d="M6 3h12v18l-6-4-6 4z"/>',back:'<path d="m15 18-6-6 6-6"/>',trash:'<path d="M3 6h18M9 6V3h6v3M6 6l1 15h10l1-15M10 10v7M14 10v7"/>',settings:'<circle cx="5" cy="12" r="1"/><circle cx="12" cy="12" r="1"/><circle cx="19" cy="12" r="1"/>',arrow:'<path d="M7 17 17 7M7 7h10v10"/>',pin:'<path d="m16 3 5 5-4 2-3 5-2-2-6 6-1-1 6-6-2-2 5-3z"/>',search:'<circle cx="10" cy="10" r="6"/><path d="m14 14 6 6"/>'});
   Object.assign(icons,{mic:'<rect x="9" y="3" width="6" height="12" rx="3"/><path d="M5 10v2a7 7 0 0 0 14 0v-2M12 19v3M9 22h6"/>',save:'<path d="M5 3h12l4 4v14H3V3zM7 3v7h10V3M7 21v-7h10v7"/>',edit:'<path d="m15 4 5 5M4 20l4-1 13-13-5-5L3 14z"/>',image:'<rect x="3" y="3" width="18" height="18" rx="3"/><circle cx="8" cy="8" r="1.5"/><path d="m3 17 6-6 4 4 3-3 5 5"/>'});
@@ -1992,7 +1993,6 @@
     if(selected&&modelTestReceipt?.phase==='working'&&Date.now()>modelTestReceipt.expires){modelTestReceipt={...modelTestReceipt,phase:'failed',detail:'Model request expired · retry.'};paintModelTest();}
     const health=state==='ready'?'Ready':state==='responding'?'Responding':state==='recording'?'Recording':state==='working'?'Finishing…':state==='uncertain'?'Needs attention':state==='stale'?'Unavailable':'Checking…';
     const label=pinBusy?'Selecting…':selected?conversationName(here)+' · '+health:sameChat?'Same chat · another tab selected':'Not registered';
-    const setText=(node,value)=>{if(node.textContent!==value)node.textContent=value;};
     const setAttr=(node,key,value)=>{if(node.getAttribute(key)!==value)node.setAttribute(key,value);};
     $('worker-pin').hidden=!chat||selected;$('worker-pin').disabled=pinBusy;
     $('keep-awake').hidden=!selected;
