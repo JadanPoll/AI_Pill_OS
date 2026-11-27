@@ -1,6 +1,6 @@
 {
   "schema": "ai_pill_os.rsm_investigation",
-  "version": 26,
+  "version": 27,
   "updated": "2026-11-26",
   "parent_purpose": "Asymptotically reduce the mechanical distance from human intention to useful realization, preserving attention, agency, intellectual continuity and recoverability. Optimize the complete recurring human–AI loop, not a browser transport.",
   "scope": "Safari-first personal computing: direct touch for low-information operations, dictation and AI collaboration for high-information intentions, universal pill plus contextual mini-pills, local working state and context-aware canonical persistence.",
@@ -150,7 +150,8 @@
     "pill_module_navigation": "https://github.com/JadanPoll/AI_Pill_OS/blob/42f8ca97ac64d4b0f16eb1dc545c21317c891286/AI_Pill.user.js",
     "pill_registry_parser": "https://github.com/JadanPoll/AI_Pill_OS/blob/f3a1bfd0d24d135d53fe65144da81544dc951faf/AI_Pill.user.js",
     "pill_cross_site": "https://github.com/JadanPoll/AI_Pill_OS/blob/11bb07cdeb0e09c76e82f2576c08020d9cd27822/AI_Pill.user.js",
-    "pill_gemini_acquisition": "https://github.com/JadanPoll/AI_Pill_OS/blob/d7ce6fb223789f4088b0aeb51e39f78f859abf5a/AI_Pill.user.js"
+    "pill_gemini_acquisition": "https://github.com/JadanPoll/AI_Pill_OS/blob/d7ce6fb223789f4088b0aeb51e39f78f859abf5a/AI_Pill.user.js",
+    "pocket_0759": "https://github.com/JadanPoll/AI_Pill_OS/commit/760e7d883d11d99636af4623665ed2992cef615f"
   },
   "question_tree": [
     {
@@ -1216,18 +1217,19 @@
       "status": "active_priority",
       "why": "Use mature AI Pill as an investigation substrate for Pocket's native ChatGPT and Gemini integration; improve speed, reliable state observation, rich context and continuity without bypassing provider safeguards.",
       "model": "Named probe/action capabilities with preconditions, cleanup and evidence contracts; per-operation expected vs actual outcomes. Passive source/module/load/API caller metadata before invasive changes; bounded experiment and retry policy. Differentiate delivered/executed, evidence captured, expectations met, persisted, and inference certified. Compare provider-specific native mechanisms beneath one common functional contract: authorized submission, attachment readiness, turn ownership, streaming/completion, recoverable result, microphone acquisition vs readiness, model selection. Preserve UI fallback and explicit guard conditions. Source evidence first, then passive runtime observations only where needed.",
-      "belief": "Mic bridge already exposes selected caller stacks and timing; v0.4.10 validates typed expectations and summarizes per-operation outcomes. Coverage of bridge events in AI Pill, ordinary message submission, response stream and source modules is not yet established. Pocket v0.7.57 inspected: startAsk requires empty verified composer, focus/insertText, exact turn ownership; Gemini image handoff deliberately stops at manual Send because attachment readiness is not certified. observeAsk polls native DOM and requires explicit completion plus stability (500ms modern/Gemini, 6000ms legacy); native model selector depends on menus; microphone lifecycle already has separate capture/UI states. These are concrete opportunities for observation rather than bypass.",
-      "certificate": "Real source retrieval outcome verified; full guided-record/auto-caller collection and hands-off execution remain unverified. Microsoft research audit establishes the value of direct source obstruction and separate runtime witnesses, not blanket portability.",
+      "belief": "Static discovery closed by user decision. ChatGPT retained corpus dfdd578d-f84d-4584-ada9-8280d378320c: pmRu 420899.fa79bc2158.js UTF16 11232–18385 establishes conditional background polling and snapshot recovery, not persistent Safari execution; 7078.55b4a92118.js 686000–693200 and 646436.55f1254c7f.js 185000–204500 establish deferred submission and upload/draft/route guards. 646436.55f1254c7f.js 698000–710000 establishes structured message projection; complete native Copy serialization not established. Gemini native attachment loading/error predicates and distinct rendering/generation states established from query-free CDN variants, original byte equivalence unverified. No private API integration justified. Transferable patterns: speculative preparation, revocable intent, single consumption, logical continuity and recoverable state.",
+      "certificate": "Source phase sufficient to guide improvements. Runtime validation remains open: v0.7.58 passive Gemini visual-readiness trace; v0.7.59 committed DOM extraction preserving formatting, code whitespace and conservative public links; recovery before timeout, foreground/network wakeups, accepted vs connection-paused status, prepared-draft revocation. Syntax verified, not live Safari. Existing native send authorization unchanged.",
       "evidence": [
         "pill_plan",
         "pocket_0757",
         "microsoft_atlas",
         "microsoft_audit",
-        "pill_gemini_acquisition"
+        "pill_gemini_acquisition",
+        "pocket_0759"
       ],
-      "stop": "Identify and source-certify one or more consequential native integration boundaries for each provider, demonstrate one practical improvement with representative user flow and unchanged send/draft/ownership guards, then stop when remaining uncertainties do not affect Pocket usability.",
+      "stop": "Static education closed. Implementation phase ends when representative real Pocket input, output and continuity workflows work with minimal human interaction, preserving native submission, ownership and draft guards; reopen only for material evidence.",
       "reopen": "New consequential feature, unresolved source/runtime discrepancy, or recurring UI-dependent failure.",
-      "next": "First source-only ChatGPT query over retained snapshot: module search for addTurnCompletedListener, conversationStateCallbacks, streamingConversations; module search for composerController, submittedEditorDocument, submittedPromptForRestoration; file search for attachment/upload readiness symbols. Read relevant modules/ranges and establish actual domain (ordinary ChatGPT vs Codex or other). In parallel, capture Gemini Copy AI context for its own source inventory, identify native submit, response lifecycle and attachment mechanisms. Then choose one real user-authorized end-to-end ordinary Ask or image attachment probe with passive bounded metadata, not raw bodies/headers/auth, no replay or hidden sends. Do not reintroduce microphone experiments unless source reveals a discriminating new question.",
+      "next": "Use v0.7.59 in ordinary work. First Gemini two-image Ask with manual Send and existing Copy Report; use actual preview/Send/readiness observations to decide safe automatic submission. ChatGPT representative formatted response and accepted-turn interruption/recovery; compare fidelity and observe recovery rather than impose artificial tests. No further broad static queries; reopen a specific source branch only for a consequential unresolved failure.",
       "depends_on": [
         "I22"
       ]
@@ -1487,6 +1489,11 @@
       "date": "2026-11-26",
       "decision": "Gemini acquisition certificate: live v0.4.23 excluded 89/89 by origin policy; v0.4.24 still excluded 80 Gemini CDN scripts by query/hash/userinfo safeguard, zero fetches. v0.4.25 run facc541b-2223-47ab-8ba4-cdb496e7b0e4 retrieved 80/80 eligible query-free static CDN variants, 19,893,582 bytes, 671 tiles, 4673 ms reported elapsed, archive persisted, no failed/deferred. All 80 observed Gemini CDN URLs had queries; none had fragments/userinfo. Nine other resources outside policy, including two boq-bard-web islands bundles. Native CORS retrieval succeeded for query-free variants; byte equivalence to loaded scripts and reload survival unverified. Next copy AI context from retained archive for native attachment/submission/response investigation; no additional acquisition changes until evidence demands them.",
       "method": "RSM-01.04 failure and success certificates; REM-06.01 economical policy correction"
+    },
+    {
+      "date": "2026-11-26",
+      "decision": "Close static discovery at user direction. v0.7.59 first QoL implementation pass, with guarded Gemini manual Send retained until live attachment evidence. Prefer real ordinary interactions over further source plans.",
+      "method": "REM subtraction; RSM source certificates distinguished from runtime witnesses"
     }
   ],
   "functional_intent": {
