@@ -1,6 +1,6 @@
 {
   "schema": "ai_pill_os.rsm_investigation",
-  "version": 30,
+  "version": 31,
   "updated": "2026-11-26",
   "parent_purpose": "Asymptotically reduce the mechanical distance from human intention to useful realization, preserving attention, agency, intellectual continuity and recoverability. Optimize the complete recurring human–AI loop, not a browser transport.",
   "scope": "Safari-first personal computing: direct touch for low-information operations, dictation and AI collaboration for high-information intentions, universal pill plus contextual mini-pills, local working state and context-aware canonical persistence.",
@@ -1184,7 +1184,7 @@
       ],
       "stop": "One bounded application snapshot with exact-byte SHA-256 receipts, explicit inventory coverage and failed items, and range retrieval from canonical storage without re-fetching browser assets. Repeat acquisition reuses identical content; new build adds only missing artifacts. No raw private source upload until destination authorization and privacy are verified. In a separate context with only the atlas, an investigator can identify several distinct consequential subsystem questions, locate concrete regions, and identify what evidence is missing without rerunning browser instrumentation. Test against inventory-only and outcome-only baselines; do not demand a predetermined number of questions as proof of quality.",
       "reopen": "Changed source build, missing dependency/realm, failed digest/receipt, repeated source-navigation friction.",
-      "next": "Stop acquisition changes. Verify retained archive after reload using an existing readSource or structural query; reopen only for demonstrated obstruction.",
+      "next": "Acquisition sufficient; structural reindexing reused the same retained snapshot across updates. Independent explicit reload/storage verification remains unisolated; reopen only if persistence obstructs a real investigation.",
       "depends_on": []
     },
     {
@@ -1269,18 +1269,18 @@
         "Q8.1.4",
         "Q8.7.2"
       ],
-      "status": "active_priority",
+      "status": "research_sufficient",
       "why": "Curiosity-led question generation requires broad exposure, not just efficient lookup after a question is known. Gemini's orientation landmarks were concentrated in early portions of the largest bundles despite comprehensive acquisition.",
       "model": "P-code-inspired lexical lifting: normalize known operation vocabulary, retain ordered local motif witnesses with original identifiers and offsets, spatially stratify tiles, and expose deterministic queryless pagination. Preserve raw source, existing exact searches and parsed module boundaries. Structural clues are not semantic classification; importance is question-relative.",
       "belief": "Diverse spatial coverage and operation combinations may expose mechanisms missed by identifier rarity alone. Prior P-code grammar implementation approximates rule presence by unordered token-set membership; avoid conflating order, co-occurrence and causal relationships. Current motifs can cross functions or occur in strings/comments. No learned grammar induction or function-level proof yet.",
-      "certificate": "AI Pill v0.4.26 introduced exploreIndex and 18 ordered lexical motifs (within 1200 UTF-16 units), with full tile pagination; actual Pocket source 320525 characters/10 tiles yielded first four tile starts 32768,294912,65536,262144, all tiles retrieved once across pages, 16 motif families found, 26ms in tool-side execution. Ordered-span fixture and syntax passed. v0.4.27 adds budget accounting, original witness names and first/last-stratum priority for largest bundles; syntax passed; live Safari archive upgrade and discovery quality unverified. Discord v0.4.28: cf08003a-a233-4f53-a2d7-0e8d40cf8e0c 4/4 search/explore in 1255ms, 70ee1a03-9ee6-4752-b890-5f0c4d9068d6 8/8 reads in 155ms. Five source-backed mechanisms identified: deferred internationalization, editor reconciliation, identity-based scroll anchors, Sentry frame provenance, per-product backoff. 156-file packet starved API/module landmarks; all search scores tied. Webpack numeric module chain 674658 -> 590180 -> 158390 motivated structural navigation. v0.4.29 introduces parsed Webpack registry boundaries, candidate loader ID resolution, definition-aware ranking, motif diversity and staged budgets. Exact consumer parser, Rspack and cross-file fixture passed, live full-corpus coverage pending.",
+      "certificate": "AI Pill v0.4.26 introduced exploreIndex and 18 ordered lexical motifs (within 1200 UTF-16 units), with full tile pagination; actual Pocket source 320525 characters/10 tiles yielded first four tile starts 32768,294912,65536,262144, all tiles retrieved once across pages, 16 motif families found, 26ms in tool-side execution. Ordered-span fixture and syntax passed. v0.4.27 adds budget accounting, original witness names and first/last-stratum priority for largest bundles; syntax passed; live Safari archive upgrade and discovery quality unverified. Discord v0.4.28: cf08003a-a233-4f53-a2d7-0e8d40cf8e0c 4/4 search/explore in 1255ms, 70ee1a03-9ee6-4752-b890-5f0c4d9068d6 8/8 reads in 155ms. Five source-backed mechanisms identified: deferred internationalization, editor reconciliation, identity-based scroll anchors, Sentry frame provenance, per-product backoff. 156-file packet starved API/module landmarks; all search scores tied. Webpack numeric module chain 674658 -> 590180 -> 158390 motivated structural navigation. v0.4.29 introduces parsed Webpack registry boundaries, candidate loader ID resolution, definition-aware ranking, motif diversity and staged budgets. Exact consumer parser, Rspack and cross-file fixture passed, live full-corpus coverage pending. Live v0.4.29 f630cfe7-cf3e-416c-9e51-821d402f3028: 1423/1429 files, 8918 factories, 2 unresolved known IDs; main 13 MB bootstrap not recognized. v0.4.30 736e2360-1c5d-4624-bde7-166a73f1a687: 11096234/24197823 recognized source bytes; bootstrap initializer rejected. Embedded Acorn reproduced SequenceExpression over comma-separated variable declarators; v0.4.31 uses initializer production. Live v0.4.31 3c3abc60-bb63-463e-ba07-2faf74270056: all 4 operations passed, 6050 ms, 1429/1429 files (1423 chunk, 6 bootstrap), 24197823/24197823 bytes, 13976 parsed factories; exact chain 674658 -> 590180 [6003580,6006994) -> 158390 [352224,353251), same retained source run cbd1b9c7-6462-407f-9968-5aa5f3b1402e. Definition ranked first (51 vs 21 for callers); warm lookups 13 and 11 ms; no new source bytes. Structural acceptance satisfied, not runtime graph or full semantic coverage. Rebalanced cold-start context quality not independently measured.",
       "evidence": [
         "pcode_pipeline",
         "pcode_grammar",
         "pcode_taxonomy",
         "pill_queryless_lifting"
       ],
-      "next": "Update v0.4.29 and run README structural acceptance plan against retained Discord corpus; compare returned module chain and context allocation, report main bootstrap header if unsupported. Do not refetch. Assess marginal learning value before further changes.",
+      "next": "Stop structural indexing changes. Apply the discovery substrate to actual engineering questions (e.g. Discord Wiki), reopen only for consequential failures. Rebalanced orientation packet comparison remains optional when needed.",
       "stop": "Representative unfamiliar software discovery yields useful source-grounded questions with less manual search and without degrading context budget or acquisition; only reopen for demonstrated missed mechanisms or cost.",
       "reopen": "Concentrated coverage, false-positive motif overload, inability to discover unnamed computation, or poor marginal discovery value.",
       "depends_on": [
@@ -1376,7 +1376,6 @@
     }
   ],
   "active_queue": [
-    "I26",
     "I24",
     "I22",
     "I25",
@@ -1399,7 +1398,8 @@
     "I9",
     "I10",
     "I11",
-    "I23"
+    "I23",
+    "I26"
   ],
   "global_stop": "A recurring real workflow must beat the direct existing workflow on human interventions, attention interruption and recovery cost while preserving useful output and agency. No obligation to realize every possible capability. Stop adding mechanisms once sufficient for the parent goal; reopen on actual recurrent friction. Manual relay is not a success criterion.",
   "limitations": "Source review and user-relayed prior experiments only. Drive root metadata inspected privately; no private IDs/content copied into public repository. No new device execution, provider automation, data migration or installation. Browser manager/version and support/authorization for any automated inference must be established separately.",
@@ -1538,6 +1538,11 @@
       "date": "2026-11-26",
       "decision": "Discord real-device acquisition and evidence retrieval passed. Implement v0.4.29 structural navigation from concrete module dependency and context allocation failures. No provider execution or Pocket UI changes. Wiki review: retain identity anchors and native authorized navigation; consider incremental rendering and independent history acquisition before any rewrite.",
       "method": "RSM evidence-driven question selection; REM-06.01 economical intervention"
+    },
+    {
+      "date": "2026-11-26",
+      "decision": "Close structural discovery acceptance on live v0.4.31 report: 100% retained-file and byte coverage, 13976 factories, known dependency chain and definition ranking verified. Root cause was parsing a variable initializer as a comma sequence. Stop polishing the parser; use the substrate on real engineering questions. No runtime or cold-start semantic quality certificate.",
+      "method": "RSM failure discrimination and sufficient stopping; REM marginal utility"
     }
   ],
   "functional_intent": {
