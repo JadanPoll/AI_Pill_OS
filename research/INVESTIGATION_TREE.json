@@ -1,6 +1,6 @@
 {
   "schema": "ai_pill_os.rsm_investigation",
-  "version": 16,
+  "version": 17,
   "updated": "2026-11-26",
   "parent_purpose": "Asymptotically reduce the mechanical distance from human intention to useful realization, preserving attention, agency, intellectual continuity and recoverability. Optimize the complete recurring human–AI loop, not a browser transport.",
   "scope": "Safari-first personal computing: direct touch for low-information operations, dictation and AI collaboration for high-information intentions, universal pill plus contextual mini-pills, local working state and context-aware canonical persistence.",
@@ -49,6 +49,11 @@
       "decision": "Select a single real hands-off acquisition/repair/retrieval canary",
       "clause": "RSM-02.05–02.08; RSM-04.04–04.07",
       "why": "Discriminate transport, persistence and retrieval failures before building an exhaustive tracer."
+    },
+    {
+      "decision": "Keep portable visible JSON and a minimal human feedback loop; defer MCP. Apply REM-04.03 to the UI, not to the breadth of underlying investigator capabilities.",
+      "clause": "RSM-02.05–02.08; REM-04.03; reverse-engineering question-before-tool and bounded context",
+      "why": "The human discovered expectation and outcome-report friction. Foreground paste/run, visible progress and outcome, copy results, save full evidence. Keep specialized instruments under Tools; no mandatory onboarding or memorization."
     }
   ],
   "sources": {
@@ -130,7 +135,11 @@
     "microsoft_atlas": "https://github.com/JadanPoll/microsoft/blob/main/source_atlas/README.md",
     "microsoft_audit": "https://github.com/JadanPoll/microsoft/blob/main/source_atlas/RESEARCH_PROCESS_AUDIT_2026-11-17.md",
     "pill_plan": "https://github.com/JadanPoll/AI_Pill_OS/blob/45137542bc0bd7a61a16a8a77d3efa87b6435838/AI_Pill.user.js",
-    "pocket_0757": "https://github.com/JadanPoll/AI_Pill_OS/blob/64accf41281199b6058083afedc0c4a0e88d1475/Pocket.user.js"
+    "pocket_0757": "https://github.com/JadanPoll/AI_Pill_OS/blob/64accf41281199b6058083afedc0c4a0e88d1475/Pocket.user.js",
+    "reverse_engineering": "https://github.com/JadanPoll/Reverse_Engineering_Research_And_Taxonomy/blob/main/README.md",
+    "reverse_engineering_context": "https://github.com/JadanPoll/Reverse_Engineering_Research_And_Taxonomy/blob/main/cli.py",
+    "reverse_engineering_state": "https://github.com/JadanPoll/Reverse_Engineering_Research_And_Taxonomy/blob/main/investigation.py",
+    "reverse_engineering_stripped": "https://github.com/JadanPoll/Reverse_Engineering_Research_And_Taxonomy/blob/main/STRIPPED_ANALYSIS_DESIGN.md"
   },
   "question_tree": [
     {
@@ -1158,7 +1167,7 @@
         "Q8.2.3",
         "Q8.6"
       ],
-      "status": "active_priority",
+      "status": "conditional",
       "why": "Remove human command and evidence transport from each iteration.",
       "model": "Separate authenticated control lane (target binding, job ID, capability scope, lease/deadline, claim/receipt, terminal outcome) from artifact lane (immutable reference + digest + verified persistence). AI Pill page realm has no GM grants; Pocket holds cross-origin GM namespace and heartbeat. A narrow bridge may reuse existing Pocket transport for local dispatch; a connector-accessible queue or supported agent runner is required for direct remote invocation from an investigator. Do not conflate browser DOM output with an authenticated control channel.",
       "belief": "Current manual plans and export work; no directly callable browser tool or verified automatic ChatGPT-to-AI-Pill command lane. Existing Pocket mailbox is browser-local and cannot by itself make this chat an endpoint. Safari scheduling, manager isolation, origin policy, and explicit permissions remain independent constraints.",
@@ -1170,7 +1179,7 @@
       ],
       "stop": "After one explicit scoped authorization, a real investigator submits a harmless job, correct browser target claims once, execution yields matching compact result, follow-up is dispatched without human copying, and refresh/duplicate delivery does not replay completed side effects. Actual background and foreground timing recorded.",
       "reopen": "Stale target, transport loss, inaccessible browser realm, authorization or provider contract changes.",
-      "next": "Compare existing Pocket local job protocol with connector-reachable job mailbox and supported agent runtime. Select smallest demonstrable control path with authenticated scope; use read-only source acquisition as first job, not arbitrary eval or hidden authenticated requests.",
+      "next": "Defer MCP and remote transport. Keep portable, visible, manually relayed JSON while discovering the appropriate operation and expectation vocabulary. Reopen when measured relay friction warrants automation.",
       "depends_on": []
     },
     {
@@ -1193,10 +1202,9 @@
       ],
       "stop": "Trace one ordinary user-authorized ChatGPT Ask across submission, native transport and completion; retrieve complete newly identified assets once, inspect relevant ranges, form a falsifiable conclusion and choose one meaningful intervention or stop. No unbounded probes or permanent research controls for every hypothesis.",
       "reopen": "New consequential feature, unresolved source/runtime discrepancy, or recurring UI-dependent failure.",
-      "next": "Start after I22/I23 can exchange jobs and evidence; instrument passive native boundaries, with IDs/metadata only and explicit coverage. Retain existing UI adapter fallback. Use competing outcomes to choose subsequent experiments.",
+      "next": "Run passive probes through reviewed JSON plans after sufficient source acquisition; do not wait for remote transport.",
       "depends_on": [
-        "I22",
-        "I23"
+        "I22"
       ]
     },
     {
@@ -1207,7 +1215,7 @@
         "Q8.5.2",
         "Q8.5.3"
       ],
-      "status": "conditional",
+      "status": "active_priority",
       "why": "Test complete autonomous research utility rather than count constituent features.",
       "model": "Representative loop: one authorization -> inventory/archive job -> compact partial outcome -> distinct dependency-resolution job -> verified artifact reference -> later independent range lookup -> source-linked certificate. Measure human interventions, elapsed time, bytes re-transferred, number of model turns and recovery cost; compare actual previous workflow.",
       "belief": "The manual Microsoft archive amortized source retrieval; AI Pill can reduce the acquisition and iteration cost if the integrated loop works. Passing local syntax tests is not evidence of that utility.",
@@ -1217,13 +1225,11 @@
         "microsoft_audit",
         "pill_plan"
       ],
-      "stop": "One real source-discovery investigation completes after initial authorization without manual file handling, copying or tab switches. A later model can recover the original artifact and locate a new mechanism without reacquisition. Stop adding machinery unless failures materially change that result.",
+      "stop": "A real investigation runs with minimal human relay, compact result first, full source artifact only when useful; repeated investigations retrieve existing evidence without reacquisition. Human can identify wasted effort and revise plans. Fully autonomous transport is not a prerequisite for this phase.",
       "reopen": "Repeated human intervention, lost evidence, unsafe scope, or inferior whole-workflow cost.",
-      "next": "Use missing worklet dependency as regression witness and a previously unindexed ordinary message path as discovery witness; compare actual not synthetic browser results.",
+      "next": "Evaluate real source acquisition and follow-up using the plan UI and compact outcome. Identify missing operations, coverage, persistence and friction before automating relay.",
       "depends_on": [
-        "I22",
-        "I23",
-        "I24"
+        "I22"
       ]
     }
   ],
@@ -1316,7 +1322,7 @@
   ],
   "active_queue": [
     "I22",
-    "I23",
+    "I25",
     "I16",
     "I21",
     "I12",
@@ -1337,7 +1343,7 @@
     "I10",
     "I11",
     "I24",
-    "I25"
+    "I23"
   ],
   "global_stop": "A recurring real workflow must beat the direct existing workflow on human interventions, attention interruption and recovery cost while preserving useful output and agency. No obligation to realize every possible capability. Stop adding mechanisms once sufficient for the parent goal; reopen on actual recurrent friction. Manual relay is not a success criterion.",
   "limitations": "Source review and user-relayed prior experiments only. Drive root metadata inspected privately; no private IDs/content copied into public repository. No new device execution, provider automation, data migration or installation. Browser manager/version and support/authorization for any automated inference must be established separately.",
@@ -1406,6 +1412,11 @@
       "date": "2026-11-26",
       "decision": "User reorients around AI Pill as an autonomous investigation runtime, drawing on Microsoft full-source archival and rough source ranges. Add Q8 landscape and I22–I25; prioritize source corpus amortization and authenticated bidirectional control/artifact lanes. No new architecture assumed proven; source retrieval and outcome reports demonstrated with manual relay only.",
       "method": "RSM-02.09–02.10; RSM-05.01–05.02; RSM-04.07"
+    },
+    {
+      "date": "2026-11-26",
+      "decision": "User selects JSON over MCP for now. AI Pill v0.4.12 removes duplicate Ask UI, foregrounds a plan and Run, exposes copy/save only after results, retains manual instruments under Tools. UI cold-demo and forgotten-operation tests are required; actual Safari behavior remains unverified.",
+      "method": "REM-04.03; RSM-02.05–02.08; reverse-engineering context/brief distinction"
     }
   ],
   "functional_intent": {
